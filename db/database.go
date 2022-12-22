@@ -56,7 +56,7 @@ func Close() error {
 }
 
 func RunDatabaseSchema() error {
-	query, err := ioutil.ReadFile("databaseschema.psql")
+	query, err := ioutil.ReadFile("db/schema.psql")
 	if err != nil {
 		return util.MakeError(err, "RunDatabaseSchema")
 	}
