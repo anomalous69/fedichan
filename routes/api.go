@@ -2,8 +2,8 @@ package routes
 
 import (
 	"io"
-	"os"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/KushBlazingJudah/fedichan/config"

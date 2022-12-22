@@ -1,10 +1,10 @@
 package routes
 
 import (
-	"io"
 	"bytes"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"regexp"
 	"sort"

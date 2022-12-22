@@ -1,14 +1,13 @@
 package activitypub
 
 import (
-	"io"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"regexp"
 	"sort"
 	"strings"
-	"time"
 
 	"github.com/KushBlazingJudah/fedichan/config"
 	"github.com/KushBlazingJudah/fedichan/util"
@@ -176,46 +175,6 @@ func FingerRequest(actor string, instance string) (*http.Response, error) {
 	}
 
 	return resp, nil
-}
-
-func AddInstanceToIndexDB(actor string) error {
-	// TODO: completely disabling this until it is actually reasonable to turn it on
-	// only actually allow this when it more or less works, i.e. can post, make threads, manage boards, etc
-	return nil
-
-	//sleep to be sure the webserver is fully initialized
-	//before making finger request
-	time.Sleep(15 * time.Second)
-
-	nActor, err := FingerActor(actor)
-	if err != nil {
-		return util.MakeError(err, "IsValidActor")
-	}
-
-	if nActor.Id == "" {
-		return nil
-	}
-
-	// TODO: maybe allow different indexes?
-	reqActivity := Activity{Id: "https://fchan.xyz/followers"}
-	followers, err := reqActivity.GetCollection()
-	if err != nil {
-		return util.MakeError(err, "IsValidActor")
-	}
-
-	var alreadyIndex = false
-	for _, e := range followers.Items {
-		if e.Id == nActor.Id {
-			alreadyIndex = true
-		}
-	}
-
-	if !alreadyIndex {
-		actor := Actor{Id: "https://fchan.xyz"}
-		return actor.AddFollower(nActor.Id)
-	}
-
-	return nil
 }
 
 func GetActorByNameFromBoardCollection(name string) Actor {

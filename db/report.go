@@ -33,52 +33,11 @@ func CloseLocalReport(id string, board string) error {
 	return util.MakeError(err, "CloseLocalReportDB")
 }
 
-func CreateLocalDelete(id string, _type string) error {
-	var i string
-
-	query := `select id from removed where id=$1`
-	if err := config.DB.QueryRow(query, id).Scan(&i); err != nil {
-		query := `insert into removed (id, type) values ($1, $2)`
-		if _, err := config.DB.Exec(query, id, _type); err != nil {
-			return util.MakeError(err, "CreateLocalDeleteDB")
-		}
-	}
-
-	query = `update removed set type=$1 where id=$2`
-	_, err := config.DB.Exec(query, _type, id)
-
-	return util.MakeError(err, "CreateLocalDeleteDB")
-}
-
 func CreateLocalReport(id string, board string, reason string) error {
 	query := `insert into reported (id, count, board, reason) values ($1, $2, $3, $4)`
 	_, err := config.DB.Exec(query, id, 1, board, reason)
 
 	return util.MakeError(err, "CreateLocalReportDB")
-}
-
-func GetLocalDelete() ([]Removed, error) {
-	var deleted []Removed
-
-	query := `select id, type from removed`
-	rows, err := config.DB.Query(query)
-
-	if err != nil {
-		return deleted, util.MakeError(err, "GetLocalDeleteDB")
-	}
-
-	defer rows.Close()
-	for rows.Next() {
-		var r Removed
-
-		if err := rows.Scan(&r.ID, &r.Type); err != nil {
-			return deleted, util.MakeError(err, "GetLocalDeleteDB")
-		}
-
-		deleted = append(deleted, r)
-	}
-
-	return deleted, nil
 }
 
 func GetLocalReport(board string) (map[string]Reports, error) {

@@ -26,50 +26,6 @@ func GetThemeCookie(c *fiber.Ctx) string {
 	return "default"
 }
 
-func WantToServeCatalog(actorName string) (activitypub.Collection, bool, error) {
-	var collection activitypub.Collection
-	serve := false
-
-	actor, err := activitypub.GetActorByNameFromDB(actorName)
-	if err != nil {
-		return collection, false, util.MakeError(err, "WantToServeCatalog")
-	}
-
-	if actor.Id != "" {
-		collection, err = actor.GetCatalogCollection()
-		if err != nil {
-			return collection, false, util.MakeError(err, "WantToServeCatalog")
-		}
-
-		collection.Actor = &actor
-		return collection, true, nil
-	}
-
-	return collection, serve, nil
-}
-
-func WantToServeArchive(actorName string) (activitypub.Collection, bool, error) {
-	var collection activitypub.Collection
-	serve := false
-
-	actor, err := activitypub.GetActorByNameFromDB(actorName)
-	if err != nil {
-		return collection, false, util.MakeError(err, "WantToServeArchive")
-	}
-
-	if actor.Id != "" {
-		collection, err = actor.GetCollectionType("Archive")
-		if err != nil {
-			return collection, false, util.MakeError(err, "WantToServeArchive")
-		}
-
-		collection.Actor = &actor
-		return collection, true, nil
-	}
-
-	return collection, serve, nil
-}
-
 func GetActorPost(ctx *fiber.Ctx, path string) error {
 	obj := activitypub.ObjectBase{Id: config.Domain + path}
 	collection, err := obj.GetCollectionFromPath()

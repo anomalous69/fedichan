@@ -1,11 +1,9 @@
 package activitypub
 
 import (
-	"io"
 	"encoding/json"
 	"fmt"
 	"mime/multipart"
-	"net/http"
 	"os"
 	"regexp"
 	"strings"
@@ -216,32 +214,12 @@ func GetObjectFromJson(obj []byte) (ObjectBase, error) {
 	return nObj, nil
 }
 
-func GetObjectsWithoutPreviewsCallback(callback func(id string, href string, mediatype string, name string, size int, published time.Time) error) error {
-	var id string
-	var href string
-	var mediatype string
-	var name string
-	var size int
-	var published time.Time
-
-	query := `select id, href, mediatype, name, size, published from activitystream where id in (select attachment from activitystream where attachment!='' and preview='')`
-	if err := config.DB.QueryRow(query).Scan(&id, &href, &mediatype, &name, &size, &published); err != nil {
-		return util.MakeError(err, "GetObjectsWithoutPreviewsCallback")
-	}
-
-	if err := callback(id, href, mediatype, name, size, published); err != nil {
-		return util.MakeError(err, "GetObjectsWithoutPreviewsCallback")
-	}
-
-	return nil
-}
-
 func HasContextFromJson(context []byte) (bool, error) {
 	var generic interface{}
 
 	err := json.Unmarshal(context, &generic)
 	if err != nil {
-		return false, util.MakeError(err, "GetObjectsWithoutPreviewsCallback")
+		return false, util.MakeError(err, "HasContextFromJson")
 	}
 
 	hasContext := false
@@ -291,52 +269,6 @@ func GetActorByNameFromDB(name string) (Actor, error) {
 	}
 
 	return nActor, nil
-}
-
-func GetActorCollectionReq(collection string) (Collection, error) {
-	var nCollection Collection
-
-	req, err := http.NewRequest("GET", collection, nil)
-
-	if err != nil {
-		return nCollection, util.MakeError(err, "GetActorCollectionReq")
-	}
-
-	// TODO: rewrite this for fiber
-	pass := "FIXME"
-	//_, pass := GetPasswordFromSession(r)
-
-	req.Header.Set("Accept", config.ActivityStreams)
-
-	req.Header.Set("Authorization", "Basic "+pass)
-
-	resp, err := util.RouteProxy(req)
-
-	if err != nil {
-		return nCollection, util.MakeError(err, "GetActorCollectionReq")
-	}
-
-	defer resp.Body.Close()
-	if resp.StatusCode == 200 {
-		body, _ := io.ReadAll(resp.Body)
-
-		if err := json.Unmarshal(body, &nCollection); err != nil {
-			return nCollection, util.MakeError(err, "GetActorCollectionReq")
-		}
-	}
-
-	return nCollection, nil
-}
-
-func GetActorFollowNameFromPath(path string) string {
-	var actor string
-
-	re := regexp.MustCompile(`f\w+-`)
-	actor = re.FindString(path)
-	actor = strings.Replace(actor, "f", "", 1)
-	actor = strings.Replace(actor, "-", "", 1)
-
-	return actor
 }
 
 func GetActorFromDB(id string) (Actor, error) {
@@ -390,49 +322,6 @@ func GetActorFromJson(actor []byte) (Actor, error) {
 	return nActor, nil
 }
 
-func GetActorsFollowPostFromId(actors []string, id string) (Collection, error) {
-	var collection Collection
-
-	for _, e := range actors {
-		obj := ObjectBase{Id: e + "/" + id}
-		tempCol, err := obj.GetCollectionFromPath()
-		if err != nil {
-			return collection, util.MakeError(err, "GetActorsFollowPostFromId")
-		}
-
-		if len(tempCol.OrderedItems) > 0 {
-			collection = tempCol
-			return collection, nil
-		}
-	}
-
-	return collection, nil
-}
-
-func GetBoards() ([]Actor, error) {
-	var boards []Actor
-
-	query := `select type, id, name, preferedusername, inbox, outbox, following, followers FROM actor`
-	rows, err := config.DB.Query(query)
-
-	if err != nil {
-		return boards, util.MakeError(err, "GetBoards")
-	}
-
-	defer rows.Close()
-	for rows.Next() {
-		var actor = new(Actor)
-
-		if err := rows.Scan(&actor.Type, &actor.Id, &actor.Name, &actor.PreferredUsername, &actor.Inbox, &actor.Outbox, &actor.Following, &actor.Followers); err != nil {
-			return boards, util.MakeError(err, "GetBoards")
-		}
-
-		boards = append(boards, *actor)
-	}
-
-	return boards, nil
-}
-
 func GetToFromJson(to []byte) ([]string, error) {
 	var generic interface{}
 
@@ -460,6 +349,7 @@ func GetToFromJson(to []byte) ([]string, error) {
 
 	return nil, nil
 }
+
 func GetActorAndInstance(path string) (string, string) {
 	re := regexp.MustCompile(`([@]?([\w\d.-_]+)[@](.+))`)
 	atFormat := re.MatchString(path)
