@@ -40,7 +40,7 @@ var DB *sql.DB
 // TODO Change this to some other config format like YAML
 // to save into a struct and only read once
 func GetConfigValue(value string, ifnone string) string {
-	file, err := os.Open("config/config-init")
+	file, err := os.Open("fchan.cfg")
 
 	if err != nil {
 		Log.Println(err)

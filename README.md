@@ -47,7 +47,7 @@ Most of the development on this was done using NixOS and as such a ready-to-go
 
 - Ensure you have Golang installed and set a correct `GOPATH`
 - `git clone` the software
-- Copy `config-init` to `config/config-init` and change the values appropriately to reflect the instance.
+- Copy `fchan.example.cfg` to `fchan.cfg` and change the values appropriately to reflect the instance.
 - Create the database, username, and password for psql that is used in the `config` file.
 - Build the server with `make`
 - Start the server with `./fchan`.
@@ -150,19 +150,3 @@ server {
 
 - After installing Certbot and the Nginx plugin, generate the certificate: `sudo certbot --nginx --agree-tos --redirect --rsa-key-size 4096 --hsts --staple-ocsp --email YOUR_EMAIL -d DOMAIN_NAME`
 - Add a job to cron so the certificate will be renewed automatically: `echo "0 0 * * *  root  certbot renew --quiet --no-self-upgrade --post-hook 'systemctl reload nginx'" | sudo tee -a /etc/cron.d/renew_certbot`
-
-### Apache
-
-`Please consider submitting a pull request if you set up a FChannel instance with Apache with instructions on how to do so`
-
-### Caddy
-
-`Please consider submitting a pull request if you set up a FChannel instance with Caddy with instructions on how to do so`
-
-### Docker
-
-A Dockerfile is provided, and an example `docker-compose.yml` exists to base your Docker setup on.
-You should use the `config-init.docker` file to configure it and it will work more or less out of the box with it, you should just need some minor configuration changes to test it out.
-
-Remember, you may need to look at [the section on local testing](#local-testing)
-to use 100% of FChannel's features.

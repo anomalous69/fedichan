@@ -2,6 +2,7 @@
 !.githooks
 *~
 /config/config-init
+/fchan.cfg
 /fchan
 /pem/
 /pgdata
