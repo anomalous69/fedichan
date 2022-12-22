@@ -15,7 +15,7 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/FChannel0/FChannel-Server/config"
+	"github.com/KushBlazingJudah/fedichan/config"
 )
 
 func IsOnion(url string) bool {

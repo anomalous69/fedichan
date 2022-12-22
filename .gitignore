@@ -1,9 +1,9 @@
 .*
 !.githooks
 *~
-#*
-public/
-config$
-config/config-init
+/config/config-init
+/fchan
+/pem/
+/pgdata
+/public
 clientkey
-pem/

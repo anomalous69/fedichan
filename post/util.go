@@ -11,10 +11,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/FChannel0/FChannel-Server/activitypub"
-	"github.com/FChannel0/FChannel-Server/config"
-	"github.com/FChannel0/FChannel-Server/db"
-	"github.com/FChannel0/FChannel-Server/util"
+	"github.com/KushBlazingJudah/fedichan/activitypub"
+	"github.com/KushBlazingJudah/fedichan/config"
+	"github.com/KushBlazingJudah/fedichan/db"
+	"github.com/KushBlazingJudah/fedichan/util"
 	"github.com/gofiber/fiber/v2"
 )
 

@@ -6,8 +6,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/FChannel0/FChannel-Server/activitypub"
-	"github.com/FChannel0/FChannel-Server/util"
+	"github.com/KushBlazingJudah/fedichan/activitypub"
+	"github.com/KushBlazingJudah/fedichan/util"
 )
 
 var Boards []Board

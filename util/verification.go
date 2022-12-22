@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/FChannel0/FChannel-Server/config"
+	"github.com/KushBlazingJudah/fedichan/config"
 	"github.com/gofiber/fiber/v2"
 	_ "github.com/lib/pq"
 )

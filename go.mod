@@ -1,4 +1,4 @@
-module github.com/FChannel0/FChannel-Server
+module github.com/KushBlazingJudah/fedichan
 
 go 1.15
 

@@ -1,31 +1,38 @@
-# About
+# Fedichan
 
-FChannel is a [libre](https://en.wikipedia.org/wiki/Free_and_open-source_software), [self-hostable](https://en.wikipedia.org/wiki/Self-hosting_(web_services)), [federated](https://en.wikipedia.org/wiki/Federation_(information_technology)), [imageboard](https://en.wikipedia.org/wiki/Imageboard) platform that utilizes [ActivityPub](https://activitypub.rocks/).
+Fedichan is a
+[libre](https://en.wikipedia.org/wiki/Free_and_open-source_software),
+[self-hostable](https://en.wikipedia.org/wiki/Self-hosting_(web_services)),
+[federated](https://en.wikipedia.org/wiki/Federation_(information_technology)),
+[imageboard](https://en.wikipedia.org/wiki/Imageboard) platform that utilizes
+[ActivityPub](https://activitypub.rocks/) to federate between other instances.
+It is a continuation of
+[FChannel](https://github.com/FChannel0/FChannel-Server), who's upstream has
+effectively stalled as the main developer has lost interest.
 
-There are currently several instances federated with each other, for a full list see: https://fchan.xyz
+## Why fork?
 
-There is an anon testing FChannel instances on TOR/Loki/I2P. Find more information here: https://fchan.xyz/g/MORL0KUT
-It is a testing environment, so the instances might come and go.
+There is still a bit of a demand for this type of software and for a period of
+time, it was quite popular.
+At its peak, there were about 10 instances, however as of writing only one
+remains.
 
-## To Do List
-Current things that will be implemented first are:
-- A way to automatically index new instances into a list so others can discover instances as they come online.
-- Setting up a server proxy so that clearnet instances can talk to TOR/Loki/I2P instances.
-- Other improvements will be made over time, first it needs to be as easy as possible for new instances to come online and connect with others reliably.
-
-Try and run your own instances and federate with one of the instances above.
-Any contributions or suggestions are appreciated. Best way to give immediate feedback is the XMPP: `xmpp:general@rooms.fchannel.org` or Matrix: `#fchan:matrix.org`
+This fork aims to further improve the software and to give a reason for people
+to host instances again.
 
 ## Development
-To get started on hacking the code of FChannel, it is recommended you setup your
-git hooks by simply running `git config core.hooksPath .githooks`.
 
-This currently helps enforce the Go style guide, but may be expanded upon in the
-future.
+To get started on hacking the code of Fedichan, it is recommended you setup your
+Git hooks by simply running `git config core.hooksPath .githooks`.
 
 Before you make a pull request, ensure everything you changed works as expected,
 and to fix errors reported by `go vet` and make your code better with
 `staticcheck`.
+
+### Nix
+
+Most of the development on this was done using NixOS and as such a ready-to-go
+`shell.nix` is available for those who use direnv and Lorri.
 
 ## Server Installation and Configuration
 

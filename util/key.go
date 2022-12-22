@@ -8,7 +8,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/FChannel0/FChannel-Server/config"
+	"github.com/KushBlazingJudah/fedichan/config"
 	"github.com/gofiber/fiber/v2/middleware/encryptcookie"
 )
 

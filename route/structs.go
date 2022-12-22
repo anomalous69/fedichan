@@ -1,10 +1,10 @@
 package route
 
 import (
-	"github.com/FChannel0/FChannel-Server/activitypub"
-	"github.com/FChannel0/FChannel-Server/db"
-	"github.com/FChannel0/FChannel-Server/util"
-	"github.com/FChannel0/FChannel-Server/webfinger"
+	"github.com/KushBlazingJudah/fedichan/activitypub"
+	"github.com/KushBlazingJudah/fedichan/db"
+	"github.com/KushBlazingJudah/fedichan/util"
+	"github.com/KushBlazingJudah/fedichan/webfinger"
 )
 
 type PageData struct {
