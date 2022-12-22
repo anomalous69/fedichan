@@ -13,7 +13,6 @@ import (
 	"github.com/KushBlazingJudah/fedichan/activitypub"
 	"github.com/KushBlazingJudah/fedichan/config"
 	"github.com/KushBlazingJudah/fedichan/db"
-	"github.com/KushBlazingJudah/fedichan/route"
 	"github.com/KushBlazingJudah/fedichan/util"
 	"github.com/KushBlazingJudah/fedichan/webfinger"
 	"github.com/gofiber/fiber/v2"
@@ -118,7 +117,7 @@ func AdminIndex(ctx *fiber.Ctx) error {
 		followers = append(followers, e.Id)
 	}
 
-	var adminData route.AdminPage
+	var adminData AdminPage
 	adminData.Following = following
 	adminData.Followers = followers
 
@@ -239,7 +238,7 @@ func AdminAddBoard(ctx *fiber.Ctx) error {
 }
 
 func AdminActorIndex(ctx *fiber.Ctx) error {
-	var data route.AdminPage
+	var data AdminPage
 
 	id, pass := util.GetPasswordFromSession(ctx)
 	actor, _ := webfinger.GetActorFromPath(ctx.Path(), "/"+config.Key+"/")

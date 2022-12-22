@@ -7,8 +7,7 @@ import (
 	"github.com/KushBlazingJudah/fedichan/activitypub"
 	"github.com/KushBlazingJudah/fedichan/config"
 	"github.com/KushBlazingJudah/fedichan/db"
-	"github.com/KushBlazingJudah/fedichan/route"
-	"github.com/KushBlazingJudah/fedichan/route/routes"
+	"github.com/KushBlazingJudah/fedichan/routes"
 	"github.com/KushBlazingJudah/fedichan/util"
 	"github.com/KushBlazingJudah/fedichan/webfinger"
 	"github.com/gofiber/fiber/v2"
@@ -26,7 +25,7 @@ func main() {
 	// Routing and templates
 	template := html.New("./views", ".html")
 
-	route.TemplateFunctions(template)
+	routes.TemplateFunctions(template)
 
 	app := fiber.New(fiber.Config{
 		AppName:      "FChannel",

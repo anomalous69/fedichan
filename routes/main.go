@@ -4,7 +4,6 @@ import (
 	"github.com/KushBlazingJudah/fedichan/activitypub"
 	"github.com/KushBlazingJudah/fedichan/config"
 	"github.com/KushBlazingJudah/fedichan/db"
-	"github.com/KushBlazingJudah/fedichan/route"
 	"github.com/KushBlazingJudah/fedichan/util"
 	"github.com/KushBlazingJudah/fedichan/webfinger"
 	"github.com/gofiber/fiber/v2"
@@ -22,7 +21,7 @@ func Index(ctx *fiber.Ctx) error {
 		return nil
 	}
 
-	var data route.PageData
+	var data PageData
 
 	data.NewsItems, err = db.GetNews(3)
 	if err != nil {
@@ -52,7 +51,7 @@ func Index(ctx *fiber.Ctx) error {
 	data.Meta.Title = data.Title
 
 	data.Themes = &config.Themes
-	data.ThemeCookie = route.GetThemeCookie(ctx)
+	data.ThemeCookie = GetThemeCookie(ctx)
 
 	return ctx.Render("index", fiber.Map{
 		"page": data,
@@ -76,7 +75,7 @@ func Outbox(ctx *fiber.Ctx) error {
 		return nil
 	}
 
-	return route.ParseOutboxRequest(ctx, actor)
+	return ParseOutboxRequest(ctx, actor)
 }
 
 func Following(ctx *fiber.Ctx) error {

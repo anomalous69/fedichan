@@ -10,7 +10,6 @@ import (
 
 	"github.com/KushBlazingJudah/fedichan/activitypub"
 	"github.com/KushBlazingJudah/fedichan/config"
-	"github.com/KushBlazingJudah/fedichan/route"
 	"github.com/KushBlazingJudah/fedichan/webfinger"
 
 	"github.com/KushBlazingJudah/fedichan/db"
@@ -528,7 +527,7 @@ func ReportPost(ctx *fiber.Ctx) error {
 func ReportGet(ctx *fiber.Ctx) error {
 	actor, _ := activitypub.GetActor(ctx.Query("actor"))
 
-	var data route.PageData
+	var data PageData
 	data.Board.Actor = actor
 	data.Board.Name = actor.Name
 	data.Board.PrefName = actor.PreferredUsername
@@ -553,7 +552,7 @@ func ReportGet(ctx *fiber.Ctx) error {
 	data.Instance, err = activitypub.GetActorFromDB(config.Domain)
 
 	data.Themes = &config.Themes
-	data.ThemeCookie = route.GetThemeCookie(ctx)
+	data.ThemeCookie = GetThemeCookie(ctx)
 
 	data.Key = config.Key
 	data.Board.ModCred, _ = util.GetPasswordFromSession(ctx)

@@ -8,7 +8,6 @@ import (
 	"github.com/KushBlazingJudah/fedichan/activitypub"
 	"github.com/KushBlazingJudah/fedichan/config"
 	"github.com/KushBlazingJudah/fedichan/db"
-	"github.com/KushBlazingJudah/fedichan/route"
 	"github.com/KushBlazingJudah/fedichan/util"
 	"github.com/KushBlazingJudah/fedichan/webfinger"
 	"github.com/gofiber/fiber/v2"
@@ -28,7 +27,7 @@ func NewsGet(ctx *fiber.Ctx) error {
 		return util.MakeError(err, "NewsGet")
 	}
 
-	var data route.PageData
+	var data PageData
 	data.PreferredUsername = actor.PreferredUsername
 	data.Boards = webfinger.Boards
 	data.Board.Name = ""
@@ -52,7 +51,7 @@ func NewsGet(ctx *fiber.Ctx) error {
 	data.Meta.Title = data.Title
 
 	data.Themes = &config.Themes
-	data.ThemeCookie = route.GetThemeCookie(ctx)
+	data.ThemeCookie = GetThemeCookie(ctx)
 
 	return ctx.Render("news", fiber.Map{"page": data}, "layouts/main")
 }
@@ -63,7 +62,7 @@ func NewsGetAll(ctx *fiber.Ctx) error {
 		return util.MakeError(err, "NewsGetAll")
 	}
 
-	var data route.PageData
+	var data PageData
 	data.PreferredUsername = actor.PreferredUsername
 	data.Title = actor.PreferredUsername + " News"
 	data.Boards = webfinger.Boards
@@ -90,7 +89,7 @@ func NewsGetAll(ctx *fiber.Ctx) error {
 	data.Meta.Title = data.Title
 
 	data.Themes = &config.Themes
-	data.ThemeCookie = route.GetThemeCookie(ctx)
+	data.ThemeCookie = GetThemeCookie(ctx)
 
 	return ctx.Render("anews", fiber.Map{"page": data}, "layouts/main")
 }

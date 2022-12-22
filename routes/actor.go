@@ -15,7 +15,6 @@ import (
 	"github.com/KushBlazingJudah/fedichan/activitypub"
 	"github.com/KushBlazingJudah/fedichan/config"
 	"github.com/KushBlazingJudah/fedichan/db"
-	"github.com/KushBlazingJudah/fedichan/route"
 	"github.com/KushBlazingJudah/fedichan/util"
 	"github.com/KushBlazingJudah/fedichan/webfinger"
 	"github.com/gofiber/fiber/v2"
@@ -185,7 +184,7 @@ func PostActorOutbox(ctx *fiber.Ctx) error {
 		return nil
 	}
 
-	return route.ParseOutboxRequest(ctx, actor)
+	return ParseOutboxRequest(ctx, actor)
 }
 
 func ActorFollowing(ctx *fiber.Ctx) error {
@@ -371,7 +370,7 @@ func ActorPost(ctx *fiber.Ctx) error {
 
 	// this is a activitpub json request return json instead of html page
 	if activitypub.AcceptActivity(ctx.Get("Accept")) {
-		route.GetActorPost(ctx, ctx.Path())
+		GetActorPost(ctx, ctx.Path())
 		return nil
 	}
 
@@ -392,7 +391,7 @@ func ActorPost(ctx *fiber.Ctx) error {
 		return ctx.Status(404).Render("404", fiber.Map{})
 	}
 
-	var data route.PageData
+	var data PageData
 
 	if collection.Actor.Id != "" {
 		data.Board.Post.Actor = collection.Actor.Id
@@ -445,7 +444,7 @@ func ActorPost(ctx *fiber.Ctx) error {
 	}
 
 	data.Themes = &config.Themes
-	data.ThemeCookie = route.GetThemeCookie(ctx)
+	data.ThemeCookie = GetThemeCookie(ctx)
 
 	return ctx.Render("npost", fiber.Map{
 		"page": data,
@@ -466,7 +465,7 @@ func ActorCatalog(ctx *fiber.Ctx) error {
 		return util.MakeError(err, "ActorCatalog")
 	}
 
-	var data route.PageData
+	var data PageData
 	data.Board.Name = actor.Name
 	data.Board.PrefName = actor.PreferredUsername
 	data.Board.InReplyTo = ""
@@ -505,7 +504,7 @@ func ActorCatalog(ctx *fiber.Ctx) error {
 	data.Meta.Title = data.Title
 
 	data.Themes = &config.Themes
-	data.ThemeCookie = route.GetThemeCookie(ctx)
+	data.ThemeCookie = GetThemeCookie(ctx)
 
 	return ctx.Render("catalog", fiber.Map{
 		"page": data,
@@ -548,7 +547,7 @@ func ActorPosts(ctx *fiber.Ctx) error {
 		pages = append(pages, int(i))
 	}
 
-	var data route.PageData
+	var data PageData
 	data.Board.Name = actor.Name
 	data.Board.PrefName = actor.PreferredUsername
 	data.Board.Summary = actor.Summary
@@ -586,7 +585,7 @@ func ActorPosts(ctx *fiber.Ctx) error {
 	data.Meta.Title = data.Title
 
 	data.Themes = &config.Themes
-	data.ThemeCookie = route.GetThemeCookie(ctx)
+	data.ThemeCookie = GetThemeCookie(ctx)
 
 	return ctx.Render("nposts", fiber.Map{
 		"page": data,
@@ -607,7 +606,7 @@ func ActorArchive(ctx *fiber.Ctx) error {
 		return util.MakeError(err, "ActorArchive")
 	}
 
-	var returnData route.PageData
+	var returnData PageData
 	returnData.Board.Name = actor.Name
 	returnData.Board.PrefName = actor.PreferredUsername
 	returnData.Board.InReplyTo = ""
@@ -642,7 +641,7 @@ func ActorArchive(ctx *fiber.Ctx) error {
 	returnData.Meta.Title = returnData.Title
 
 	returnData.Themes = &config.Themes
-	returnData.ThemeCookie = route.GetThemeCookie(ctx)
+	returnData.ThemeCookie = GetThemeCookie(ctx)
 
 	return ctx.Render("archive", fiber.Map{
 		"page": returnData,

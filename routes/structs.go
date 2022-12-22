@@ -1,4 +1,4 @@
-package route
+package routes
 
 import (
 	"github.com/KushBlazingJudah/fedichan/activitypub"
