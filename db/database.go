@@ -260,11 +260,7 @@ func DeleteInstanceFromInactive(instance string) error {
 func IsInactiveTimestamp(timeStamp string) bool {
 	stamp, _ := time.Parse(time.RFC3339, timeStamp)
 
-	if time.Now().UTC().Sub(stamp).Hours() > 48 {
-		return true
-	}
-
-	return false
+	return time.Now().UTC().Sub(stamp).Hours() > 48
 }
 
 func IsReplyToOP(op string, link string) (string, bool, error) {
@@ -303,7 +299,7 @@ func GetReplyOP(link string) (string, error) {
 }
 
 func CheckInactive() {
-	for true {
+	for {
 		CheckInactiveInstances()
 		time.Sleep(24 * time.Hour)
 	}

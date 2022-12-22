@@ -80,7 +80,7 @@ func TripCode(pass string) (string, error) {
 	}
 
 	// normally i would just return error here but if the encrypt fails, this operation may fail and as a result cause a panic
-	return enc[len(enc)-10 : len(enc)], nil
+	return enc[len(enc)-10:], nil
 }
 
 func TripCodeConvert(str string) string {
@@ -105,5 +105,5 @@ func TripCodeSecure(pass string) (string, error) {
 		return "", MakeError(err, "TripCodeSecure")
 	}
 
-	return enc[len(enc)-10 : len(enc)], nil
+	return enc[len(enc)-10:], nil
 }

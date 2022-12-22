@@ -1347,7 +1347,7 @@ func (obj ObjectBase) WriteCache() (ObjectBase, error) {
 			obj.Preview.WritePreviewCache()
 		}
 
-		for i, _ := range obj.Attachment {
+		for i := range obj.Attachment {
 			obj.Attachment[i].WriteAttachmentCache()
 			obj.WriteCacheWithAttachment(obj.Attachment[i])
 		}

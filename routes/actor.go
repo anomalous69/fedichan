@@ -59,8 +59,6 @@ func ActorInbox(ctx *fiber.Ctx) error {
 				return util.MakeError(err, "ActorInbox")
 			}
 		}
-
-		break
 	case "Delete":
 		for _, e := range activity.To {
 			actor, err := activitypub.GetActorFromDB(e)
@@ -88,7 +86,6 @@ func ActorInbox(ctx *fiber.Ctx) error {
 				break
 			}
 		}
-		break
 
 	case "Follow":
 		for _, e := range activity.To {
@@ -156,8 +153,6 @@ func ActorInbox(ctx *fiber.Ctx) error {
 				return response.MakeRequestInbox()
 			}
 		}
-		break
-
 	case "Reject":
 		if activity.Object.Object.Type == "Follow" {
 			config.Log.Println("follow rejected")
@@ -165,9 +160,7 @@ func ActorInbox(ctx *fiber.Ctx) error {
 				return util.MakeError(err, "ActorInbox")
 			}
 		}
-		break
 	}
-
 	return nil
 }
 
@@ -373,7 +366,7 @@ func ActorPost(ctx *fiber.Ctx) error {
 		return nil
 	}
 
-	re := regexp.MustCompile("\\w+$")
+	re := regexp.MustCompile(`\w+$`)
 	postId := re.FindString(ctx.Path())
 
 	inReplyTo, _ := db.GetPostIDFromNum(postId)

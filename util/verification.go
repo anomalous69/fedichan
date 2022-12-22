@@ -208,7 +208,7 @@ func CreateNewCaptcha() error {
 	id := RandomID(8)
 	file := "public/" + id + ".png"
 
-	for true {
+	for {
 		if _, err := os.Stat("./" + file); err == nil {
 			id = RandomID(8)
 			file = "public/" + id + ".png"
@@ -226,16 +226,10 @@ func CreateNewCaptcha() error {
 	switch srnd {
 	case "0":
 		pattern = "pattern:verticalbricks"
-		break
-
 	case "1":
 		pattern = "pattern:verticalsaw"
-		break
-
 	case "2":
 		pattern = "pattern:hs_cross"
-		break
-
 	}
 
 	cmd := exec.Command("convert", "-size", "200x98", pattern, "-transparent", "white", file)

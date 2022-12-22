@@ -20,11 +20,7 @@ import (
 
 func IsOnion(url string) bool {
 	re := regexp.MustCompile(`\.onion`)
-	if re.MatchString(url) {
-		return true
-	}
-
-	return false
+	return re.MatchString(url)
 }
 
 func StripTransferProtocol(value string) string {
@@ -151,7 +147,7 @@ func GetUniqueFilename(ext string) string {
 	id := RandomID(8)
 	file := "/public/" + id + "." + ext
 
-	for true {
+	for {
 		if _, err := os.Stat("." + file); err == nil {
 			id = RandomID(8)
 			file = "/public/" + id + "." + ext
@@ -184,7 +180,7 @@ func EscapeString(text string) string {
 func CreateUniqueID(actor string) (string, error) {
 	var newID string
 
-	for true {
+	for {
 		newID = RandomID(8)
 		query := "select id from activitystream where id=$1"
 		args := fmt.Sprintf("%s/%s/%s", config.Domain, actor, newID)

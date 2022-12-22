@@ -106,7 +106,7 @@ func ParseLinkTitle(actorName string, op string, content string) string {
 	re := regexp.MustCompile(`(>>(https?://[A-Za-z0-9_.:\-~]+\/[A-Za-z0-9_.\-~]+\/)\w+(#.+)?)`)
 	match := re.FindAllStringSubmatch(content, -1)
 
-	for i, _ := range match {
+	for i := range match {
 		link := strings.Replace(match[i][0], ">>", "", 1)
 		isOP := ""
 
@@ -132,7 +132,7 @@ func ParseOptions(ctx *fiber.Ctx, obj activitypub.ObjectBase) activitypub.Object
 
 	if options != "" {
 		option := strings.Split(options, ";")
-		email := regexp.MustCompile(".+@.+\\..+")
+		email := regexp.MustCompile(`.+@.+\..+`)
 		wallet := regexp.MustCompile("wallet:.+")
 		delete := regexp.MustCompile("delete:.+")
 
@@ -192,10 +192,10 @@ func CheckCaptcha(captcha string) (bool, error) {
 }
 
 func GetCaptchaCode(captcha string) string {
-	re := regexp.MustCompile("\\w+\\.\\w+$")
+	re := regexp.MustCompile(`\w+\.\w+$`)
 	code := re.FindString(captcha)
 
-	re = regexp.MustCompile("\\w+")
+	re = regexp.MustCompile(`\w+`)
 	code = re.FindString(code)
 
 	return code
@@ -563,7 +563,7 @@ func ParseCommentQuotes(content string) string {
 	re := regexp.MustCompile(`((\r\n|\r|\n|^)>(.+)?[^\r\n])`)
 	match := re.FindAllStringSubmatch(content, -1)
 
-	for i, _ := range match {
+	for i := range match {
 		quote := strings.Replace(match[i][0], ">", "&gt;", 1)
 		line := re.ReplaceAllString(match[i][0], "<span class=\"quote\">"+quote+"</span>")
 		content = strings.Replace(content, match[i][0], line, 1)

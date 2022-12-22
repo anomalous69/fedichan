@@ -28,7 +28,7 @@ func MediaProxy(url string) string {
 		return url
 	}
 
-	re = regexp.MustCompile("(.+)?\\.onion(.+)?")
+	re = regexp.MustCompile(`(.+)?\.onion(.+)?`)
 	if re.MatchString(url) {
 		return url
 	}

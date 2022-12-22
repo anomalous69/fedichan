@@ -214,7 +214,6 @@ func ParseOutboxRequest(ctx *fiber.Ctx, actor activitypub.Actor) error {
 			case "Create":
 				ctx.Response().Header.Set("Status", "403")
 				_, err = ctx.Write([]byte(""))
-				break
 
 			case "Follow":
 				validActor := (activity.Object.Actor != "")
@@ -247,18 +246,14 @@ func ParseOutboxRequest(ctx *fiber.Ctx, actor activitypub.Actor) error {
 				if err != nil {
 					return util.MakeError(err, "ParseOutboxRequest")
 				}
-				break
 
 			case "Delete":
 				config.Log.Println("This is a delete")
 				ctx.Response().Header.Set("Status", "403")
 				_, err = ctx.Write([]byte("could not process activity"))
-				break
-
 			case "Note":
-				ctx.Response().Header.Set("Satus", "403")
+				ctx.Response().Header.Set("Status", "403")
 				_, err = ctx.Write([]byte("could not process activity"))
-				break
 
 			case "New":
 				name := activity.Object.Alias
@@ -296,7 +291,6 @@ func ParseOutboxRequest(ctx *fiber.Ctx, actor activitypub.Actor) error {
 
 				ctx.Response().Header.Set("Status", "403")
 				_, err = ctx.Write([]byte(""))
-				break
 
 			default:
 				ctx.Response().Header.Set("status", "403")

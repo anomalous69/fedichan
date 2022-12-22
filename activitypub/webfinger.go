@@ -14,7 +14,6 @@ import (
 	"github.com/KushBlazingJudah/fedichan/util"
 )
 
-
 var Boards []Board
 var FollowingBoards []ObjectBase
 
@@ -52,7 +51,6 @@ type BoardSortAsc []Board
 func (a BoardSortAsc) Len() int           { return len(a) }
 func (a BoardSortAsc) Less(i, j int) bool { return a[i].Name < a[j].Name }
 func (a BoardSortAsc) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
-
 
 func GetActor(id string) (Actor, error) {
 	var respActor Actor
@@ -219,7 +217,6 @@ func AddInstanceToIndexDB(actor string) error {
 
 	return nil
 }
-
 
 func GetActorByNameFromBoardCollection(name string) Actor {
 	var actor Actor

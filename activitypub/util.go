@@ -17,7 +17,7 @@ import (
 )
 
 // False positive for application/ld+ld, application/activity+ld, application/json+json
-var activityRegexp = regexp.MustCompile("application\\/(ld|json|activity)((\\+(ld|json))|$)")
+var activityRegexp = regexp.MustCompile(`application/(ld|json|activity)((\+(ld|json))|$)`)
 
 func AcceptActivity(header string) bool {
 	accept := false
@@ -77,7 +77,7 @@ func CreateNewActor(board string, prefName string, summary string, authReq []str
 	}
 
 	actor.Type = "Group"
-	actor.Id = fmt.Sprintf("%s", path)
+	actor.Id = path
 	actor.Following = fmt.Sprintf("%s/following", actor.Id)
 	actor.Followers = fmt.Sprintf("%s/followers", actor.Id)
 	actor.Inbox = fmt.Sprintf("%s/inbox", actor.Id)
@@ -190,7 +190,6 @@ func GetObjectFromJson(obj []byte) (ObjectBase, error) {
 				lObj = arrContext.Object[0]
 			}
 			nObj = lObj
-			break
 
 		case map[string]interface{}:
 			var arrContext Object
@@ -200,7 +199,6 @@ func GetObjectFromJson(obj []byte) (ObjectBase, error) {
 			}
 
 			nObj = *arrContext.Object
-			break
 
 		case string:
 			var lObj ObjectBase
@@ -212,7 +210,6 @@ func GetObjectFromJson(obj []byte) (ObjectBase, error) {
 
 			lObj.Id = arrContext.Object
 			nObj = lObj
-			break
 		}
 	}
 
@@ -258,7 +255,6 @@ func HasContextFromJson(context []byte) (bool, error) {
 				hasContext = true
 			}
 		}
-		break
 
 	case string:
 		var arrContext AtContextString
@@ -266,7 +262,6 @@ func HasContextFromJson(context []byte) (bool, error) {
 		if arrContext.Context == "https://www.w3.org/ns/activitystreams" {
 			hasContext = true
 		}
-		break
 	}
 
 	return hasContext, util.MakeError(err, "GetObjectsWithoutPreviewsCallback")
@@ -336,7 +331,7 @@ func GetActorCollectionReq(collection string) (Collection, error) {
 func GetActorFollowNameFromPath(path string) string {
 	var actor string
 
-	re := regexp.MustCompile("f\\w+-")
+	re := regexp.MustCompile(`f\w+-`)
 	actor = re.FindString(path)
 	actor = strings.Replace(actor, "f", "", 1)
 	actor = strings.Replace(actor, "-", "", 1)
@@ -382,13 +377,11 @@ func GetActorFromJson(actor []byte) (Actor, error) {
 		switch generic.(type) {
 		case map[string]interface{}:
 			err = json.Unmarshal(actor, &nActor)
-			break
 
 		case string:
 			var str string
 			err = json.Unmarshal(actor, &str)
 			nActor.Id = str
-			break
 		}
 
 		return nActor, util.MakeError(err, "GetActorFromJson")
@@ -457,19 +450,16 @@ func GetToFromJson(to []byte) ([]string, error) {
 		switch generic.(type) {
 		case []interface{}:
 			err = json.Unmarshal(to, &nStr)
-			break
 		case string:
 			var str string
 			err = json.Unmarshal(to, &str)
 			nStr = append(nStr, str)
-			break
 		}
 		return nStr, util.MakeError(err, "GetToFromJson")
 	}
 
 	return nil, nil
 }
-
 func GetActorAndInstance(path string) (string, string) {
 	re := regexp.MustCompile(`([@]?([\w\d.-_]+)[@](.+))`)
 	atFormat := re.MatchString(path)
