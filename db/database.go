@@ -159,7 +159,7 @@ func RemovePreviewFromFile(id string) error {
 	return util.MakeError(err, "RemovePreviewFromFile")
 }
 
-//if limit less than 1 return all news items
+// if limit less than 1 return all news items
 func GetNews(limit int) ([]NewsItem, error) {
 	var news []NewsItem
 	var query string

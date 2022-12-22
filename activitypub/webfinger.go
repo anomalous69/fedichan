@@ -61,7 +61,7 @@ func GetActor(id string) (Actor, error) {
 	return respActor, nil
 }
 
-//looks for actor with pattern of board@instance
+// looks for actor with pattern of board@instance
 func FingerActor(path string) (Actor, error) {
 	var nActor Actor
 

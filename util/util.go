@@ -285,3 +285,13 @@ func MakeError(err error, msg string) error {
 
 	return nil
 }
+
+func SupportedMIMEType(mime string) bool {
+	for _, e := range config.SupportedFiles {
+		if e == mime {
+			return true
+		}
+	}
+
+	return false
+}

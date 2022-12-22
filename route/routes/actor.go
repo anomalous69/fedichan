@@ -15,7 +15,6 @@ import (
 	"github.com/KushBlazingJudah/fedichan/activitypub"
 	"github.com/KushBlazingJudah/fedichan/config"
 	"github.com/KushBlazingJudah/fedichan/db"
-	"github.com/KushBlazingJudah/fedichan/post"
 	"github.com/KushBlazingJudah/fedichan/route"
 	"github.com/KushBlazingJudah/fedichan/util"
 	"github.com/KushBlazingJudah/fedichan/webfinger"
@@ -275,7 +274,7 @@ func MakeActorPost(ctx *fiber.Ctx) error {
 		}
 	}
 
-	reply, _ := post.ParseCommentForReply(ctx.FormValue("comment"))
+	reply, _ := db.ParseCommentForReply(ctx.FormValue("comment"))
 
 	form, _ := ctx.MultipartForm()
 
@@ -290,7 +289,7 @@ func MakeActorPost(ctx *fiber.Ctx) error {
 				return util.MakeError(err, "ActorPost")
 			}
 		} else if key == "name" {
-			name, tripcode, _ := post.CreateNameTripCode(ctx)
+			name, tripcode, _ := util.CreateNameTripCode(ctx)
 
 			err := we.WriteField(key, name)
 			if err != nil {
@@ -340,7 +339,7 @@ func MakeActorPost(ctx *fiber.Ctx) error {
 	if resp.StatusCode == 200 {
 		var obj activitypub.ObjectBase
 
-		obj = post.ParseOptions(ctx, obj)
+		obj = db.ParseOptions(ctx, obj)
 		for _, e := range obj.Option {
 			if e == "noko" || e == "nokosage" {
 				return ctx.Redirect(config.Domain+"/"+ctx.FormValue("boardName")+"/"+util.ShortURL(ctx.FormValue("sendTo"), string(body)), 301)
@@ -424,7 +423,7 @@ func ActorPost(ctx *fiber.Ctx) error {
 		return util.MakeError(err, "PostGet")
 	}
 	data.Board.Captcha = config.Domain + "/" + capt
-	data.Board.CaptchaCode = post.GetCaptchaCode(data.Board.Captcha)
+	data.Board.CaptchaCode = db.GetCaptchaCode(data.Board.Captcha)
 
 	data.Instance, err = activitypub.GetActorFromDB(config.Domain)
 	if err != nil {
@@ -494,7 +493,7 @@ func ActorCatalog(ctx *fiber.Ctx) error {
 	}
 
 	data.Board.Captcha = config.Domain + "/" + capt
-	data.Board.CaptchaCode = post.GetCaptchaCode(data.Board.Captcha)
+	data.Board.CaptchaCode = db.GetCaptchaCode(data.Board.Captcha)
 
 	data.Title = "/" + data.Board.Name + "/ - catalog"
 
@@ -570,7 +569,7 @@ func ActorPosts(ctx *fiber.Ctx) error {
 		return util.MakeError(err, "OutboxGet")
 	}
 	data.Board.Captcha = config.Domain + "/" + capt
-	data.Board.CaptchaCode = post.GetCaptchaCode(data.Board.Captcha)
+	data.Board.CaptchaCode = db.GetCaptchaCode(data.Board.Captcha)
 
 	data.Title = "/" + actor.Name + "/ - " + actor.PreferredUsername
 
@@ -630,7 +629,7 @@ func ActorArchive(ctx *fiber.Ctx) error {
 		return util.MakeError(err, "ActorArchive")
 	}
 	returnData.Board.Captcha = config.Domain + "/" + capt
-	returnData.Board.CaptchaCode = post.GetCaptchaCode(returnData.Board.Captcha)
+	returnData.Board.CaptchaCode = db.GetCaptchaCode(returnData.Board.Captcha)
 
 	returnData.Title = "/" + actor.Name + "/ - " + actor.PreferredUsername
 

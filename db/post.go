@@ -1,4 +1,4 @@
-package post
+package db
 
 import (
 	"fmt"
@@ -13,7 +13,6 @@ import (
 
 	"github.com/KushBlazingJudah/fedichan/activitypub"
 	"github.com/KushBlazingJudah/fedichan/config"
-	"github.com/KushBlazingJudah/fedichan/db"
 	"github.com/KushBlazingJudah/fedichan/util"
 	"github.com/gofiber/fiber/v2"
 )
@@ -44,7 +43,7 @@ func ParseCommentForReplies(comment string, op string) ([]activitypub.ObjectBase
 		str = strings.Replace(str, "http://", "", 1)
 		str = strings.Replace(str, "https://", "", 1)
 		str = config.TP + "" + str
-		_, isReply, err := db.IsReplyToOP(op, str)
+		_, isReply, err := IsReplyToOP(op, str)
 
 		if err != nil {
 			return nil, util.MakeError(err, "ParseCommentForReplies")
@@ -214,17 +213,7 @@ func IsMediaBanned(f multipart.File) (bool, error) {
 	hash := util.HashBytes(fileBytes)
 	f.Seek(0, 0)
 
-	return db.IsHashBanned(hash)
-}
-
-func SupportedMIMEType(mime string) bool {
-	for _, e := range config.SupportedFiles {
-		if e == mime {
-			return true
-		}
-	}
-
-	return false
+	return IsHashBanned(hash)
 }
 
 func ObjectFromForm(ctx *fiber.Ctx, obj activitypub.ObjectBase) (activitypub.ObjectBase, error) {
@@ -547,14 +536,14 @@ func ParseLinkComments(board activitypub.Actor, op string, content string, threa
 			}
 		}
 
-		if replyID, isReply, err := db.IsReplyToOP(op, parsedLink); err == nil || !isReply {
+		if replyID, isReply, err := IsReplyToOP(op, parsedLink); err == nil || !isReply {
 			id := util.ShortURL(board.Outbox, replyID)
 
 			content = strings.Replace(content, match[i][0], "<a class=\"reply\" title=\""+quoteTitle+"\" href=\"/"+board.Name+"/"+util.ShortURL(board.Outbox, op)+"#"+id+"\">&gt;&gt;"+id+""+isOP+"</a>", -1)
 		} else {
 			//this is a cross post
 
-			parsedOP, err := db.GetReplyOP(parsedLink)
+			parsedOP, err := GetReplyOP(parsedLink)
 			if err == nil {
 				link = parsedOP + "#" + util.ShortURL(parsedOP, parsedLink)
 			}

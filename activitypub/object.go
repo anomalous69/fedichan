@@ -173,7 +173,7 @@ func (obj ObjectBase) DeleteAndRepliesRequest() error {
 	return util.MakeError(err, "DeleteAndRepliesRequest")
 }
 
-//TODO break this off into seperate for Cache
+// TODO break this off into seperate for Cache
 func (obj ObjectBase) DeleteAttachment() error {
 	query := `delete from activitystream where id in (select attachment from activitystream where id=$1)`
 	if _, err := config.DB.Exec(query, obj.Id); err != nil {
@@ -204,7 +204,7 @@ func (obj ObjectBase) DeleteAttachmentFromFile() error {
 	return nil
 }
 
-//TODO break this off into seperate for Cache
+// TODO break this off into seperate for Cache
 func (obj ObjectBase) DeletePreview() error {
 	query := `delete from activitystream where id=$1`
 
@@ -265,7 +265,7 @@ func (obj ObjectBase) DeleteAll() error {
 	return obj.DeleteRepliedTo()
 }
 
-//TODO break this off into seperate for Cache
+// TODO break this off into seperate for Cache
 func (obj ObjectBase) Delete() error {
 	query := `delete from activitystream where id=$1`
 	if _, err := config.DB.Exec(query, obj.Id); err != nil {
@@ -443,7 +443,7 @@ func (obj ObjectBase) GetInReplyTo() ([]ObjectBase, error) {
 	return result, nil
 }
 
-//TODO does attachemnts need to be an array in the activitypub structs?
+// TODO does attachemnts need to be an array in the activitypub structs?
 func (obj ObjectBase) GetAttachment() ([]ObjectBase, error) {
 	var attachments []ObjectBase
 	var attachment ObjectBase
@@ -647,8 +647,8 @@ func (obj ObjectBase) GetReplies() (*CollectionBase, error) {
 
 	return &CollectionBase{
 		OrderedItems: result,
-		TotalItems: postCount,
-		TotalImgs: attachCount,
+		TotalItems:   postCount,
+		TotalImgs:    attachCount,
 	}, nil
 }
 
@@ -716,8 +716,8 @@ func (obj ObjectBase) GetRepliesLimit(limit int) (*CollectionBase, error) {
 
 	return &CollectionBase{
 		OrderedItems: result,
-		TotalItems: postCount,
-		TotalImgs: attachCount,
+		TotalItems:   postCount,
+		TotalImgs:    attachCount,
 	}, nil
 }
 
@@ -777,8 +777,8 @@ func (obj ObjectBase) GetRepliesReplies() (*CollectionBase, error) {
 
 	return &CollectionBase{
 		OrderedItems: result,
-		TotalItems: postCount,
-		TotalImgs: attachCount,
+		TotalItems:   postCount,
+		TotalImgs:    attachCount,
 	}, nil
 }
 
@@ -832,7 +832,7 @@ func (obj ObjectBase) IsReplyInThread(id string) (bool, error) {
 	return false, nil
 }
 
-//TODO break this off into seperate for Cache
+// TODO break this off into seperate for Cache
 func (obj ObjectBase) MarkSensitive(sensitive bool) error {
 	var query = `update activitystream set sensitive=$1 where id=$2`
 	if _, err := config.DB.Exec(query, sensitive, obj.Id); err != nil {

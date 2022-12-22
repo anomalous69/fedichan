@@ -14,7 +14,6 @@ import (
 	"github.com/KushBlazingJudah/fedichan/webfinger"
 
 	"github.com/KushBlazingJudah/fedichan/db"
-	"github.com/KushBlazingJudah/fedichan/post"
 	"github.com/KushBlazingJudah/fedichan/util"
 	"github.com/gofiber/fiber/v2"
 )
@@ -74,7 +73,7 @@ func BoardBanMedia(ctx *fiber.Ctx) error {
 		return util.MakeError(err, "BoardBanMedia")
 	}
 
-	if banned, err := post.IsMediaBanned(f); err == nil && !banned {
+	if banned, err := db.IsMediaBanned(f); err == nil && !banned {
 		query := `insert into bannedmedia (hash) values ($1)`
 		if _, err := config.DB.Exec(query, util.HashBytes(bytes)); err != nil {
 			return util.MakeError(err, "BoardBanMedia")
@@ -510,7 +509,7 @@ func ReportPost(ctx *fiber.Ctx) error {
 		})
 	}
 
-	if ok, _ := post.CheckCaptcha(captcha); !ok && close != "1" {
+	if ok, _ := db.CheckCaptcha(captcha); !ok && close != "1" {
 		return ctx.Status(403).Render("403", fiber.Map{
 			"message": "Invalid captcha",
 		})
@@ -545,7 +544,7 @@ func ReportGet(ctx *fiber.Ctx) error {
 	}
 
 	data.Board.Captcha = config.Domain + "/" + capt
-	data.Board.CaptchaCode = post.GetCaptchaCode(data.Board.Captcha)
+	data.Board.CaptchaCode = db.GetCaptchaCode(data.Board.Captcha)
 
 	data.Meta.Description = data.Board.Summary
 	data.Meta.Url = data.Board.Actor.Id

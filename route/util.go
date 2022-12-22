@@ -11,7 +11,6 @@ import (
 	"github.com/KushBlazingJudah/fedichan/activitypub"
 	"github.com/KushBlazingJudah/fedichan/config"
 	"github.com/KushBlazingJudah/fedichan/db"
-	"github.com/KushBlazingJudah/fedichan/post"
 	"github.com/KushBlazingJudah/fedichan/util"
 	"github.com/KushBlazingJudah/fedichan/webfinger"
 	"github.com/gofiber/fiber/v2"
@@ -104,7 +103,7 @@ func ParseOutboxRequest(ctx *fiber.Ctx, actor activitypub.Actor) error {
 			return util.MakeError(err, "ParseOutboxRequest")
 		}
 
-		valid, err := post.CheckCaptcha(ctx.FormValue("captcha"))
+		valid, err := db.CheckCaptcha(ctx.FormValue("captcha"))
 		if err == nil && hasCaptcha && valid {
 			header, _ := ctx.FormFile("file")
 			if header != nil {
@@ -114,7 +113,7 @@ func ParseOutboxRequest(ctx *fiber.Ctx, actor activitypub.Actor) error {
 					ctx.Response().Header.SetStatusCode(403)
 					_, err := ctx.Write([]byte("7MB max file size"))
 					return util.MakeError(err, "ParseOutboxRequest")
-				} else if isBanned, err := post.IsMediaBanned(f); err == nil && isBanned {
+				} else if isBanned, err := db.IsMediaBanned(f); err == nil && isBanned {
 					config.Log.Println("media banned")
 					ctx.Response().Header.SetStatusCode(403)
 					_, err := ctx.Write([]byte(""))
@@ -125,7 +124,7 @@ func ParseOutboxRequest(ctx *fiber.Ctx, actor activitypub.Actor) error {
 
 				contentType, _ := util.GetFileContentType(f)
 
-				if !post.SupportedMIMEType(contentType) {
+				if !util.SupportedMIMEType(contentType) {
 					ctx.Response().Header.SetStatusCode(403)
 					_, err := ctx.Write([]byte("file type not supported"))
 					return util.MakeError(err, "ParseOutboxRequest")
@@ -133,7 +132,7 @@ func ParseOutboxRequest(ctx *fiber.Ctx, actor activitypub.Actor) error {
 			}
 
 			var nObj = activitypub.CreateObject("Note")
-			nObj, err := post.ObjectFromForm(ctx, nObj)
+			nObj, err := db.ObjectFromForm(ctx, nObj)
 			if err != nil {
 				return util.MakeError(err, "ParseOutboxRequest")
 			}
@@ -347,9 +346,9 @@ func TemplateFunctions(engine *html.Engine) {
 	// previously short
 	engine.AddFunc("shortURL", util.ShortURL)
 
-	engine.AddFunc("parseAttachment", post.ParseAttachment)
+	engine.AddFunc("parseAttachment", db.ParseAttachment)
 
-	engine.AddFunc("parseContent", post.ParseContent)
+	engine.AddFunc("parseContent", db.ParseContent)
 
 	engine.AddFunc("shortImg", util.ShortImg)
 
@@ -359,7 +358,7 @@ func TemplateFunctions(engine *html.Engine) {
 
 	engine.AddFunc("parseReplyLink", func(actorId string, op string, id string, content string) template.HTML {
 		actor, _ := activitypub.FingerActor(actorId)
-		title := strings.ReplaceAll(post.ParseLinkTitle(actor.Id+"/", op, content), `/\&lt;`, ">")
+		title := strings.ReplaceAll(db.ParseLinkTitle(actor.Id+"/", op, content), `/\&lt;`, ">")
 		link := "<a href=\"/" + actor.Name + "/" + util.ShortURL(actor.Outbox, op) + "#" + util.ShortURL(actor.Outbox, id) + "\" title=\"" + title + "\" class=\"replyLink\">&gt;&gt;" + util.ShortURL(actor.Outbox, id) + "</a>"
 		return template.HTML(link)
 	})
@@ -397,7 +396,7 @@ func TemplateFunctions(engine *html.Engine) {
 	})
 
 	engine.AddFunc("parseLinkTitle", func(board string, op string, content string) string {
-		nContent := post.ParseLinkTitle(board, op, content)
+		nContent := db.ParseLinkTitle(board, op, content)
 		nContent = strings.ReplaceAll(nContent, `/\&lt;`, ">")
 
 		return nContent
