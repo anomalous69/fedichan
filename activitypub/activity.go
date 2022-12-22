@@ -5,11 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"regexp"
 	"strings"
 	"time"
+	"io"
 
 	"github.com/KushBlazingJudah/fedichan/config"
 	"github.com/KushBlazingJudah/fedichan/util"
@@ -128,7 +128,7 @@ func (activity Activity) GetCollection() (Collection, error) {
 
 	if resp.StatusCode == 200 {
 		defer resp.Body.Close()
-		body, _ := ioutil.ReadAll(resp.Body)
+		body, _ := io.ReadAll(resp.Body)
 		if len(body) > 0 {
 			if err := json.Unmarshal(body, &nColl); err != nil {
 				return nColl, util.MakeError(err, "GetCollection")

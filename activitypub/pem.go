@@ -6,7 +6,6 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"errors"
-	"io/ioutil"
 	"os"
 	"regexp"
 	"strings"
@@ -87,7 +86,7 @@ func CreatePublicKeyFromPrivate(actor *Actor, publicKeyPem string) error {
 	privateFilename := strings.ReplaceAll(publicFilename, "public.pem", "private.pem")
 	if _, err := os.Stat(privateFilename); err == nil {
 		// Not a lost cause
-		priv, err := ioutil.ReadFile(privateFilename)
+		priv, err := os.ReadFile(privateFilename)
 		if err != nil {
 			return util.MakeError(err, "CreatePublicKeyFromPrivate")
 		}

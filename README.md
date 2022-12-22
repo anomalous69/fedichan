@@ -38,7 +38,7 @@ Most of the development on this was done using NixOS and as such a ready-to-go
 
 ### Minimum Server Requirements
 
-- Go v1.16+
+- Go v1.19+
 - PostgreSQL
 - ImageMagick
 - exiv2

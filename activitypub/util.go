@@ -1,9 +1,9 @@
 package activitypub
 
 import (
+	"io"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"mime/multipart"
 	"net/http"
 	"os"
@@ -44,7 +44,7 @@ func CreateAttachmentObject(file multipart.File, header *multipart.FileHeader) (
 
 	fileType := re.ReplaceAllString(contentType, "")
 
-	tempFile, err := ioutil.TempFile("./public", "*."+fileType)
+	tempFile, err := os.CreateTemp("./public", "*."+fileType)
 	if err != nil {
 		return nil, nil, util.MakeError(err, "CreateAttachmentObject")
 	}
@@ -318,7 +318,7 @@ func GetActorCollectionReq(collection string) (Collection, error) {
 
 	defer resp.Body.Close()
 	if resp.StatusCode == 200 {
-		body, _ := ioutil.ReadAll(resp.Body)
+		body, _ := io.ReadAll(resp.Body)
 
 		if err := json.Unmarshal(body, &nCollection); err != nil {
 			return nCollection, util.MakeError(err, "GetActorCollectionReq")

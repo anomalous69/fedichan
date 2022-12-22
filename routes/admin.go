@@ -1,10 +1,10 @@
 package routes
 
 import (
+	"io"
 	"bytes"
 	"encoding/json"
 	"errors"
-	"io/ioutil"
 	"net/http"
 	"regexp"
 	"sort"
@@ -43,7 +43,7 @@ func AdminVerify(ctx *fiber.Ctx) error {
 
 	defer resp.Body.Close()
 
-	rBody, _ := ioutil.ReadAll(resp.Body)
+	rBody, _ := io.ReadAll(resp.Body)
 
 	body := string(rBody)
 

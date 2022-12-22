@@ -1,9 +1,9 @@
 package activitypub
 
 import (
+	"io"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"regexp"
 	"sort"
@@ -80,7 +80,7 @@ func GetActor(id string) (Actor, error) {
 	}
 
 	defer resp.Body.Close()
-	body, _ := ioutil.ReadAll(resp.Body)
+	body, _ := io.ReadAll(resp.Body)
 
 	if err := json.Unmarshal(body, &respActor); err != nil {
 		return respActor, util.MakeError(err, "GetActor")
@@ -112,7 +112,7 @@ func FingerActor(path string) (Actor, error) {
 		if resp != nil && resp.StatusCode == 200 {
 			defer resp.Body.Close()
 
-			body, err := ioutil.ReadAll(resp.Body)
+			body, err := io.ReadAll(resp.Body)
 			if err != nil {
 				return nActor, util.MakeError(err, "FingerActor read resp")
 			}
@@ -146,7 +146,7 @@ func FingerRequest(actor string, instance string) (*http.Response, error) {
 	var finger Webfinger
 
 	if resp.StatusCode == 200 {
-		body, err := ioutil.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return resp, err
 		}

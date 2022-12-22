@@ -11,7 +11,6 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"errors"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"regexp"
@@ -59,7 +58,7 @@ accepting your posts from your board from this site. Good luck ;)`)
 
 	var publickey []byte
 
-	if publickey, err = ioutil.ReadFile(file); err != nil {
+	if publickey, err = os.ReadFile(file); err != nil {
 		return "", util.MakeError(err, "ActivitySign")
 	}
 

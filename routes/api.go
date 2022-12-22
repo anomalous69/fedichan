@@ -1,7 +1,8 @@
 package routes
 
 import (
-	"io/ioutil"
+	"io"
+	"os"
 	"net/http"
 	"time"
 
@@ -30,7 +31,7 @@ func RouteImages(ctx *fiber.Ctx, media string) error {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		fileBytes, err := ioutil.ReadFile("./views/notfound.png")
+		fileBytes, err := os.ReadFile("./views/notfound.png")
 		if err != nil {
 			return util.MakeError(err, "RouteImages")
 		}
@@ -41,7 +42,7 @@ func RouteImages(ctx *fiber.Ctx, media string) error {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
-		fileBytes, err := ioutil.ReadFile("./views/notfound.png")
+		fileBytes, err := os.ReadFile("./views/notfound.png")
 		if err != nil {
 			return util.MakeError(err, "RouteImages")
 		}
@@ -50,7 +51,7 @@ func RouteImages(ctx *fiber.Ctx, media string) error {
 		return util.MakeError(err, "RouteImages")
 	}
 
-	body, _ := ioutil.ReadAll(resp.Body)
+	body, _ := io.ReadAll(resp.Body)
 	for name, values := range resp.Header {
 		for _, value := range values {
 			ctx.Append(name, value)
