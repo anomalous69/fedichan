@@ -16,7 +16,6 @@ import (
 	"github.com/KushBlazingJudah/fedichan/config"
 	"github.com/KushBlazingJudah/fedichan/db"
 	"github.com/KushBlazingJudah/fedichan/util"
-	"github.com/KushBlazingJudah/fedichan/webfinger"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -174,7 +173,7 @@ func ActorInbox(ctx *fiber.Ctx) error {
 
 func PostActorOutbox(ctx *fiber.Ctx) error {
 	//var activity activitypub.Activity
-	actor, err := webfinger.GetActorFromPath(ctx.Path(), "/")
+	actor, err := activitypub.GetActorFromPath(ctx.Path(), "/")
 	if err != nil {
 		return util.MakeError(err, "ActorOutbox")
 	}
@@ -430,7 +429,7 @@ func ActorPost(ctx *fiber.Ctx) error {
 	}
 
 	data.Key = config.Key
-	data.Boards = webfinger.Boards
+	data.Boards = activitypub.Boards
 
 	data.Title = "/" + data.Board.Name + "/ - " + data.PostId
 
@@ -496,7 +495,7 @@ func ActorCatalog(ctx *fiber.Ctx) error {
 
 	data.Title = "/" + data.Board.Name + "/ - catalog"
 
-	data.Boards = webfinger.Boards
+	data.Boards = activitypub.Boards
 	data.Posts = collection.OrderedItems
 
 	data.Meta.Description = data.Board.Summary
@@ -574,7 +573,7 @@ func ActorPosts(ctx *fiber.Ctx) error {
 
 	data.Key = config.Key
 
-	data.Boards = webfinger.Boards
+	data.Boards = activitypub.Boards
 	data.Posts = collection.OrderedItems
 
 	data.Pages = pages
@@ -632,7 +631,7 @@ func ActorArchive(ctx *fiber.Ctx) error {
 
 	returnData.Title = "/" + actor.Name + "/ - " + actor.PreferredUsername
 
-	returnData.Boards = webfinger.Boards
+	returnData.Boards = activitypub.Boards
 
 	returnData.Posts = collection.OrderedItems
 
@@ -649,7 +648,7 @@ func ActorArchive(ctx *fiber.Ctx) error {
 }
 
 func GetActorOutbox(ctx *fiber.Ctx) error {
-	actor, _ := webfinger.GetActorFromPath(ctx.Path(), "/")
+	actor, _ := activitypub.GetActorFromPath(ctx.Path(), "/")
 
 	collection, _ := actor.GetCollection()
 	collection.AtContext.Context = "https://www.w3.org/ns/activitystreams"

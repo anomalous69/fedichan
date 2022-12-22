@@ -10,7 +10,6 @@ import (
 
 	"github.com/KushBlazingJudah/fedichan/activitypub"
 	"github.com/KushBlazingJudah/fedichan/config"
-	"github.com/KushBlazingJudah/fedichan/webfinger"
 
 	"github.com/KushBlazingJudah/fedichan/db"
 	"github.com/KushBlazingJudah/fedichan/util"
@@ -557,7 +556,7 @@ func ReportGet(ctx *fiber.Ctx) error {
 	data.Key = config.Key
 	data.Board.ModCred, _ = util.GetPasswordFromSession(ctx)
 	data.Board.Domain = config.Domain
-	data.Boards = webfinger.Boards
+	data.Boards = activitypub.Boards
 
 	return ctx.Render("report", fiber.Map{"page": data}, "layouts/main")
 }

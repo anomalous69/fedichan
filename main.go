@@ -9,7 +9,6 @@ import (
 	"github.com/KushBlazingJudah/fedichan/db"
 	"github.com/KushBlazingJudah/fedichan/routes"
 	"github.com/KushBlazingJudah/fedichan/util"
-	"github.com/KushBlazingJudah/fedichan/webfinger"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/encryptcookie"
 	"github.com/gofiber/fiber/v2/middleware/logger"
@@ -139,11 +138,11 @@ func Init() {
 		config.Log.Println(err)
 	}
 
-	if webfinger.FollowingBoards, err = actor.GetFollowing(); err != nil {
+	if activitypub.FollowingBoards, err = actor.GetFollowing(); err != nil {
 		config.Log.Println(err)
 	}
 
-	if webfinger.Boards, err = webfinger.GetBoardCollection(); err != nil {
+	if activitypub.Boards, err = activitypub.GetBoardCollection(); err != nil {
 		config.Log.Println(err)
 	}
 
@@ -157,7 +156,7 @@ func Init() {
 		config.Log.Println(err)
 	}
 
-	go webfinger.StartupArchive()
+	go activitypub.StartupArchive()
 
 	go util.MakeCaptchas(100)
 

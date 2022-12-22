@@ -9,7 +9,6 @@ import (
 	"github.com/KushBlazingJudah/fedichan/config"
 	"github.com/KushBlazingJudah/fedichan/db"
 	"github.com/KushBlazingJudah/fedichan/util"
-	"github.com/KushBlazingJudah/fedichan/webfinger"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -29,7 +28,7 @@ func NewsGet(ctx *fiber.Ctx) error {
 
 	var data PageData
 	data.PreferredUsername = actor.PreferredUsername
-	data.Boards = webfinger.Boards
+	data.Boards = activitypub.Boards
 	data.Board.Name = ""
 	data.Key = config.Key
 	data.Board.Domain = config.Domain
@@ -65,7 +64,7 @@ func NewsGetAll(ctx *fiber.Ctx) error {
 	var data PageData
 	data.PreferredUsername = actor.PreferredUsername
 	data.Title = actor.PreferredUsername + " News"
-	data.Boards = webfinger.Boards
+	data.Boards = activitypub.Boards
 	data.Board.Name = ""
 	data.Key = config.Key
 	data.Board.Domain = config.Domain

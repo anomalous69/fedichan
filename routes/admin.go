@@ -14,7 +14,6 @@ import (
 	"github.com/KushBlazingJudah/fedichan/config"
 	"github.com/KushBlazingJudah/fedichan/db"
 	"github.com/KushBlazingJudah/fedichan/util"
-	"github.com/KushBlazingJudah/fedichan/webfinger"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -86,7 +85,7 @@ func AdminAuth(ctx *fiber.Ctx) error {
 
 func AdminIndex(ctx *fiber.Ctx) error {
 	id, _ := util.GetPasswordFromSession(ctx)
-	actor, _ := webfinger.GetActorFromPath(ctx.Path(), "/"+config.Key+"/")
+	actor, _ := activitypub.GetActorFromPath(ctx.Path(), "/"+config.Key+"/")
 
 	if actor.Id == "" {
 		actor, _ = activitypub.GetActorByNameFromDB(config.Domain)
@@ -144,7 +143,7 @@ func AdminIndex(ctx *fiber.Ctx) error {
 	adminData.Board.ModCred, _ = util.GetPasswordFromSession(ctx)
 	adminData.Title = actor.Name + " Admin page"
 
-	adminData.Boards = webfinger.Boards
+	adminData.Boards = activitypub.Boards
 
 	adminData.Board.Post.Actor = actor.Id
 
@@ -185,7 +184,7 @@ func AdminFollow(ctx *fiber.Ctx) error {
 	}
 
 	var redirect string
-	actor, _ = webfinger.GetActorFromPath(ctx.Path(), "/"+config.Key+"/")
+	actor, _ = activitypub.GetActorFromPath(ctx.Path(), "/"+config.Key+"/")
 
 	if actor.Name != "main" {
 		redirect = actor.Name
@@ -241,7 +240,7 @@ func AdminActorIndex(ctx *fiber.Ctx) error {
 	var data AdminPage
 
 	id, pass := util.GetPasswordFromSession(ctx)
-	actor, _ := webfinger.GetActorFromPath(ctx.Path(), "/"+config.Key+"/")
+	actor, _ := activitypub.GetActorFromPath(ctx.Path(), "/"+config.Key+"/")
 
 	if actor.Id == "" {
 		actor, _ = activitypub.GetActorByNameFromDB(config.Domain)
@@ -289,7 +288,7 @@ func AdminActorIndex(ctx *fiber.Ctx) error {
 	data.Domain = config.Domain
 	data.IsLocal, _ = actor.IsLocal()
 	data.Title = "Manage /" + actor.Name + "/"
-	data.Boards = webfinger.Boards
+	data.Boards = activitypub.Boards
 	data.Board.Name = actor.Name
 	data.Board.Actor = actor
 	data.Key = config.Key
@@ -328,7 +327,7 @@ func AdminActorIndex(ctx *fiber.Ctx) error {
 
 func AdminAddJanny(ctx *fiber.Ctx) error {
 	id, pass := util.GetPasswordFromSession(ctx)
-	actor, _ := webfinger.GetActorFromPath(ctx.Path(), "/"+config.Key+"/")
+	actor, _ := activitypub.GetActorFromPath(ctx.Path(), "/"+config.Key+"/")
 
 	if actor.Id == "" {
 		actor, _ = activitypub.GetActorByNameFromDB(config.Domain)
@@ -350,7 +349,7 @@ func AdminAddJanny(ctx *fiber.Ctx) error {
 	}
 
 	var redirect string
-	actor, _ = webfinger.GetActorFromPath(ctx.Path(), "/"+config.Key+"/")
+	actor, _ = activitypub.GetActorFromPath(ctx.Path(), "/"+config.Key+"/")
 
 	if actor.Name != "main" {
 		redirect = actor.Name
@@ -361,7 +360,7 @@ func AdminAddJanny(ctx *fiber.Ctx) error {
 
 func AdminEditSummary(ctx *fiber.Ctx) error {
 	id, pass := util.GetPasswordFromSession(ctx)
-	actor, _ := webfinger.GetActorFromPath(ctx.Path(), "/"+config.Key+"/")
+	actor, _ := activitypub.GetActorFromPath(ctx.Path(), "/"+config.Key+"/")
 
 	if actor.Id == "" {
 		actor, _ = activitypub.GetActorByNameFromDB(config.Domain)
@@ -391,7 +390,7 @@ func AdminEditSummary(ctx *fiber.Ctx) error {
 
 func AdminDeleteJanny(ctx *fiber.Ctx) error {
 	id, pass := util.GetPasswordFromSession(ctx)
-	actor, _ := webfinger.GetActorFromPath(ctx.Path(), "/"+config.Key+"/")
+	actor, _ := activitypub.GetActorFromPath(ctx.Path(), "/"+config.Key+"/")
 
 	if actor.Id == "" {
 		actor, _ = activitypub.GetActorByNameFromDB(config.Domain)

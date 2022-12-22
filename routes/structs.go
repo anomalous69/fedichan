@@ -4,17 +4,16 @@ import (
 	"github.com/KushBlazingJudah/fedichan/activitypub"
 	"github.com/KushBlazingJudah/fedichan/db"
 	"github.com/KushBlazingJudah/fedichan/util"
-	"github.com/KushBlazingJudah/fedichan/webfinger"
 )
 
 type PageData struct {
 	Title             string
 	PreferredUsername string
-	Board             webfinger.Board
+	Board             activitypub.Board
 	Pages             []int
 	CurrentPage       int
 	TotalPage         int
-	Boards            []webfinger.Board
+	Boards            []activitypub.Board
 	Posts             []activitypub.ObjectBase
 	Key               string
 	PostId            string
@@ -31,10 +30,10 @@ type PageData struct {
 
 type AdminPage struct {
 	Title         string
-	Board         webfinger.Board
+	Board         activitypub.Board
 	Key           string
 	Actor         string
-	Boards        []webfinger.Board
+	Boards        []activitypub.Board
 	Following     []string
 	Followers     []string
 	Domain        string

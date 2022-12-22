@@ -5,7 +5,6 @@ import (
 	"github.com/KushBlazingJudah/fedichan/config"
 	"github.com/KushBlazingJudah/fedichan/db"
 	"github.com/KushBlazingJudah/fedichan/util"
-	"github.com/KushBlazingJudah/fedichan/webfinger"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -30,7 +29,7 @@ func Index(ctx *fiber.Ctx) error {
 
 	data.Title = "Welcome to " + actor.PreferredUsername
 	data.PreferredUsername = actor.PreferredUsername
-	data.Boards = webfinger.Boards
+	data.Boards = activitypub.Boards
 	data.Board.Name = ""
 	data.Key = config.Key
 	data.Board.Domain = config.Domain
@@ -64,7 +63,7 @@ func Inbox(ctx *fiber.Ctx) error {
 }
 
 func Outbox(ctx *fiber.Ctx) error {
-	actor, err := webfinger.GetActorFromPath(ctx.Path(), "/")
+	actor, err := activitypub.GetActorFromPath(ctx.Path(), "/")
 
 	if err != nil {
 		return util.MakeError(err, "Outbox")

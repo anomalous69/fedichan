@@ -2,14 +2,21 @@ package activitypub
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
+	"regexp"
+	"sort"
 	"strings"
 	"time"
 
 	"github.com/KushBlazingJudah/fedichan/config"
 	"github.com/KushBlazingJudah/fedichan/util"
 )
+
+
+var Boards []Board
+var FollowingBoards []ObjectBase
 
 type Webfinger struct {
 	Subject string          `json:"subject,omitempty"`
@@ -21,6 +28,31 @@ type WebfingerLink struct {
 	Type string `json:"type,omitempty"`
 	Href string `json:"href,omitempty"`
 }
+
+type Board struct {
+	Name        string
+	Actor       Actor
+	Summary     string
+	PrefName    string
+	InReplyTo   string
+	Location    string
+	To          string
+	RedirectTo  string
+	Captcha     string
+	CaptchaCode string
+	ModCred     string
+	Domain      string
+	TP          string
+	Restricted  bool
+	Post        ObjectBase
+}
+
+type BoardSortAsc []Board
+
+func (a BoardSortAsc) Len() int           { return len(a) }
+func (a BoardSortAsc) Less(i, j int) bool { return a[i].Name < a[j].Name }
+func (a BoardSortAsc) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+
 
 func GetActor(id string) (Actor, error) {
 	var respActor Actor
@@ -183,6 +215,102 @@ func AddInstanceToIndexDB(actor string) error {
 	if !alreadyIndex {
 		actor := Actor{Id: "https://fchan.xyz"}
 		return actor.AddFollower(nActor.Id)
+	}
+
+	return nil
+}
+
+
+func GetActorByNameFromBoardCollection(name string) Actor {
+	var actor Actor
+
+	boards, _ := GetBoardCollection()
+	for _, e := range boards {
+		if e.Actor.Name == name {
+			actor = e.Actor
+		}
+	}
+
+	return actor
+}
+
+func GetBoardCollection() ([]Board, error) {
+	var collection []Board
+
+	for _, e := range FollowingBoards {
+		var board Board
+
+		boardActor, err := GetActorFromDB(e.Id)
+
+		if err != nil {
+			return collection, util.MakeError(err, "GetBoardCollection")
+		}
+
+		if boardActor.Id == "" {
+			boardActor, err = FingerActor(e.Id)
+
+			if err != nil {
+				return collection, util.MakeError(err, "GetBoardCollection")
+			}
+		}
+
+		board.Name = boardActor.Name
+		board.PrefName = boardActor.PreferredUsername
+		board.Location = "/" + boardActor.Name
+		board.Actor = boardActor
+		board.Restricted = boardActor.Restricted
+
+		collection = append(collection, board)
+	}
+
+	sort.Sort(BoardSortAsc(collection))
+
+	return collection, nil
+}
+
+func GetActorFromPath(location string, prefix string) (Actor, error) {
+	var actor string
+
+	pattern := fmt.Sprintf("%s([^/\n]+)(/.+)?", prefix)
+	re := regexp.MustCompile(pattern)
+	match := re.FindStringSubmatch(location)
+
+	if len(match) < 1 {
+		actor = "/"
+	} else {
+		actor = strings.Replace(match[1], "/", "", -1)
+	}
+
+	if actor == "/" || actor == "outbox" || actor == "inbox" || actor == "following" || actor == "followers" {
+		actor = "main"
+	}
+
+	var nActor Actor
+
+	nActor, err := GetActorByNameFromDB(actor)
+
+	if err != nil {
+		return nActor, util.MakeError(err, "GetActorFromPath")
+	}
+
+	if nActor.Id == "" {
+		nActor = GetActorByNameFromBoardCollection(actor)
+	}
+
+	return nActor, nil
+}
+
+func StartupArchive() error {
+	for _, e := range FollowingBoards {
+		actor, err := GetActorFromDB(e.Id)
+
+		if err != nil {
+			return util.MakeError(err, "StartupArchive")
+		}
+
+		if err := actor.ArchivePosts(); err != nil {
+			return util.MakeError(err, "StartupArchive")
+		}
 	}
 
 	return nil

@@ -12,7 +12,6 @@ import (
 	"github.com/KushBlazingJudah/fedichan/config"
 	"github.com/KushBlazingJudah/fedichan/db"
 	"github.com/KushBlazingJudah/fedichan/util"
-	"github.com/KushBlazingJudah/fedichan/webfinger"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/template/html"
 )
@@ -237,13 +236,13 @@ func ParseOutboxRequest(ctx *fiber.Ctx, actor activitypub.Actor) error {
 				}
 
 				actor, _ := activitypub.GetActorFromDB(config.Domain)
-				webfinger.FollowingBoards, err = actor.GetFollowing()
+				activitypub.FollowingBoards, err = actor.GetFollowing()
 
 				if err != nil {
 					return util.MakeError(err, "ParseOutboxRequest")
 				}
 
-				webfinger.Boards, err = webfinger.GetBoardCollection()
+				activitypub.Boards, err = activitypub.GetBoardCollection()
 
 				if err != nil {
 					return util.MakeError(err, "ParseOutboxRequest")
@@ -278,7 +277,7 @@ func ParseOutboxRequest(ctx *fiber.Ctx, actor activitypub.Actor) error {
 					var removed bool = false
 
 					item.Id = actor.Id
-					for _, e := range webfinger.FollowingBoards {
+					for _, e := range activitypub.FollowingBoards {
 						if e.Id != item.Id {
 							board = append(board, e)
 						} else {
@@ -290,8 +289,8 @@ func ParseOutboxRequest(ctx *fiber.Ctx, actor activitypub.Actor) error {
 						board = append(board, item)
 					}
 
-					webfinger.FollowingBoards = board
-					webfinger.Boards, err = webfinger.GetBoardCollection()
+					activitypub.FollowingBoards = board
+					activitypub.Boards, err = activitypub.GetBoardCollection()
 					return util.MakeError(err, "ParseOutboxRequest")
 				}
 
