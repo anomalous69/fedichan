@@ -171,8 +171,7 @@ func PostActorOutbox(ctx *fiber.Ctx) error {
 	}
 
 	if activitypub.AcceptActivity(ctx.Get("Accept")) {
-		actor.GetOutbox(ctx)
-		return nil
+		return actor.GetOutbox(ctx)
 	}
 
 	return ParseOutboxRequest(ctx, actor)
@@ -189,6 +188,8 @@ func ActorFollowers(ctx *fiber.Ctx) error {
 }
 
 func MakeActorPost(ctx *fiber.Ctx) error {
+	pw, _ := util.GetPasswordFromSession(ctx)
+
 	header, _ := ctx.FormFile("file")
 
 	if ctx.FormValue("inReplyTo") == "" && header == nil {
@@ -240,7 +241,8 @@ func MakeActorPost(ctx *fiber.Ctx) error {
 		})
 	}
 
-	if ctx.FormValue("captcha") == "" {
+	// Waive captcha for authenticated users, otherwise complain
+	if pw == "" && ctx.FormValue("captcha") == "" {
 		return ctx.Render("403", fiber.Map{
 			"message": "Incorrect Captcha",
 		})
@@ -307,24 +309,32 @@ func MakeActorPost(ctx *fiber.Ctx) error {
 
 	we.Close()
 
+	// TODO: Remove sendTo
+
 	sendTo := ctx.FormValue("sendTo")
 
 	req, err := http.NewRequest("POST", sendTo, &b)
-
 	if err != nil {
 		return util.MakeError(err, "ActorPost")
 	}
 
 	req.Header.Set("Content-Type", we.FormDataContentType())
+	if c := ctx.Cookies("session_token"); c != "" {
+		// This is a hack to pass through the token while we still make
+		// requests to the outbox
+		req.Header.Set("Authorization", "Bearer " + c)
+	}
 
 	resp, err := util.RouteProxy(req)
-
 	if err != nil {
 		return util.MakeError(err, "ActorPost")
 	}
-
 	defer resp.Body.Close()
-	body, _ := io.ReadAll(resp.Body)
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return util.MakeError(err, "ActorPost")
+	}
 
 	if resp.StatusCode == 200 {
 		var obj activitypub.ObjectBase
@@ -408,12 +418,15 @@ func ActorPost(ctx *fiber.Ctx) error {
 		data.PostId = util.ShortURL(data.Board.To, data.Posts[0].Id)
 	}
 
-	capt, err := util.GetRandomCaptcha()
-	if err != nil {
-		return util.MakeError(err, "PostGet")
+	// Ignore captcha if we're authenticated
+	if data.Board.ModCred != data.Board.Domain && data.Board.ModCred != data.Board.Actor.Id {
+		capt, err := util.GetRandomCaptcha()
+		if err != nil {
+			return util.MakeError(err, "OutboxGet")
+		}
+		data.Board.Captcha = config.Domain + "/" + capt
+		data.Board.CaptchaCode = db.GetCaptchaCode(data.Board.Captcha)
 	}
-	data.Board.Captcha = config.Domain + "/" + capt
-	data.Board.CaptchaCode = db.GetCaptchaCode(data.Board.Captcha)
 
 	data.Instance, err = activitypub.GetActorFromDB(config.Domain)
 	if err != nil {
@@ -477,13 +490,15 @@ func ActorCatalog(ctx *fiber.Ctx) error {
 		return util.MakeError(err, "CatalogGet")
 	}
 
-	capt, err := util.GetRandomCaptcha()
-	if err != nil {
-		return util.MakeError(err, "CatalogGet")
+	// Ignore captcha if we're authenticated
+	if data.Board.ModCred != data.Board.Domain && data.Board.ModCred != data.Board.Actor.Id {
+		capt, err := util.GetRandomCaptcha()
+		if err != nil {
+			return util.MakeError(err, "OutboxGet")
+		}
+		data.Board.Captcha = config.Domain + "/" + capt
+		data.Board.CaptchaCode = db.GetCaptchaCode(data.Board.Captcha)
 	}
-
-	data.Board.Captcha = config.Domain + "/" + capt
-	data.Board.CaptchaCode = db.GetCaptchaCode(data.Board.Captcha)
 
 	data.Title = "/" + data.Board.Name + "/ - catalog"
 
@@ -554,12 +569,15 @@ func ActorPosts(ctx *fiber.Ctx) error {
 
 	data.Board.Post.Actor = actor.Id
 
-	capt, err := util.GetRandomCaptcha()
-	if err != nil {
-		return util.MakeError(err, "OutboxGet")
+	// Ignore captcha if we're authenticated
+	if data.Board.ModCred != data.Board.Domain && data.Board.ModCred != data.Board.Actor.Id {
+		capt, err := util.GetRandomCaptcha()
+		if err != nil {
+			return util.MakeError(err, "OutboxGet")
+		}
+		data.Board.Captcha = config.Domain + "/" + capt
+		data.Board.CaptchaCode = db.GetCaptchaCode(data.Board.Captcha)
 	}
-	data.Board.Captcha = config.Domain + "/" + capt
-	data.Board.CaptchaCode = db.GetCaptchaCode(data.Board.Captcha)
 
 	data.Title = "/" + actor.Name + "/ - " + actor.PreferredUsername
 

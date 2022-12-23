@@ -431,6 +431,14 @@ func VerifyCooldownCurrent(auth string) (VerifyCooldown, error) {
 
 func GetPasswordFromSession(ctx *fiber.Ctx) (string, string) {
 	cookie := ctx.Cookies("session_token")
+	if cookie == "" {
+		// Try Authorization header
+		cookie = ctx.Get("Authorization")
+		if cookie == "" || !strings.HasPrefix(cookie, "Bearer ") {
+			return "", ""
+		}
+		cookie = strings.TrimPrefix(cookie, "Bearer ")
+	}
 	parts := strings.Split(cookie, "|")
 
 	if len(parts) > 1 {

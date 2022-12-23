@@ -35,6 +35,7 @@
             <td><input type="file" id="file" name="file" {{ if gt $len 1 }} required {{ else }} {{ if eq $len 0 }} required {{ end }} {{ end }} >
                 <br><input type="checkbox" name="sensitive">Mark sensitive</input></td>
           </tr>
+	  {{if gt (len .Board.Captcha) 0}}
           <tr>
             <td><label for="captcha">Captcha:</label></td>
             <td>
@@ -44,6 +45,7 @@
               <input type="text" id="captcha" name="captcha" autocomplete="off">
             </td>
           </tr>
+	  {{end}}
       </table>
 
       <input type="hidden" id="inReplyTo" name="inReplyTo" value="{{ .Board.InReplyTo }}">
@@ -93,6 +95,7 @@
             <td><input type="file" id="file" name="file" {{ if gt $len 1 }} required {{ else }} {{ if eq $len 0 }} required {{ end }} {{ end }} >
                 <br><input type="checkbox" name="sensitive">Mark sensitive</input></td>
           </tr>
+	  {{if gt (len .Board.Captcha) 0}}
           <tr>
             <td><label for="captcha">Captcha:</label></td>
             <td>
@@ -102,6 +105,7 @@
               <input type="text" id="captcha" name="captcha" autocomplete="off">
             </td>
           </tr>
+	  {{end}}
       </table>
 
       <input type="hidden" id="inReplyTo" name="inReplyTo" value="{{ .Board.InReplyTo }}">

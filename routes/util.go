@@ -50,6 +50,8 @@ func GetActorPost(ctx *fiber.Ctx, path string) error {
 }
 
 func ParseOutboxRequest(ctx *fiber.Ctx, actor activitypub.Actor) error {
+	pw, _ := util.GetPasswordFromSession(ctx)
+	needCaptcha := pw == ""
 	contentType := util.GetContentType(ctx.Get("content-type"))
 
 	if contentType == "multipart/form-data" || contentType == "application/x-www-form-urlencoded" {
@@ -59,7 +61,11 @@ func ParseOutboxRequest(ctx *fiber.Ctx, actor activitypub.Actor) error {
 		}
 
 		valid, err := db.CheckCaptcha(ctx.FormValue("captcha"))
-		if err == nil && hasCaptcha && valid {
+		if err != nil {
+			return util.MakeError(err, "ParseOutboxRequest")
+		}
+
+		if !needCaptcha || (hasCaptcha && valid) {
 			header, _ := ctx.FormFile("file")
 			if header != nil {
 				f, _ := header.Open()
@@ -73,8 +79,6 @@ func ParseOutboxRequest(ctx *fiber.Ctx, actor activitypub.Actor) error {
 					ctx.Response().Header.SetStatusCode(403)
 					_, err := ctx.Write([]byte(""))
 					return util.MakeError(err, "ParseOutboxRequest")
-				} else if err != nil {
-					return util.MakeError(err, "ParseOutboxRequest")
 				}
 
 				contentType, _ := util.GetFileContentType(f)
@@ -86,8 +90,7 @@ func ParseOutboxRequest(ctx *fiber.Ctx, actor activitypub.Actor) error {
 				}
 			}
 
-			var nObj = activitypub.CreateObject("Note")
-			nObj, err := db.ObjectFromForm(ctx, nObj)
+			nObj, err := db.ObjectFromForm(ctx, activitypub.CreateObject("Note"))
 			if err != nil {
 				return util.MakeError(err, "ParseOutboxRequest")
 			}
@@ -150,8 +153,7 @@ func ParseOutboxRequest(ctx *fiber.Ctx, actor activitypub.Actor) error {
 			return util.MakeError(err, "ParseOutboxRequest")
 		}
 
-		ctx.Response().Header.Set("Status", "403")
-		_, err = ctx.Write([]byte("captcha could not auth"))
+		_, err = ctx.Status(403).Write([]byte("captcha could not auth"))
 		return util.MakeError(err, "")
 	} else { // json request
 		activity, err := activitypub.GetActivityFromJson(ctx)
@@ -251,6 +253,10 @@ func ParseOutboxRequest(ctx *fiber.Ctx, actor activitypub.Actor) error {
 			default:
 				ctx.Response().Header.Set("status", "403")
 				_, err = ctx.Write([]byte("could not process activity"))
+			}
+
+			if err != nil {
+				return util.MakeError(err, "ParseOutboxRequest")
 			}
 		} else if err != nil {
 			return util.MakeError(err, "ParseOutboxRequest")
