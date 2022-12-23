@@ -4,6 +4,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
+	"io"
+	"mime/multipart"
+	"os"
+	"os/exec"
 	"regexp"
 	"strings"
 	"time"
@@ -49,12 +53,12 @@ func ParseOutboxRequest(ctx *fiber.Ctx, actor activitypub.Actor) error {
 	contentType := util.GetContentType(ctx.Get("content-type"))
 
 	if contentType == "multipart/form-data" || contentType == "application/x-www-form-urlencoded" {
-		hasCaptcha, err := util.BoardHasAuthType(actor.Name, "captcha")
+		hasCaptcha, err := db.BoardHasAuthType(actor.Name, "captcha")
 		if err != nil {
 			return util.MakeError(err, "ParseOutboxRequest")
 		}
 
-		valid, err := db.CheckCaptcha(ctx.FormValue("captcha"))
+		valid, err := util.CheckCaptcha(ctx.FormValue("captcha"))
 		if err != nil {
 			return util.MakeError(err, "ParseOutboxRequest")
 		}
@@ -81,7 +85,7 @@ func ParseOutboxRequest(ctx *fiber.Ctx, actor activitypub.Actor) error {
 				}
 			}
 
-			nObj, err := db.ObjectFromForm(ctx, activitypub.CreateObject("Note"))
+			nObj, err := ObjectFromForm(ctx, activitypub.CreateObject("Note"))
 			if err != nil {
 				return util.MakeError(err, "ParseOutboxRequest")
 			}
@@ -284,7 +288,7 @@ func TemplateFunctions(engine *html.Engine) {
 	// previously short
 	engine.AddFunc("shortURL", util.ShortURL)
 
-	engine.AddFunc("parseAttachment", db.ParseAttachment)
+	engine.AddFunc("parseAttachment", ParseAttachment)
 
 	engine.AddFunc("parseContent", db.ParseContent)
 
@@ -362,4 +366,217 @@ func TemplateFunctions(engine *html.Engine) {
 
 		return true
 	})
+}
+
+func ObjectFromForm(ctx *fiber.Ctx, obj activitypub.ObjectBase) (activitypub.ObjectBase, error) {
+	var err error
+	var file multipart.File
+
+	header, _ := ctx.FormFile("file")
+
+	if header != nil {
+		file, _ = header.Open()
+	}
+
+	if file != nil {
+		defer file.Close()
+		var tempFile = new(os.File)
+
+		obj.Attachment, tempFile, err = activitypub.CreateAttachmentObject(file, header)
+
+		if err != nil {
+			return obj, util.MakeError(err, "ObjectFromForm")
+		}
+
+		defer tempFile.Close()
+
+		fileBytes, _ := io.ReadAll(file)
+		tempFile.Write(fileBytes)
+
+		re := regexp.MustCompile(`image/(jpe?g|png|webp)`)
+		if re.MatchString(obj.Attachment[0].MediaType) {
+			fileLoc := strings.ReplaceAll(obj.Attachment[0].Href, config.Domain, "")
+
+			cmd := exec.Command("exiv2", "rm", "."+fileLoc)
+
+			if err := cmd.Run(); err != nil {
+				return obj, util.MakeError(err, "ObjectFromForm")
+			}
+		}
+
+		obj.Preview = obj.Attachment[0].CreatePreview()
+	}
+
+	obj.AttributedTo = util.EscapeString(ctx.FormValue("name"))
+	obj.TripCode = util.EscapeString(ctx.FormValue("tripcode"))
+	obj.Name = util.EscapeString(ctx.FormValue("subject"))
+	obj.Content = util.EscapeString(ctx.FormValue("comment"))
+	obj.Sensitive = (ctx.FormValue("sensitive") != "")
+	obj = ParseOptions(ctx, obj)
+
+	var originalPost activitypub.ObjectBase
+
+	originalPost.Id = util.EscapeString(ctx.FormValue("inReplyTo"))
+	obj.InReplyTo = append(obj.InReplyTo, originalPost)
+
+	var activity activitypub.Activity
+
+	if !util.IsInStringArray(activity.To, originalPost.Id) {
+		activity.To = append(activity.To, originalPost.Id)
+	}
+
+	if originalPost.Id != "" {
+		if local, _ := activity.IsLocal(); !local {
+			actor, err := activitypub.FingerActor(originalPost.Id)
+			if err == nil { // Keep things moving if it fails
+				if !util.IsInStringArray(obj.To, actor.Id) {
+					obj.To = append(obj.To, actor.Id)
+				}
+			}
+		} else if err != nil {
+			return obj, util.MakeError(err, "ObjectFromForm")
+		}
+	}
+
+	replyingTo, err := db.ParseCommentForReplies(ctx.FormValue("comment"), originalPost.Id)
+
+	if err != nil {
+		return obj, util.MakeError(err, "ObjectFromForm")
+	}
+
+	for _, e := range replyingTo {
+		has := false
+
+		for _, f := range obj.InReplyTo {
+			if e.Id == f.Id {
+				has = true
+				break
+			}
+		}
+
+		if !has {
+			obj.InReplyTo = append(obj.InReplyTo, e)
+
+			var activity activitypub.Activity
+
+			activity.To = append(activity.To, e.Id)
+
+			if local, _ := activity.IsLocal(); !local {
+				actor, err := activitypub.FingerActor(e.Id)
+				if err != nil {
+					return obj, util.MakeError(err, "ObjectFromForm")
+				}
+
+				if !util.IsInStringArray(obj.To, actor.Id) {
+					obj.To = append(obj.To, actor.Id)
+				}
+			}
+		}
+	}
+
+	return obj, nil
+}
+
+func ParseAttachment(obj activitypub.ObjectBase, catalog bool) template.HTML {
+	// TODO: convert all of these to Sprintf statements, or use strings.Builder or something, anything but this really
+	// string concatenation is highly inefficient _especially_ when being used like this
+
+	if len(obj.Attachment) < 1 {
+		return ""
+	}
+
+	var media string
+
+	if regexp.MustCompile(`image\/`).MatchString(obj.Attachment[0].MediaType) {
+		media = "<img "
+		media += "id=\"img\" "
+		media += "main=\"1\" "
+		media += "enlarge=\"0\" "
+		media += "attachment=\"" + obj.Attachment[0].Href + "\""
+		if catalog {
+			media += "style=\"max-width: 180px; max-height: 180px;\" "
+		} else {
+			media += "style=\"float: left; margin-right: 10px; margin-bottom: 10px; max-width: 250px; max-height: 250px;\""
+		}
+		if obj.Preview.Id != "" {
+			media += "src=\"" + util.MediaProxy(obj.Preview.Href) + "\""
+			media += "preview=\"" + util.MediaProxy(obj.Preview.Href) + "\""
+		} else {
+			media += "src=\"" + util.MediaProxy(obj.Attachment[0].Href) + "\""
+			media += "preview=\"" + util.MediaProxy(obj.Attachment[0].Href) + "\""
+		}
+
+		media += ">"
+
+		return template.HTML(media)
+	}
+
+	if regexp.MustCompile(`audio\/`).MatchString(obj.Attachment[0].MediaType) {
+		media = "<audio "
+		media += "controls=\"controls\" "
+		media += "preload=\"metadta\" "
+		if catalog {
+			media += "style=\"margin-right: 10px; margin-bottom: 10px; max-width: 180px; max-height: 180px;\" "
+		} else {
+			media += "style=\"float: left; margin-right: 10px; margin-bottom: 10px; max-width: 250px; max-height: 250px;\" "
+		}
+		media += ">"
+		media += "<source "
+		media += "src=\"" + util.MediaProxy(obj.Attachment[0].Href) + "\" "
+		media += "type=\"" + obj.Attachment[0].MediaType + "\" "
+		media += ">"
+		media += "Audio is not supported."
+		media += "</audio>"
+
+		return template.HTML(media)
+	}
+
+	if regexp.MustCompile(`video\/`).MatchString(obj.Attachment[0].MediaType) {
+		media = "<video "
+		media += "controls=\"controls\" "
+		media += "preload=\"metadta\" "
+		media += "muted=\"muted\" "
+		if catalog {
+			media += "style=\"margin-right: 10px; margin-bottom: 10px; max-width: 180px; max-height: 180px;\" "
+		} else {
+			media += "style=\"float: left; margin-right: 10px; margin-bottom: 10px; max-width: 250px; max-height: 250px;\" "
+		}
+		media += ">"
+		media += "<source "
+		media += "src=\"" + util.MediaProxy(obj.Attachment[0].Href) + "\" "
+		media += "type=\"" + obj.Attachment[0].MediaType + "\" "
+		media += ">"
+		media += "Video is not supported."
+		media += "</video>"
+
+		return template.HTML(media)
+	}
+
+	return template.HTML(media)
+}
+
+func ParseOptions(ctx *fiber.Ctx, obj activitypub.ObjectBase) activitypub.ObjectBase {
+	options := util.EscapeString(ctx.FormValue("options"))
+
+	if options != "" {
+		option := strings.Split(options, ";")
+		email := regexp.MustCompile(`.+@.+\..+`)
+		delete := regexp.MustCompile("delete:.+")
+
+		for _, e := range option {
+			if e == "noko" {
+				obj.Option = append(obj.Option, "noko")
+			} else if e == "sage" {
+				obj.Option = append(obj.Option, "sage")
+			} else if e == "nokosage" {
+				obj.Option = append(obj.Option, "nokosage")
+			} else if email.MatchString(e) {
+				obj.Option = append(obj.Option, "email:"+e)
+			} else if delete.MatchString(e) {
+				obj.Option = append(obj.Option, e)
+			}
+		}
+	}
+
+	return obj
 }

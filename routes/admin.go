@@ -23,7 +23,7 @@ func AdminVerify(ctx *fiber.Ctx) error {
 	// This doesn't make sense at all.
 	// Why is it looking for details by what I assume is the fucking password?
 
-	v, err := util.GetVerificationByCode(code)
+	v, err := db.GetVerificationByCode(code)
 	if err != nil {
 		// TODO: Invalid username or password
 		return err
@@ -208,7 +208,7 @@ func AdminActorIndex(ctx *fiber.Ctx) error {
 	}
 
 	var hasAuth bool
-	hasAuth, data.Board.ModCred = util.HasAuth(pass, actor.Id)
+	hasAuth, data.Board.ModCred = db.HasAuth(pass, actor.Id)
 
 	if !hasAuth || (id != actor.Id && id != config.Domain) {
 		return ctx.Render("verify", fiber.Map{"key": config.Key})
@@ -261,11 +261,10 @@ func AdminActorIndex(ctx *fiber.Ctx) error {
 
 	data.AutoSubscribe, _ = actor.GetAutoSubscribe()
 
+	/* TODO
 	jannies, err := actor.GetJanitors()
-
-	if err != nil {
-		return util.MakeError(err, "AdminActorIndex")
-	}
+	*/
+	jannies := []db.Verify(nil)
 
 	data.Meta.Description = data.Title
 	data.Meta.Url = data.Board.Actor.Id
@@ -291,20 +290,22 @@ func AdminAddJanny(ctx *fiber.Ctx) error {
 		actor, _ = activitypub.GetActorByNameFromDB(config.Domain)
 	}
 
-	hasAuth, _type := util.HasAuth(pass, actor.Id)
+	hasAuth, _type := db.HasAuth(pass, actor.Id)
 
 	if !hasAuth || _type != "admin" || (id != actor.Id && id != config.Domain) {
 		return util.MakeError(errors.New("Error"), "AdminJanny")
 	}
 
-	var verify util.Verify
+	var verify db.Verify
 	verify.Type = "janitor"
 	verify.Identifier = actor.Id
 	verify.Label = ctx.FormValue("label")
 
+	/* TODO
 	if err := actor.CreateVerification(verify); err != nil {
 		return util.MakeError(err, "CreateNewBoardDB")
 	}
+	*/
 
 	var redirect string
 	actor, _ = activitypub.GetActorFromPath(ctx.Path(), "/"+config.Key+"/")
@@ -324,7 +325,7 @@ func AdminEditSummary(ctx *fiber.Ctx) error {
 		actor, _ = activitypub.GetActorByNameFromDB(config.Domain)
 	}
 
-	hasAuth, _type := util.HasAuth(pass, actor.Id)
+	hasAuth, _type := db.HasAuth(pass, actor.Id)
 
 	if !hasAuth || _type != "admin" || (id != actor.Id && id != config.Domain) {
 		return util.MakeError(errors.New("Error"), "AdminEditSummary")
@@ -354,18 +355,20 @@ func AdminDeleteJanny(ctx *fiber.Ctx) error {
 		actor, _ = activitypub.GetActorByNameFromDB(config.Domain)
 	}
 
-	hasAuth, _type := util.HasAuth(pass, actor.Id)
+	hasAuth, _type := db.HasAuth(pass, actor.Id)
 
 	if !hasAuth || _type != "admin" || (id != actor.Id && id != config.Domain) {
 		return util.MakeError(errors.New("Error"), "AdminJanny")
 	}
 
-	var verify util.Verify
+	var verify db.Verify
 	verify.Code = ctx.Query("code")
 
+	/* TODO
 	if err := actor.DeleteVerification(verify); err != nil {
 		return util.MakeError(err, "AdminDeleteJanny")
 	}
+	*/
 
 	var redirect string
 

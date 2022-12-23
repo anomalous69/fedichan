@@ -49,7 +49,7 @@ func BoardBanMedia(ctx *fiber.Ctx) error {
 	var actor activitypub.Actor
 	actor.Id = col.OrderedItems[0].Actor
 
-	if has, _ := util.HasAuth(auth, actor.Id); !has {
+	if has, _ := db.HasAuth(auth, actor.Id); !has {
 		err = errors.New("actor does not have auth")
 		return util.MakeError(err, "BoardBanMedia")
 	}
@@ -159,7 +159,7 @@ func BoardDelete(ctx *fiber.Ctx) error {
 		actor.Id = col.OrderedItems[0].Actor
 	}
 
-	if has, _ := util.HasAuth(auth, actor.Id); !has {
+	if has, _ := db.HasAuth(auth, actor.Id); !has {
 		err = errors.New("actor does not have auth")
 		return util.MakeError(err, "BoardDelete")
 	}
@@ -311,7 +311,7 @@ func BoardMarkSensitive(ctx *fiber.Ctx) error {
 		actor.Id = col.OrderedItems[0].Actor
 	}
 
-	if has, _ := util.HasAuth(auth, actor.Id); !has {
+	if has, _ := db.HasAuth(auth, actor.Id); !has {
 		err = errors.New("actor does not have auth")
 		return util.MakeError(err, "BoardMarkSensitive")
 	}
@@ -454,7 +454,7 @@ func ReportPost(ctx *fiber.Ctx) error {
 	var obj = activitypub.ObjectBase{Id: id}
 
 	if close == "1" {
-		if auth, err := util.HasAuth(auth, actor.Id); !auth {
+		if auth, err := db.HasAuth(auth, actor.Id); !auth {
 			config.Log.Println(err)
 			return ctx.Status(404).Render("404", fiber.Map{
 				"message": "Something broke",
@@ -507,7 +507,7 @@ func ReportPost(ctx *fiber.Ctx) error {
 		})
 	}
 
-	if ok, _ := db.CheckCaptcha(captcha); !ok && close != "1" {
+	if ok, _ := util.CheckCaptcha(captcha); !ok && close != "1" {
 		return ctx.Status(403).Render("403", fiber.Map{
 			"message": "Invalid captcha",
 		})
@@ -542,7 +542,7 @@ func ReportGet(ctx *fiber.Ctx) error {
 	}
 
 	data.Board.Captcha = config.Domain + "/" + capt
-	data.Board.CaptchaCode = db.GetCaptchaCode(data.Board.Captcha)
+	data.Board.CaptchaCode, _ = util.GetCaptchaCode(data.Board.Captcha)
 
 	data.Meta.Description = data.Board.Summary
 	data.Meta.Url = data.Board.Actor.Id
@@ -577,7 +577,7 @@ func Sticky(ctx *fiber.Ctx) error {
 	col, _ := obj.GetCollectionFromPath()
 
 	if len(col.OrderedItems) < 1 {
-		if has, _ := util.HasAuth(auth, actor.Id); !has {
+		if has, _ := db.HasAuth(auth, actor.Id); !has {
 			return util.MakeError(errors.New("no auth"), "Sticky")
 		}
 
@@ -595,7 +595,7 @@ func Sticky(ctx *fiber.Ctx) error {
 		OP = id
 	}
 
-	if has, _ := util.HasAuth(auth, actor.Id); !has {
+	if has, _ := db.HasAuth(auth, actor.Id); !has {
 		return util.MakeError(errors.New("no auth"), "Sticky")
 	}
 
@@ -625,7 +625,7 @@ func Lock(ctx *fiber.Ctx) error {
 	col, _ := obj.GetCollectionFromPath()
 
 	if len(col.OrderedItems) < 1 {
-		if has, _ := util.HasAuth(auth, actor.Id); !has {
+		if has, _ := db.HasAuth(auth, actor.Id); !has {
 			return util.MakeError(errors.New("no auth"), "Lock")
 		}
 
@@ -643,7 +643,7 @@ func Lock(ctx *fiber.Ctx) error {
 		OP = id
 	}
 
-	if has, _ := util.HasAuth(auth, actor.Id); !has {
+	if has, _ := db.HasAuth(auth, actor.Id); !has {
 		return util.MakeError(errors.New("no auth"), "Lock")
 	}
 

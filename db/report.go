@@ -3,7 +3,6 @@ package db
 import (
 	"github.com/KushBlazingJudah/fedichan/activitypub"
 	"github.com/KushBlazingJudah/fedichan/config"
-	"github.com/KushBlazingJudah/fedichan/util"
 )
 
 type Reports struct {
@@ -30,14 +29,14 @@ func CloseLocalReport(id string, board string) error {
 	query := `delete from reported where id=$1 and board=$2`
 	_, err := config.DB.Exec(query, id, board)
 
-	return util.MakeError(err, "CloseLocalReportDB")
+	return wrapErr(err)
 }
 
 func CreateLocalReport(id string, board string, reason string) error {
 	query := `insert into reported (id, count, board, reason) values ($1, $2, $3, $4)`
 	_, err := config.DB.Exec(query, id, 1, board, reason)
 
-	return util.MakeError(err, "CreateLocalReportDB")
+	return wrapErr(err)
 }
 
 func GetLocalReport(board string) (map[string]Reports, error) {
@@ -47,7 +46,7 @@ func GetLocalReport(board string) (map[string]Reports, error) {
 	rows, err := config.DB.Query(query, board)
 
 	if err != nil {
-		return reported, util.MakeError(err, "GetLocalReportDB")
+		return reported, wrapErr(err)
 	}
 
 	defer rows.Close()
@@ -55,7 +54,7 @@ func GetLocalReport(board string) (map[string]Reports, error) {
 		var r Report
 
 		if err := rows.Scan(&r.ID, &r.Reason); err != nil {
-			return reported, util.MakeError(err, "GetLocalReportDB")
+			return reported, wrapErr(err)
 		}
 
 		if report, has := reported[r.ID]; has {

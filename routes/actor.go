@@ -281,7 +281,8 @@ func MakeActorPost(ctx *fiber.Ctx) error {
 				return util.MakeError(err, "ActorPost")
 			}
 		} else if key == "name" {
-			name, tripcode, _ := util.CreateNameTripCode(ctx)
+			board, modcred := util.GetPasswordFromSession(ctx)
+			name, tripcode, _ := db.CreateNameTripCode(ctx.FormValue("name"), board, modcred)
 
 			err := we.WriteField(key, name)
 			if err != nil {
@@ -339,7 +340,7 @@ func MakeActorPost(ctx *fiber.Ctx) error {
 	if resp.StatusCode == 200 {
 		var obj activitypub.ObjectBase
 
-		obj = db.ParseOptions(ctx, obj)
+		obj = ParseOptions(ctx, obj)
 		for _, e := range obj.Option {
 			if e == "noko" || e == "nokosage" {
 				return ctx.Redirect(config.Domain+"/"+ctx.FormValue("boardName")+"/"+util.ShortURL(ctx.FormValue("sendTo"), string(body)), 301)
@@ -425,7 +426,7 @@ func ActorPost(ctx *fiber.Ctx) error {
 			return util.MakeError(err, "OutboxGet")
 		}
 		data.Board.Captcha = config.Domain + "/" + capt
-		data.Board.CaptchaCode = db.GetCaptchaCode(data.Board.Captcha)
+		data.Board.CaptchaCode, _ = util.GetCaptchaCode(data.Board.Captcha)
 	}
 
 	data.Instance, err = activitypub.GetActorFromDB(config.Domain)
@@ -497,7 +498,7 @@ func ActorCatalog(ctx *fiber.Ctx) error {
 			return util.MakeError(err, "OutboxGet")
 		}
 		data.Board.Captcha = config.Domain + "/" + capt
-		data.Board.CaptchaCode = db.GetCaptchaCode(data.Board.Captcha)
+		data.Board.CaptchaCode, _ = util.GetCaptchaCode(data.Board.Captcha)
 	}
 
 	data.Title = "/" + data.Board.Name + "/ - catalog"
@@ -576,7 +577,7 @@ func ActorPosts(ctx *fiber.Ctx) error {
 			return util.MakeError(err, "OutboxGet")
 		}
 		data.Board.Captcha = config.Domain + "/" + capt
-		data.Board.CaptchaCode = db.GetCaptchaCode(data.Board.Captcha)
+		data.Board.CaptchaCode, _ = util.GetCaptchaCode(data.Board.Captcha)
 	}
 
 	data.Title = "/" + actor.Name + "/ - " + actor.PreferredUsername
@@ -637,7 +638,7 @@ func ActorArchive(ctx *fiber.Ctx) error {
 		return util.MakeError(err, "ActorArchive")
 	}
 	returnData.Board.Captcha = config.Domain + "/" + capt
-	returnData.Board.CaptchaCode = db.GetCaptchaCode(returnData.Board.Captcha)
+	returnData.Board.CaptchaCode, _ = util.GetCaptchaCode(returnData.Board.Captcha)
 
 	returnData.Title = "/" + actor.Name + "/ - " + actor.PreferredUsername
 

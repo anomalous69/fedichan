@@ -1,4 +1,4 @@
-package util
+package db
 
 import (
 	"bytes"
@@ -6,8 +6,6 @@ import (
 	"strings"
 
 	"github.com/KushBlazingJudah/fedichan/config"
-	"github.com/gofiber/fiber/v2"
-	_ "github.com/lib/pq"
 	"github.com/simia-tech/crypt"
 	"golang.org/x/text/encoding/japanese"
 	"golang.org/x/text/transform"
@@ -23,8 +21,7 @@ const SaltTable = "" +
 	"................................" +
 	"................................"
 
-func CreateNameTripCode(ctx *fiber.Ctx) (string, string, error) {
-	input := ctx.FormValue("name")
+func CreateNameTripCode(input, board, modcred string) (string, string, error) {
 	tripSecure := regexp.MustCompile("##(.+)?")
 
 	if tripSecure.MatchString(input) {
@@ -32,7 +29,6 @@ func CreateNameTripCode(ctx *fiber.Ctx) (string, string, error) {
 		chunck = strings.Replace(chunck, "##", "", 1)
 		ce := regexp.MustCompile(`(?i)Admin`)
 		admin := ce.MatchString(chunck)
-		board, modcred := GetPasswordFromSession(ctx)
 
 		if hasAuth, _ := HasAuth(modcred, board); hasAuth && admin {
 			return tripSecure.ReplaceAllString(input, ""), "#Admin", nil
@@ -40,7 +36,7 @@ func CreateNameTripCode(ctx *fiber.Ctx) (string, string, error) {
 
 		hash, err := TripCodeSecure(chunck)
 
-		return tripSecure.ReplaceAllString(input, ""), "!!" + hash, MakeError(err, "CreateNameTripCode")
+		return tripSecure.ReplaceAllString(input, ""), "!!" + hash, wrapErr(err)
 	}
 
 	trip := regexp.MustCompile("#(.+)?")
@@ -50,14 +46,13 @@ func CreateNameTripCode(ctx *fiber.Ctx) (string, string, error) {
 		chunck = strings.Replace(chunck, "#", "", 1)
 		ce := regexp.MustCompile(`(?i)Admin`)
 		admin := ce.MatchString(chunck)
-		board, modcred := GetPasswordFromSession(ctx)
 
 		if hasAuth, _ := HasAuth(modcred, board); hasAuth && admin {
 			return trip.ReplaceAllString(input, ""), "#Admin", nil
 		}
 
 		hash, err := TripCode(chunck)
-		return trip.ReplaceAllString(input, ""), "!" + hash, MakeError(err, "CreateNameTripCode")
+		return trip.ReplaceAllString(input, ""), "!" + hash, wrapErr(err)
 	}
 
 	return input, "", nil
@@ -76,7 +71,7 @@ func TripCode(pass string) (string, error) {
 	enc, err := crypt.Crypt(pass, "$1$"+string(salt[:]))
 
 	if err != nil {
-		return "", MakeError(err, "TripCode")
+		return "", wrapErr(err)
 	}
 
 	// normally i would just return error here but if the encrypt fails, this operation may fail and as a result cause a panic
@@ -102,7 +97,7 @@ func TripCodeSecure(pass string) (string, error) {
 	enc, err := crypt.Crypt(pass, "$1$"+config.Salt)
 
 	if err != nil {
-		return "", MakeError(err, "TripCodeSecure")
+		return "", wrapErr(err)
 	}
 
 	return enc[len(enc)-10:], nil

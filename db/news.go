@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/KushBlazingJudah/fedichan/config"
-	"github.com/KushBlazingJudah/fedichan/util"
 )
 
 type NewsItem struct {
@@ -33,7 +32,7 @@ func GetNews(limit int) ([]NewsItem, error) {
 	}
 
 	if err != nil {
-		return news, util.MakeError(err, "GetNews")
+		return news, wrapErr(err)
 	}
 
 	defer rows.Close()
@@ -42,7 +41,7 @@ func GetNews(limit int) ([]NewsItem, error) {
 		n := NewsItem{}
 
 		if err := rows.Scan(&n.Title, &content, &n.Time); err != nil {
-			return news, util.MakeError(err, "GetNews")
+			return news, wrapErr(err)
 		}
 
 		content = strings.ReplaceAll(content, "\n", "<br>")
@@ -60,7 +59,7 @@ func GetNewsItem(timestamp int) (NewsItem, error) {
 
 	query := `select title, content, time from newsItem where time=$1 limit 1`
 	if err := config.DB.QueryRow(query, timestamp).Scan(&news.Title, &content, &news.Time); err != nil {
-		return news, util.MakeError(err, "GetNewsItem")
+		return news, wrapErr(err)
 	}
 
 	content = strings.ReplaceAll(content, "\n", "<br>")
@@ -73,12 +72,12 @@ func DeleteNewsItem(timestamp int) error {
 	query := `delete from newsItem where time=$1`
 	_, err := config.DB.Exec(query, timestamp)
 
-	return util.MakeError(err, "DeleteNewsItem")
+	return wrapErr(err)
 }
 
 func WriteNews(news NewsItem) error {
 	query := `insert into newsItem (title, content, time) values ($1, $2, $3)`
 	_, err := config.DB.Exec(query, news.Title, news.Content, time.Now().Unix())
 
-	return util.MakeError(err, "WriteNews")
+	return wrapErr(err)
 }

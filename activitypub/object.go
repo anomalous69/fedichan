@@ -3,7 +3,6 @@ package activitypub
 import (
 	"database/sql"
 	"fmt"
-	"net/smtp"
 	"os"
 	"os/exec"
 	"regexp"
@@ -1482,25 +1481,30 @@ func (obj ObjectBase) IsLocked() (bool, error) {
 }
 
 func (obj ObjectBase) SendEmailNotify() error {
-	if setup := util.IsEmailSetup(); !setup {
-		return nil
-	}
+	/*
+		if setup := util.IsEmailSetup(); !setup {
+			return nil
+		}
 
-	actor, _ := GetActorFromDB(obj.Actor)
+		actor, _ := GetActorFromDB(obj.Actor)
 
-	from := config.SiteEmail
-	pass := config.SiteEmailPassword
-	to := config.SiteEmailNotifyTo
-	body := fmt.Sprintf("New post: %s", config.Domain+"/"+actor.Name+"/"+util.ShortURL(actor.Outbox, obj.Id))
+		from := config.SiteEmail
+		pass := config.SiteEmailPassword
+		to := config.SiteEmailNotifyTo
+		body := fmt.Sprintf("New post: %s", config.Domain+"/"+actor.Name+"/"+util.ShortURL(actor.Outbox, obj.Id))
 
-	msg := "From: " + from + "\n" +
-		"To: " + to + "\n" +
-		"Subject: Image Board Post\n\n" +
-		body
+		msg := "From: " + from + "\n" +
+			"To: " + to + "\n" +
+			"Subject: Image Board Post\n\n" +
+			body
 
-	err := smtp.SendMail(config.SiteEmailServer+":"+config.SiteEmailPort,
-		smtp.PlainAuth("", from, pass, config.SiteEmailServer),
-		from, []string{to}, []byte(msg))
+		err := smtp.SendMail(config.SiteEmailServer+":"+config.SiteEmailPort,
+			smtp.PlainAuth("", from, pass, config.SiteEmailServer),
+			from, []string{to}, []byte(msg))
 
-	return util.MakeError(err, "SendEmailNotify")
+		return util.MakeError(err, "SendEmailNotify")
+	*/
+
+	// TODO
+	return nil
 }

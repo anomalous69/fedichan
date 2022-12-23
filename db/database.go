@@ -10,7 +10,6 @@ import (
 
 	"github.com/KushBlazingJudah/fedichan/activitypub"
 	"github.com/KushBlazingJudah/fedichan/config"
-	"github.com/KushBlazingJudah/fedichan/util"
 	_ "github.com/lib/pq"
 )
 
@@ -27,11 +26,11 @@ func Connect() error {
 	_db, err := sql.Open("postgres", psqlInfo)
 
 	if err != nil {
-		return util.MakeError(err, "Connect")
+		return wrapErr(err)
 	}
 
 	if err := _db.Ping(); err != nil {
-		return util.MakeError(err, "Connect")
+		return wrapErr(err)
 	}
 
 	config.Log.Println("Successfully connected DB")
@@ -44,28 +43,28 @@ func Connect() error {
 func Close() error {
 	err := config.DB.Close()
 
-	return util.MakeError(err, "Close")
+	return wrapErr(err)
 }
 
 func RunDatabaseSchema() error {
 	query, err := os.ReadFile("db/schema.psql")
 	if err != nil {
-		return util.MakeError(err, "RunDatabaseSchema")
+		return wrapErr(err)
 	}
 
 	_, err = config.DB.Exec(string(query))
-	return util.MakeError(err, "RunDatabaseSchema")
+	return wrapErr(err)
 }
 
 func CreateNewBoard(actor activitypub.Actor) (activitypub.Actor, error) {
 	if _, err := activitypub.GetActorFromDB(actor.Id); err == nil {
-		return activitypub.Actor{}, util.MakeError(err, "CreateNewBoardDB")
+		return activitypub.Actor{}, wrapErr(err)
 	} else {
 		query := `insert into actor (type, id, name, preferedusername, inbox, outbox, following, followers, summary, restricted) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`
 		_, err := config.DB.Exec(query, actor.Type, actor.Id, actor.Name, actor.PreferredUsername, actor.Inbox, actor.Outbox, actor.Following, actor.Followers, actor.Summary, actor.Restricted)
 
 		if err != nil {
-			return activitypub.Actor{}, util.MakeError(err, "CreateNewBoardDB")
+			return activitypub.Actor{}, wrapErr(err)
 		}
 
 		config.Log.Println("board added")
@@ -73,19 +72,21 @@ func CreateNewBoard(actor activitypub.Actor) (activitypub.Actor, error) {
 		for _, e := range actor.AuthRequirement {
 			query = `insert into actorauth (type, board) values ($1, $2)`
 			if _, err := config.DB.Exec(query, e, actor.Name); err != nil {
-				return activitypub.Actor{}, util.MakeError(err, "CreateNewBoardDB")
+				return activitypub.Actor{}, wrapErr(err)
 			}
 		}
 
+		/* TODO
 		if actor.Id == config.Domain {
-			var verify util.Verify
+			var verify Verify
 			verify.Type = "admin"
 			verify.Identifier = actor.Id
 
 			if err := actor.CreateVerification(verify); err != nil {
-				return activitypub.Actor{}, util.MakeError(err, "CreateNewBoardDB")
+				return activitypub.Actor{}, wrapErr(err)
 			}
 		}
+		*/
 
 		activitypub.CreatePem(actor)
 
@@ -96,7 +97,7 @@ func CreateNewBoard(actor activitypub.Actor) (activitypub.Actor, error) {
 			nActor, err := activitypub.GetActorFromDB(config.Domain)
 
 			if err != nil {
-				return actor, util.MakeError(err, "CreateNewBoardDB")
+				return actor, wrapErr(err)
 			}
 
 			nActivity.AtContext.Context = "https://www.w3.org/ns/activitystreams"
@@ -106,7 +107,7 @@ func CreateNewBoard(actor activitypub.Actor) (activitypub.Actor, error) {
 			mActor, err := activitypub.GetActorFromDB(actor.Id)
 
 			if err != nil {
-				return actor, util.MakeError(err, "CreateNewBoardDB")
+				return actor, wrapErr(err)
 			}
 
 			nActivity.Object.Actor = mActor.Id
@@ -115,11 +116,11 @@ func CreateNewBoard(actor activitypub.Actor) (activitypub.Actor, error) {
 			activityRequest := nActivity.AcceptFollow()
 
 			if _, err := activityRequest.SetActorFollowing(); err != nil {
-				return actor, util.MakeError(err, "CreateNewBoardDB")
+				return actor, wrapErr(err)
 			}
 
 			if err := activityRequest.MakeRequestInbox(); err != nil {
-				return actor, util.MakeError(err, "CreateNewBoardDB")
+				return actor, wrapErr(err)
 			}
 		}
 	}
@@ -139,16 +140,16 @@ func RemovePreviewFromFile(id string) error {
 
 	if href != "static/notfound.png" {
 		if _, err := os.Stat(href); err != nil {
-			return util.MakeError(err, "RemovePreviewFromFile")
+			return wrapErr(err)
 		}
 
 		err := os.Remove(href)
-		return util.MakeError(err, "RemovePreviewFromFile")
+		return wrapErr(err)
 	}
 
 	obj := activitypub.ObjectBase{Id: id}
 	err := obj.DeletePreview()
-	return util.MakeError(err, "RemovePreviewFromFile")
+	return wrapErr(err)
 }
 
 func AddInstanceToInactive(instance string) error {
@@ -159,7 +160,7 @@ func AddInstanceToInactive(instance string) error {
 		query := `insert into inactive (instance, timestamp) values ($1, $2)`
 		_, err := config.DB.Exec(query, instance, time.Now().UTC().Format(time.RFC3339))
 
-		return util.MakeError(err, "AddInstanceToInactive")
+		return wrapErr(err)
 	}
 
 	if !IsInactiveTimestamp(timeStamp) {
@@ -168,18 +169,18 @@ func AddInstanceToInactive(instance string) error {
 
 	query = `delete from follower where follower like $1`
 	if _, err := config.DB.Exec(query, "%"+instance+"%"); err != nil {
-		return util.MakeError(err, "AddInstanceToInactive")
+		return wrapErr(err)
 	}
 
 	err := DeleteInstanceFromInactive(instance)
-	return util.MakeError(err, "AddInstanceToInactive")
+	return wrapErr(err)
 }
 
 func DeleteInstanceFromInactive(instance string) error {
 	query := `delete from inactive where instance=$1`
 	_, err := config.DB.Exec(query, instance)
 
-	return util.MakeError(err, "DeleteInstanceFromInactive")
+	return wrapErr(err)
 }
 
 func IsInactiveTimestamp(timeStamp string) bool {
@@ -238,7 +239,7 @@ func CheckInactiveInstances() (map[string]string, error) {
 
 	query := `select following from following`
 	if rows, err = config.DB.Query(query); err != nil {
-		return instances, util.MakeError(err, "CheckInactiveInstances")
+		return instances, wrapErr(err)
 	}
 
 	defer rows.Close()
@@ -246,7 +247,7 @@ func CheckInactiveInstances() (map[string]string, error) {
 		var instance string
 
 		if err := rows.Scan(&instance); err != nil {
-			return instances, util.MakeError(err, "CheckInactiveInstances")
+			return instances, wrapErr(err)
 		}
 
 		instances[instance] = instance
@@ -254,7 +255,7 @@ func CheckInactiveInstances() (map[string]string, error) {
 
 	query = `select follower from follower`
 	if rows, err = config.DB.Query(query); err != nil {
-		return instances, util.MakeError(err, "CheckInactiveInstances")
+		return instances, wrapErr(err)
 	}
 
 	defer rows.Close()
@@ -262,7 +263,7 @@ func CheckInactiveInstances() (map[string]string, error) {
 		var instance string
 
 		if err := rows.Scan(&instance); err != nil {
-			return instances, util.MakeError(err, "CheckInactiveInstances")
+			return instances, wrapErr(err)
 		}
 
 		instances[instance] = instance
@@ -274,16 +275,16 @@ func CheckInactiveInstances() (map[string]string, error) {
 		actor, err := activitypub.GetActor(e)
 
 		if err != nil {
-			return instances, util.MakeError(err, "CheckInactiveInstances")
+			return instances, wrapErr(err)
 		}
 
 		if actor.Id == "" && !re.MatchString(e) {
 			if err := AddInstanceToInactive(e); err != nil {
-				return instances, util.MakeError(err, "CheckInactiveInstances")
+				return instances, wrapErr(err)
 			}
 		} else {
 			if err := DeleteInstanceFromInactive(e); err != nil {
-				return instances, util.MakeError(err, "CheckInactiveInstances")
+				return instances, wrapErr(err)
 			}
 		}
 	}
@@ -316,7 +317,7 @@ func PrintAdminAuth() error {
 	code, identifier, err := GetAdminAuth()
 
 	if err != nil {
-		return util.MakeError(err, "PrintAdminAuth")
+		return wrapErr(err)
 	}
 
 	config.Log.Println("Mod key: " + config.Key)
@@ -327,7 +328,7 @@ func PrintAdminAuth() error {
 func InitInstance() error {
 	if config.InstanceName != "" {
 		if _, err := CreateNewBoard(*activitypub.CreateNewActor("", config.InstanceName, config.InstanceSummary, config.AuthReq, false)); err != nil {
-			return util.MakeError(err, "InitInstance")
+			return wrapErr(err)
 		}
 	}
 
@@ -341,7 +342,7 @@ func GetPostIDFromNum(num string) (string, error) {
 	if err := config.DB.QueryRow(query, "%"+num).Scan(&postID); err != nil {
 		query = `select id from cacheactivitystream where id like $1`
 		if err := config.DB.QueryRow(query, "%"+num).Scan(&postID); err != nil {
-			return "", util.MakeError(err, "GetPostIDFromNum")
+			return "", wrapErr(err)
 		}
 	}
 
