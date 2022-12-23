@@ -71,21 +71,18 @@ func ParseOutboxRequest(ctx *fiber.Ctx, actor activitypub.Actor) error {
 				f, _ := header.Open()
 				defer f.Close()
 				if header.Size > (7 << 20) {
-					ctx.Response().Header.SetStatusCode(403)
-					_, err := ctx.Write([]byte("7MB max file size"))
+					_, err := ctx.Status(403).Write([]byte("7MB max file size"))
 					return util.MakeError(err, "ParseOutboxRequest")
 				} else if isBanned, err := db.IsMediaBanned(f); err == nil && isBanned {
 					config.Log.Println("media banned")
-					ctx.Response().Header.SetStatusCode(403)
-					_, err := ctx.Write([]byte(""))
+					_, err := ctx.Status(403).Write([]byte(""))
 					return util.MakeError(err, "ParseOutboxRequest")
 				}
 
 				contentType, _ := util.GetFileContentType(f)
 
 				if !util.SupportedMIMEType(contentType) {
-					ctx.Response().Header.SetStatusCode(403)
-					_, err := ctx.Write([]byte("file type not supported"))
+					_, err := ctx.Status(403).Write([]byte("file type not supported"))
 					return util.MakeError(err, "ParseOutboxRequest")
 				}
 			}
@@ -148,8 +145,7 @@ func ParseOutboxRequest(ctx *fiber.Ctx, actor activitypub.Actor) error {
 				}
 			}
 
-			ctx.Response().Header.Set("Status", "200")
-			_, err = ctx.Write([]byte(id))
+			_, err = ctx.Status(200).Write([]byte(id))
 			return util.MakeError(err, "ParseOutboxRequest")
 		}
 
@@ -163,15 +159,13 @@ func ParseOutboxRequest(ctx *fiber.Ctx, actor activitypub.Actor) error {
 
 		if res, _ := activity.IsLocal(); res {
 			if res := activity.Actor.VerifyHeaderSignature(ctx); err == nil && !res {
-				ctx.Response().Header.Set("Status", "403")
-				_, err = ctx.Write([]byte(""))
+				_, err = ctx.Status(403).Write([]byte(""))
 				return util.MakeError(err, "ParseOutboxRequest")
 			}
 
 			switch activity.Type {
 			case "Create":
-				ctx.Response().Header.Set("Status", "403")
-				_, err = ctx.Write([]byte(""))
+				_, err = ctx.Status(403).Write([]byte(""))
 
 			case "Follow":
 				validActor := (activity.Object.Actor != "")
@@ -207,11 +201,9 @@ func ParseOutboxRequest(ctx *fiber.Ctx, actor activitypub.Actor) error {
 
 			case "Delete":
 				config.Log.Println("This is a delete")
-				ctx.Response().Header.Set("Status", "403")
-				_, err = ctx.Write([]byte("could not process activity"))
+				_, err = ctx.Status(403).Write([]byte("could not process activity"))
 			case "Note":
-				ctx.Response().Header.Set("Status", "403")
-				_, err = ctx.Write([]byte("could not process activity"))
+				_, err = ctx.Status(403).Write([]byte("could not process activity"))
 
 			case "New":
 				name := activity.Object.Alias
@@ -247,12 +239,10 @@ func ParseOutboxRequest(ctx *fiber.Ctx, actor activitypub.Actor) error {
 					return util.MakeError(err, "ParseOutboxRequest")
 				}
 
-				ctx.Response().Header.Set("Status", "403")
-				_, err = ctx.Write([]byte(""))
+				_, err = ctx.Status(403).Write([]byte(""))
 
 			default:
-				ctx.Response().Header.Set("status", "403")
-				_, err = ctx.Write([]byte("could not process activity"))
+				_, err = ctx.Status(403).Write([]byte("could not process activity"))
 			}
 
 			if err != nil {
@@ -262,8 +252,7 @@ func ParseOutboxRequest(ctx *fiber.Ctx, actor activitypub.Actor) error {
 			return util.MakeError(err, "ParseOutboxRequest")
 		} else {
 			config.Log.Println("is NOT activity")
-			ctx.Response().Header.Set("Status", "403")
-			_, err = ctx.Write([]byte("could not process activity"))
+			_, err = ctx.Status(403).Write([]byte("could not process activity"))
 			return util.MakeError(err, "ParseOutboxRequest")
 		}
 	}

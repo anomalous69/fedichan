@@ -11,7 +11,6 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"errors"
-	"net/http"
 	"os"
 	"regexp"
 	"strings"
@@ -855,14 +854,12 @@ func (actor Actor) ReportedResp(ctx *fiber.Ctx) error {
 	verification := strings.Split(auth, " ")
 
 	if len(verification) < 2 {
-		ctx.Response().Header.SetStatusCode(http.StatusBadRequest)
-		_, err := ctx.Write([]byte(""))
+		_, err := ctx.Status(400).Write([]byte(""))
 		return util.MakeError(err, "GetReported")
 	}
 
 	if hasAuth, _ := util.HasAuth(verification[1], actor.Id); !hasAuth {
-		ctx.Response().Header.SetStatusCode(http.StatusBadRequest)
-		_, err := ctx.Write([]byte(""))
+		_, err := ctx.Status(400).Write([]byte(""))
 		return util.MakeError(err, "GetReported")
 	}
 
