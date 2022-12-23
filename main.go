@@ -10,13 +10,11 @@ import (
 	"github.com/KushBlazingJudah/fedichan/routes"
 	"github.com/KushBlazingJudah/fedichan/util"
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/encryptcookie"
 	"github.com/gofiber/fiber/v2/middleware/logger"
 	"github.com/gofiber/template/html"
 )
 
 func main() {
-
 	Init()
 
 	defer db.Close()
@@ -36,16 +34,6 @@ func main() {
 	})
 
 	app.Use(logger.New())
-
-	cookieKey, err := util.GetCookieKey()
-
-	if err != nil {
-		config.Log.Println(err)
-	}
-
-	app.Use(encryptcookie.New(encryptcookie.Config{
-		Key: cookieKey,
-	}))
 
 	app.Static("/static", "./views")
 	app.Static("/public", "./public")

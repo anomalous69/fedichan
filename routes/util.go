@@ -17,13 +17,7 @@ import (
 )
 
 func GetThemeCookie(c *fiber.Ctx) string {
-	cookie := c.Cookies("theme")
-	if cookie != "" {
-		cookies := strings.SplitN(cookie, "=", 2)
-		return cookies[0]
-	}
-
-	return "default"
+	return c.Cookies("theme")
 }
 
 func GetActorPost(ctx *fiber.Ctx, path string) error {

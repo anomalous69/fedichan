@@ -5,11 +5,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"math/rand"
-	"os"
 	"strings"
-
-	"github.com/KushBlazingJudah/fedichan/config"
-	"github.com/gofiber/fiber/v2/middleware/encryptcookie"
 )
 
 const domain = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -28,24 +24,6 @@ func CreateTripCode(input string) string {
 	out := sha512.Sum512([]byte(input))
 
 	return hex.EncodeToString(out[:])
-}
-
-func GetCookieKey() (string, error) {
-	if config.CookieKey == "" {
-		var file *os.File
-		var err error
-
-		if file, err = os.OpenFile("config/config-init", os.O_APPEND|os.O_WRONLY, 0644); err != nil {
-			return "", MakeError(err, "GetCookieKey")
-		}
-
-		defer file.Close()
-
-		config.CookieKey = encryptcookie.GenerateKey()
-		file.WriteString("\ncookiekey:" + config.CookieKey)
-	}
-
-	return config.CookieKey, nil
 }
 
 func RandomID(size int) string {

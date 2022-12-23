@@ -274,10 +274,7 @@ func AdminActorIndex(ctx *fiber.Ctx) error {
 	data.Themes = &config.Themes
 
 	data.RecentPosts, _ = actor.GetRecentPosts()
-
-	if cookie := ctx.Cookies("theme"); cookie != "" {
-		data.ThemeCookie = cookie
-	}
+	data.ThemeCookie = GetThemeCookie(ctx)
 
 	return ctx.Render("manage", fiber.Map{
 		"page":    data,
