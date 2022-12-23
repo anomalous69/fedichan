@@ -1167,11 +1167,8 @@ func (obj ObjectBase) Write() (ObjectBase, error) {
 		}
 	}
 
-	if err := obj.WriteReply(); err != nil {
-		return obj, util.MakeError(err, "Write")
-	}
+	err = obj.WriteReply()
 
-	err = obj.WriteWallet()
 	return obj, util.MakeError(err, "Write")
 }
 
@@ -1375,22 +1372,6 @@ func (obj ObjectBase) WriteUpdate(updated time.Time) error {
 	query = `update cacheactivitystream set updated=$1 where id=$2`
 	_, err := config.DB.Exec(query, updated, obj.Id)
 	return util.MakeError(err, "WriteUpdate")
-}
-
-func (obj ObjectBase) WriteWallet() error {
-	for _, e := range obj.Option {
-		if e == "wallet" {
-			for _, w := range obj.Wallet {
-				query := `insert into wallet (id, type, address) values ($1, $2, $3)`
-				if _, err := config.DB.Exec(query, obj.Id, w.Type, w.Address); err != nil {
-					return util.MakeError(err, "WriteWallet")
-				}
-			}
-			return nil
-		}
-	}
-
-	return nil
 }
 
 func (obj ObjectBase) WriteWithAttachment(attachment ObjectBase) {

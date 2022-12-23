@@ -133,7 +133,6 @@ func ParseOptions(ctx *fiber.Ctx, obj activitypub.ObjectBase) activitypub.Object
 	if options != "" {
 		option := strings.Split(options, ";")
 		email := regexp.MustCompile(`.+@.+\..+`)
-		wallet := regexp.MustCompile("wallet:.+")
 		delete := regexp.MustCompile("delete:.+")
 
 		for _, e := range option {
@@ -145,13 +144,6 @@ func ParseOptions(ctx *fiber.Ctx, obj activitypub.ObjectBase) activitypub.Object
 				obj.Option = append(obj.Option, "nokosage")
 			} else if email.MatchString(e) {
 				obj.Option = append(obj.Option, "email:"+e)
-			} else if wallet.MatchString(e) {
-				obj.Option = append(obj.Option, "wallet")
-				var wallet activitypub.CryptoCur
-				value := strings.Split(e, ":")
-				wallet.Type = value[0]
-				wallet.Address = value[1]
-				obj.Wallet = append(obj.Wallet, wallet)
 			} else if delete.MatchString(e) {
 				obj.Option = append(obj.Option, e)
 			}

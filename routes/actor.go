@@ -322,7 +322,7 @@ func MakeActorPost(ctx *fiber.Ctx) error {
 	if c := ctx.Cookies("session_token"); c != "" {
 		// This is a hack to pass through the token while we still make
 		// requests to the outbox
-		req.Header.Set("Authorization", "Bearer " + c)
+		req.Header.Set("Authorization", "Bearer "+c)
 	}
 
 	resp, err := util.RouteProxy(req)

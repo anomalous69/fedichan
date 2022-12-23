@@ -62,12 +62,6 @@ type varchar(50),
 board varchar(100)
 );
 
-CREATE TABLE IF NOT EXISTS wallet(
-id varchar(100) UNIQUE PRIMARY KEY,
-type varchar(25),
-address varchar(50)
-);
-
 CREATE TABLE IF NOT EXISTS activitystream(
 actor varchar(100) default '',
 attachment varchar(100) default '',
@@ -258,3 +252,5 @@ activity_id varchar(100)
 
 ALTER TABLE activitystream ALTER COLUMN content TYPE varchar(4500);
 ALTER TABLE cacheactivitystream ALTER COLUMN content TYPE varchar(4500);
+
+DROP TABLE IF EXISTS wallet;

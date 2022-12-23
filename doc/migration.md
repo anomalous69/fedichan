@@ -8,5 +8,7 @@ intervention.
 This list is short now but will likely grow as time goes on.
 Care will be taken to make this as automatic as possible.
 
-1. Move `config/config-init` to `fchan.cfg`.
-2. You're done, hopefully
+1. Ensure you are running the latest version of FChannel before migrating
+2. Install Fedichan like how you would FChannel
+3. Move `config/config-init` to `fchan.cfg`.
+4. You're done, hopefully

@@ -133,7 +133,6 @@ type ObjectBase struct {
 	StartTime    string            `json:"startTime,omitempty"`
 	Summary      string            `json:"summary,omitempty"`
 	Tag          []ObjectBase      `json:"tag,omitempty"`
-	Wallet       []CryptoCur       `json:"wallet,omitempty"`
 	Deleted      string            `json:"deleted,omitempty"`
 	Url          []ObjectBase      `json:"url,omitempty"`
 	Href         string            `json:"href,omitempty"`
@@ -147,11 +146,6 @@ type ObjectBase struct {
 	Sensitive    bool              `json:"sensitive,omitempty"`
 	Sticky       bool              `json:"sticky,omitempty"`
 	Locked       bool              `json:"locked,omitempty"`
-}
-
-type CryptoCur struct {
-	Type    string `json:"type,omitempty"`
-	Address string `json:"address,omitempty"`
 }
 
 type NestedObjectBase struct {
