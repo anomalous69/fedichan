@@ -1,3 +1,5 @@
+-- vim: set ft=sql:
+
 CREATE TABLE IF NOT EXISTS actor(
 type varchar(50) default '',
 id varchar(100) UNIQUE PRIMARY KEY,
@@ -40,26 +42,11 @@ board varchar(100),
 reason varchar(100)
 );
 
-CREATE TABLE IF NOT EXISTS verificationcooldown(
-code varchar(50),
-created TIMESTAMP default NOW()
-);
-
 CREATE TABLE IF NOT EXISTS boardaccess(
 identifier varchar(100),
 code varchar(50),
 board varchar(100),
 type varchar(50)
-);
-
-CREATE TABLE IF NOT EXISTS crossverification(
-verificationcode varchar(50),
-code varchar(50)
-);
-
-CREATE TABLE IF NOT EXISTS actorauth(
-type varchar(50),
-board varchar(100)
 );
 
 CREATE TABLE IF NOT EXISTS activitystream(
@@ -250,7 +237,18 @@ actor_id varchar(100),
 activity_id varchar(100)
 );
 
+CREATE TABLE IF NOT EXISTS accounts(
+	username TEXT NOT NULL UNIQUE,
+	type INTEGER,
+	password bytea,
+	salt bytea,
+	session text
+);
+
 ALTER TABLE activitystream ALTER COLUMN content TYPE varchar(4500);
 ALTER TABLE cacheactivitystream ALTER COLUMN content TYPE varchar(4500);
 
 DROP TABLE IF EXISTS wallet;
+DROP TABLE IF EXISTS verificationcooldown;
+DROP TABLE IF EXISTS crossverification;
+DROP TABLE IF EXISTS actorauth;

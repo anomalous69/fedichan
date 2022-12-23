@@ -20,7 +20,7 @@ import (
 	"github.com/gofiber/template/html"
 )
 
-func GetThemeCookie(c *fiber.Ctx) string {
+func themeCookie(c *fiber.Ctx) string {
 	return c.Cookies("theme")
 }
 
@@ -48,22 +48,16 @@ func GetActorPost(ctx *fiber.Ctx, path string) error {
 }
 
 func ParseOutboxRequest(ctx *fiber.Ctx, actor activitypub.Actor) error {
-	pw, _ := util.GetPasswordFromSession(ctx)
-	needCaptcha := pw == ""
+	_, waiveCaptcha := ctx.Locals("acct").(*db.Acct)
 	contentType := util.GetContentType(ctx.Get("content-type"))
 
 	if contentType == "multipart/form-data" || contentType == "application/x-www-form-urlencoded" {
-		hasCaptcha, err := db.BoardHasAuthType(actor.Name, "captcha")
-		if err != nil {
-			return util.MakeError(err, "ParseOutboxRequest")
-		}
-
 		valid, err := util.CheckCaptcha(ctx.FormValue("captcha"))
 		if err != nil {
 			return util.MakeError(err, "ParseOutboxRequest")
 		}
 
-		if !needCaptcha || (hasCaptcha && valid) {
+		if waiveCaptcha || valid {
 			header, _ := ctx.FormFile("file")
 			if header != nil {
 				f, _ := header.Open()
@@ -283,19 +277,16 @@ func TemplateFunctions(engine *html.Engine) {
 		return fmt.Sprint(t.Unix())
 	})
 
+	engine.AddFunc("isAdmin", func(d *db.Acct) bool {
+		return d != nil && d.Type == db.Admin
+	})
+
 	engine.AddFunc("proxy", util.MediaProxy)
-
-	// previously short
 	engine.AddFunc("shortURL", util.ShortURL)
-
 	engine.AddFunc("parseAttachment", ParseAttachment)
-
 	engine.AddFunc("parseContent", db.ParseContent)
-
 	engine.AddFunc("shortImg", util.ShortImg)
-
 	engine.AddFunc("convertSize", util.ConvertSize)
-
 	engine.AddFunc("isOnion", util.IsOnion)
 
 	engine.AddFunc("parseReplyLink", func(actorId string, op string, id string, content string) template.HTML {

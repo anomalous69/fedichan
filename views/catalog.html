@@ -1,6 +1,7 @@
 {{ template "partials/top" .page }}
 
 {{ $board := .page.Board }}
+{{ $acct := .page.Acct }}
 <hr>
 
 <ul id="navlinks">
@@ -14,11 +15,11 @@
 <div style="padding: 10px; text-align: center;">
   {{ range .page.Posts }}
   <div style="overflow: hidden; vertical-align: top; padding-right: 24px; padding-bottom: 24px; display: inline-block; width: 180px; max-height: 320px; margin-bottom: 10px;">
-    {{ if eq $board.ModCred $board.Domain $board.Actor.Id }}
+    {{ if $acct }}
     [<a href="/delete?id={{ .Id }}&board={{ $board.Actor.Name }}">Delete Post</a>]
     {{ end }}
     {{ if .Attachment }}
-    {{ if eq $board.ModCred $board.Domain $board.Actor.Id }}
+    {{ if $acct }}
     [<a href="/deleteattach?id={{ .Id }}&board={{ $board.Actor.Name }}">Delete Attachment</a>]
     [<a href="/marksensitive?id={{ .Id }}&board={{ $board.Actor.Name }}">Mark Sensitive</a>]
     {{ end }}

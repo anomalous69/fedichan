@@ -9,6 +9,8 @@ import (
 )
 
 func Index(ctx *fiber.Ctx) error {
+	acct, _ := ctx.Locals("acct").(*db.Acct)
+
 	actor, err := activitypub.GetActorFromDB(config.Domain)
 	if err != nil {
 		return util.MakeError(err, "Index")
@@ -33,10 +35,11 @@ func Index(ctx *fiber.Ctx) error {
 	data.Board.Name = ""
 	data.Key = config.Key
 	data.Board.Domain = config.Domain
-	data.Board.ModCred, _ = util.GetPasswordFromSession(ctx)
 	data.Board.Actor = actor
 	data.Board.Post.Actor = actor.Id
 	data.Board.Restricted = actor.Restricted
+	data.Acct = acct
+
 	//almost certainly there is a better algorithm for this but the old one was wrong
 	//and I suck at math. This works at least.
 	data.BoardRemainer = make([]int, 3-(len(data.Boards)%3))
@@ -49,8 +52,8 @@ func Index(ctx *fiber.Ctx) error {
 	data.Meta.Url = data.Board.Domain
 	data.Meta.Title = data.Title
 
-	data.Themes = &config.Themes
-	data.ThemeCookie = GetThemeCookie(ctx)
+	data.Themes = config.Themes
+	data.ThemeCookie = themeCookie(ctx)
 
 	return ctx.Render("index", fiber.Map{
 		"page": data,

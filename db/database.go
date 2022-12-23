@@ -292,18 +292,6 @@ func CheckInactiveInstances() (map[string]string, error) {
 	return instances, nil
 }
 
-func GetAdminAuth() (string, string, error) {
-	var code string
-	var identifier string
-
-	query := `select identifier, code from boardaccess where board=$1 and type='admin'`
-	if err := config.DB.QueryRow(query, config.Domain).Scan(&identifier, &code); err != nil {
-		return "", "", nil
-	}
-
-	return code, identifier, nil
-}
-
 func IsHashBanned(hash string) (bool, error) {
 	var h string
 
@@ -314,15 +302,18 @@ func IsHashBanned(hash string) (bool, error) {
 }
 
 func PrintAdminAuth() error {
-	code, identifier, err := GetAdminAuth()
+	config.Log.Println("Mod key: " + config.Key)
 
-	if err != nil {
-		return wrapErr(err)
+	if UserExists("admin") {
+		return nil
 	}
 
-	config.Log.Println("Mod key: " + config.Key)
-	config.Log.Println("Admin Login: " + identifier + ", Code: " + code)
-	return nil
+	a := Acct{Username: "admin", Type: Admin}
+	if err := a.Save(); err != nil {
+		return err
+	}
+
+	return a.SetPassword("password")
 }
 
 func InitInstance() error {

@@ -38,7 +38,6 @@ type Board struct {
 	RedirectTo  string
 	Captcha     string
 	CaptchaCode string
-	ModCred     string
 	Domain      string
 	TP          string
 	Restricted  bool

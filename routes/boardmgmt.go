@@ -17,14 +17,14 @@ import (
 )
 
 func BoardBanMedia(ctx *fiber.Ctx) error {
+	_, hasAuth := ctx.Locals("acct").(*db.Acct)
+
 	var err error
 
 	postID := ctx.Query("id")
 	board := ctx.Query("board")
 
-	_, auth := util.GetPasswordFromSession(ctx)
-
-	if postID == "" || auth == "" {
+	if postID == "" || !hasAuth {
 		err = errors.New("missing postID or auth")
 		return util.MakeError(err, "BoardBanMedia")
 	}
@@ -49,7 +49,7 @@ func BoardBanMedia(ctx *fiber.Ctx) error {
 	var actor activitypub.Actor
 	actor.Id = col.OrderedItems[0].Actor
 
-	if has, _ := db.HasAuth(auth, actor.Id); !has {
+	if !hasAuth {
 		err = errors.New("actor does not have auth")
 		return util.MakeError(err, "BoardBanMedia")
 	}
@@ -121,14 +121,14 @@ func BoardBanMedia(ctx *fiber.Ctx) error {
 }
 
 func BoardDelete(ctx *fiber.Ctx) error {
+	_, hasAuth := ctx.Locals("acct").(*db.Acct)
+
 	var err error
 
 	postID := ctx.Query("id")
 	board := ctx.Query("board")
 
-	_, auth := util.GetPasswordFromSession(ctx)
-
-	if postID == "" || auth == "" {
+	if postID == "" || !hasAuth {
 		err = errors.New("missing postID or auth")
 		return util.MakeError(err, "BoardDelete")
 	}
@@ -159,7 +159,7 @@ func BoardDelete(ctx *fiber.Ctx) error {
 		actor.Id = col.OrderedItems[0].Actor
 	}
 
-	if has, _ := db.HasAuth(auth, actor.Id); !has {
+	if !hasAuth {
 		err = errors.New("actor does not have auth")
 		return util.MakeError(err, "BoardDelete")
 	}
@@ -205,14 +205,14 @@ func BoardDelete(ctx *fiber.Ctx) error {
 }
 
 func BoardDeleteAttach(ctx *fiber.Ctx) error {
+	_, hasAuth := ctx.Locals("acct").(*db.Acct)
+
 	var err error
 
 	postID := ctx.Query("id")
 	board := ctx.Query("board")
 
-	_, auth := util.GetPasswordFromSession(ctx)
-
-	if postID == "" || auth == "" {
+	if postID == "" || !hasAuth {
 		err = errors.New("missing postID or auth")
 		return util.MakeError(err, "BoardDeleteAttach")
 	}
@@ -273,14 +273,14 @@ func BoardDeleteAttach(ctx *fiber.Ctx) error {
 }
 
 func BoardMarkSensitive(ctx *fiber.Ctx) error {
+	_, hasAuth := ctx.Locals("acct").(*db.Acct)
+
 	var err error
 
 	postID := ctx.Query("id")
 	board := ctx.Query("board")
 
-	_, auth := util.GetPasswordFromSession(ctx)
-
-	if postID == "" || auth == "" {
+	if postID == "" || !hasAuth {
 		err = errors.New("missing postID or auth")
 		return util.MakeError(err, "BoardMarkSensitive")
 	}
@@ -311,7 +311,7 @@ func BoardMarkSensitive(ctx *fiber.Ctx) error {
 		actor.Id = col.OrderedItems[0].Actor
 	}
 
-	if has, _ := db.HasAuth(auth, actor.Id); !has {
+	if !hasAuth {
 		err = errors.New("actor does not have auth")
 		return util.MakeError(err, "BoardMarkSensitive")
 	}
@@ -344,13 +344,8 @@ func BoardAddToIndex(ctx *fiber.Ctx) error {
 }
 
 func BoardPopArchive(ctx *fiber.Ctx) error {
-	actor, err := activitypub.GetActorFromDB(config.Domain)
-
-	if err != nil {
-		return util.MakeError(err, "BoardPopArchive")
-	}
-
-	if has := actor.HasValidation(ctx); !has {
+	_, hasAuth := ctx.Locals("acct").(*db.Acct)
+	if !hasAuth {
 		return ctx.Status(404).Render("404", fiber.Map{})
 	}
 
@@ -367,13 +362,13 @@ func BoardPopArchive(ctx *fiber.Ctx) error {
 }
 
 func BoardAutoSubscribe(ctx *fiber.Ctx) error {
-	actor, err := activitypub.GetActorFromDB(config.Domain)
-
-	if err != nil {
-		return util.MakeError(err, "BoardAutoSubscribe")
+	_, hasAuth := ctx.Locals("acct").(*db.Acct)
+	if !hasAuth {
+		return ctx.Status(404).Render("404", fiber.Map{})
 	}
 
-	if has := actor.HasValidation(ctx); !has {
+	actor, err := activitypub.GetActorFromDB(config.Domain)
+	if err != nil {
 		return util.MakeError(err, "BoardAutoSubscribe")
 	}
 
@@ -397,13 +392,8 @@ func BoardAutoSubscribe(ctx *fiber.Ctx) error {
 }
 
 func BoardBlacklist(ctx *fiber.Ctx) error {
-	actor, err := activitypub.GetActorFromDB(config.Domain)
-
-	if err != nil {
-		return util.MakeError(err, "BoardBlacklist")
-	}
-
-	if has := actor.HasValidation(ctx); !has {
+	_, hasAuth := ctx.Locals("acct").(*db.Acct)
+	if !hasAuth {
 		return ctx.Status(404).Render("404", fiber.Map{})
 	}
 
@@ -439,23 +429,17 @@ func BoardBlacklist(ctx *fiber.Ctx) error {
 }
 
 func ReportPost(ctx *fiber.Ctx) error {
+	_, hasAuth := ctx.Locals("acct").(*db.Acct)
+
 	id := ctx.FormValue("id")
 	board := ctx.FormValue("board")
 	reason := ctx.FormValue("comment")
 	close := ctx.FormValue("close")
 
-	actor, err := activitypub.GetActorByNameFromDB(board)
-
-	if err != nil {
-		return util.MakeError(err, "BoardReport")
-	}
-	_, auth := util.GetPasswordFromSession(ctx)
-
 	var obj = activitypub.ObjectBase{Id: id}
 
 	if close == "1" {
-		if auth, err := db.HasAuth(auth, actor.Id); !auth {
-			config.Log.Println(err)
+		if !hasAuth {
 			return ctx.Status(404).Render("404", fiber.Map{
 				"message": "Something broke",
 			})
@@ -524,6 +508,7 @@ func ReportPost(ctx *fiber.Ctx) error {
 }
 
 func ReportGet(ctx *fiber.Ctx) error {
+	acct, _ := ctx.Locals("acct").(*db.Acct)
 	actor, _ := activitypub.GetActor(ctx.Query("actor"))
 
 	var data PageData
@@ -534,6 +519,7 @@ func ReportGet(ctx *fiber.Ctx) error {
 	data.Board.InReplyTo = ctx.Query("post")
 	data.Board.To = actor.Outbox
 	data.Board.Restricted = actor.Restricted
+	data.Acct = acct
 
 	capt, err := util.GetRandomCaptcha()
 
@@ -550,11 +536,10 @@ func ReportGet(ctx *fiber.Ctx) error {
 
 	data.Instance, err = activitypub.GetActorFromDB(config.Domain)
 
-	data.Themes = &config.Themes
-	data.ThemeCookie = GetThemeCookie(ctx)
+	data.Themes = config.Themes
+	data.ThemeCookie = themeCookie(ctx)
 
 	data.Key = config.Key
-	data.Board.ModCred, _ = util.GetPasswordFromSession(ctx)
 	data.Board.Domain = config.Domain
 	data.Boards = activitypub.Boards
 
@@ -562,14 +547,14 @@ func ReportGet(ctx *fiber.Ctx) error {
 }
 
 func Sticky(ctx *fiber.Ctx) error {
+	_, hasAuth := ctx.Locals("acct").(*db.Acct)
+
 	id := ctx.Query("id")
 	board := ctx.Query("board")
 
 	actor, _ := activitypub.GetActorByNameFromDB(board)
 
-	_, auth := util.GetPasswordFromSession(ctx)
-
-	if id == "" || auth == "" {
+	if id == "" || !hasAuth {
 		return util.MakeError(errors.New("no auth"), "Sticky")
 	}
 
@@ -577,7 +562,7 @@ func Sticky(ctx *fiber.Ctx) error {
 	col, _ := obj.GetCollectionFromPath()
 
 	if len(col.OrderedItems) < 1 {
-		if has, _ := db.HasAuth(auth, actor.Id); !has {
+		if !hasAuth {
 			return util.MakeError(errors.New("no auth"), "Sticky")
 		}
 
@@ -595,7 +580,7 @@ func Sticky(ctx *fiber.Ctx) error {
 		OP = id
 	}
 
-	if has, _ := db.HasAuth(auth, actor.Id); !has {
+	if !hasAuth {
 		return util.MakeError(errors.New("no auth"), "Sticky")
 	}
 
@@ -610,14 +595,14 @@ func Sticky(ctx *fiber.Ctx) error {
 }
 
 func Lock(ctx *fiber.Ctx) error {
+	_, hasAuth := ctx.Locals("acct").(*db.Acct)
+
 	id := ctx.Query("id")
 	board := ctx.Query("board")
 
 	actor, _ := activitypub.GetActorByNameFromDB(board)
 
-	_, auth := util.GetPasswordFromSession(ctx)
-
-	if id == "" || auth == "" {
+	if id == "" || !hasAuth {
 		return util.MakeError(errors.New("no auth"), "Lock")
 	}
 
@@ -625,7 +610,7 @@ func Lock(ctx *fiber.Ctx) error {
 	col, _ := obj.GetCollectionFromPath()
 
 	if len(col.OrderedItems) < 1 {
-		if has, _ := db.HasAuth(auth, actor.Id); !has {
+		if !hasAuth {
 			return util.MakeError(errors.New("no auth"), "Lock")
 		}
 
@@ -643,7 +628,7 @@ func Lock(ctx *fiber.Ctx) error {
 		OP = id
 	}
 
-	if has, _ := db.HasAuth(auth, actor.Id); !has {
+	if !hasAuth {
 		return util.MakeError(errors.New("no auth"), "Lock")
 	}
 

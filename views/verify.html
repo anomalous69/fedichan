@@ -6,10 +6,10 @@
   <body>
     <div style="width: 200px; margin: 0 auto;">
       <form action="/{{ .key }}/verify" method="post">
-        <label>Identifier</label>
-        <input type="text" id="identifier" name="id" required><br>
-        <label>Code</label>
-        <input type="text" id="verify" name="code" required><br>
+        <label>Username</label>
+        <input type="text" id="username" name="username" required><br>
+        <label>Password</label>
+        <input type="password" id="password" name="password" required><br>
         <input type="submit" value="Verify">
       </form>
     </div>

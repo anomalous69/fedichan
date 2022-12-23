@@ -796,13 +796,10 @@ func (actor Actor) GetReportedTotal() (int, error) {
 }
 
 func (actor Actor) HasValidation(ctx *fiber.Ctx) bool {
-	id, _ := util.GetPasswordFromSession(ctx)
-
-	if id == "" || (id != actor.Id && id != config.Domain) {
-		return false
-	}
-
-	return true
+	// TODO: Board-specific account permissions are not yet implemented
+	// Assume yes if acct exists.
+	a := ctx.Locals("acct")
+	return a != nil
 }
 
 func (actor Actor) IsAlreadyFollowing(follow string) (bool, error) {

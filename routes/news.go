@@ -13,6 +13,8 @@ import (
 )
 
 func NewsGet(ctx *fiber.Ctx) error {
+	acct, _ := ctx.Locals("acct").(*db.Acct)
+
 	timestamp := ctx.Path()[6:]
 	ts, err := strconv.Atoi(timestamp)
 
@@ -32,11 +34,11 @@ func NewsGet(ctx *fiber.Ctx) error {
 	data.Board.Name = ""
 	data.Key = config.Key
 	data.Board.Domain = config.Domain
-	data.Board.ModCred, _ = util.GetPasswordFromSession(ctx)
 	data.Board.Actor = actor
 	data.Board.Post.Actor = actor.Id
 	data.Board.Restricted = actor.Restricted
 	data.NewsItems = make([]db.NewsItem, 1)
+	data.Acct = acct
 
 	data.NewsItems[0], err = db.GetNewsItem(ts)
 	if err != nil {
@@ -49,13 +51,15 @@ func NewsGet(ctx *fiber.Ctx) error {
 	data.Meta.Url = data.Board.Actor.Id
 	data.Meta.Title = data.Title
 
-	data.Themes = &config.Themes
-	data.ThemeCookie = GetThemeCookie(ctx)
+	data.Themes = config.Themes
+	data.ThemeCookie = themeCookie(ctx)
 
 	return ctx.Render("news", fiber.Map{"page": data}, "layouts/main")
 }
 
 func NewsGetAll(ctx *fiber.Ctx) error {
+	acct, _ := ctx.Locals("acct").(*db.Acct)
+
 	actor, err := activitypub.GetActorFromDB(config.Domain)
 	if err != nil {
 		return util.MakeError(err, "NewsGetAll")
@@ -68,10 +72,10 @@ func NewsGetAll(ctx *fiber.Ctx) error {
 	data.Board.Name = ""
 	data.Key = config.Key
 	data.Board.Domain = config.Domain
-	data.Board.ModCred, _ = util.GetPasswordFromSession(ctx)
 	data.Board.Actor = actor
 	data.Board.Post.Actor = actor.Id
 	data.Board.Restricted = actor.Restricted
+	data.Acct = acct
 
 	data.NewsItems, err = db.GetNews(0)
 
@@ -87,8 +91,8 @@ func NewsGetAll(ctx *fiber.Ctx) error {
 	data.Meta.Url = data.Board.Actor.Id
 	data.Meta.Title = data.Title
 
-	data.Themes = &config.Themes
-	data.ThemeCookie = GetThemeCookie(ctx)
+	data.Themes = config.Themes
+	data.ThemeCookie = themeCookie(ctx)
 
 	return ctx.Render("anews", fiber.Map{"page": data}, "layouts/main")
 }

@@ -21,18 +21,14 @@ const SaltTable = "" +
 	"................................" +
 	"................................"
 
-func CreateNameTripCode(input, board, modcred string) (string, string, error) {
+func CreateNameTripCode(input string, a *Acct) (string, string, error) {
+	// TODO: Capcode support has been removed. Add it back in.
+
 	tripSecure := regexp.MustCompile("##(.+)?")
 
 	if tripSecure.MatchString(input) {
 		chunck := tripSecure.FindString(input)
 		chunck = strings.Replace(chunck, "##", "", 1)
-		ce := regexp.MustCompile(`(?i)Admin`)
-		admin := ce.MatchString(chunck)
-
-		if hasAuth, _ := HasAuth(modcred, board); hasAuth && admin {
-			return tripSecure.ReplaceAllString(input, ""), "#Admin", nil
-		}
 
 		hash, err := TripCodeSecure(chunck)
 
@@ -44,12 +40,6 @@ func CreateNameTripCode(input, board, modcred string) (string, string, error) {
 	if trip.MatchString(input) {
 		chunck := trip.FindString(input)
 		chunck = strings.Replace(chunck, "#", "", 1)
-		ce := regexp.MustCompile(`(?i)Admin`)
-		admin := ce.MatchString(chunck)
-
-		if hasAuth, _ := HasAuth(modcred, board); hasAuth && admin {
-			return trip.ReplaceAllString(input, ""), "#Admin", nil
-		}
 
 		hash, err := TripCode(chunck)
 		return trip.ReplaceAllString(input, ""), "!" + hash, wrapErr(err)

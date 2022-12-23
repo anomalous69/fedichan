@@ -2,6 +2,7 @@ package main
 
 import (
 	"math/rand"
+	"strings"
 	"time"
 
 	"github.com/KushBlazingJudah/fedichan/activitypub"
@@ -37,6 +38,32 @@ func main() {
 
 	app.Static("/static", "./views")
 	app.Static("/public", "./public")
+
+	// Authentication middleware
+	// Creates the `acct` local if the session is good
+	app.Use(func(ctx *fiber.Ctx) error {
+		cookie := ctx.Cookies("session")
+		var a db.Acct
+		var err error
+		if cookie == "" {
+			// Try Authorization header
+			cookie = ctx.Get("Authorization")
+			if cookie == "" || !strings.HasPrefix(cookie, "Bearer ") {
+				goto done
+			}
+			cookie = strings.TrimPrefix(cookie, "Bearer ")
+		}
+
+		a, err = db.LoginSession(cookie)
+		if err != nil {
+			// TODO: Drop cookie
+			goto done
+		}
+
+		ctx.Locals("acct", &a)
+	done:
+		return ctx.Next()
+	})
 
 	// Main actor
 	app.Get("/", routes.Index)
@@ -94,7 +121,9 @@ func main() {
 	app.Get("/:actor", routes.ActorPosts)
 	app.Get("/:actor/:post", routes.ActorPost)
 
-	db.PrintAdminAuth()
+	if err := db.PrintAdminAuth(); err != nil {
+		panic(err)
+	}
 
 	app.Listen(config.Port)
 }

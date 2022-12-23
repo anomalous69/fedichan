@@ -1,6 +1,7 @@
 {{ template "partials/top" .page }}
 
 {{ $board := .page.Board }}
+{{ $acct := .page.Acct }}
 
 <hr>
 <ul id="navlinks">
@@ -13,7 +14,7 @@
 {{ if .page.Posts }}
 <table align="center" style="table-layout:fixed; width:90%;">
   <tr>
-    {{ if eq $board.ModCred $board.Domain $board.Actor.Id }}
+    {{ if $acct }}
     <th style="width: 45px;"></th>
     {{ end }}
     <th style="width: 110px">No.</th>
@@ -23,7 +24,7 @@
   {{ range $i, $e := .page.Posts }}
   {{ if mod $i 2 }}
   <tr class="box-alt">
-    {{ if eq $board.ModCred $board.Domain $board.Actor.Id }}
+    {{ if $acct }}
     <td>[<a href="/poparchive?id={{ $e.Id }}&board={{ $board.Name }}">Pop</a>]</td>
     {{ end }}
     <td>{{ shortURL $board.Actor.Outbox $e.Id }}</td>
@@ -32,7 +33,7 @@
   </tr>
   {{ else }}
   <tr class="box">
-    {{ if eq $board.ModCred $board.Domain $board.Actor.Id }}
+    {{ if $acct }}
     <td>[<a href="/poparchive?id={{ $e.Id }}">Pop</a>]</td>
     {{ end }}
     <td>{{ shortURL $board.Actor.Outbox $e.Id }}</td>

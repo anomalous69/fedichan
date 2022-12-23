@@ -1,4 +1,5 @@
 {{ $board := .Board }}
+{{ $acct := .Acct }}
 {{ $len := len .Posts }}
 {{ $page := . }}
 {{ range .Posts }}
@@ -9,11 +10,11 @@
 {{ end }}
 <div style="overflow: auto;">
   <div id="{{ shortURL $board.Actor.Outbox .Id }}" style="overflow: visible; margin-bottom: 12px;">
-    {{ if eq $board.ModCred $board.Domain $board.Actor.Id }}
+    {{ if $acct }}
     [<a href="/delete?id={{ .Id }}&board={{ $board.Actor.Name }}">Delete Post</a>]
     {{ end }}
     {{ if .Attachment }}
-    {{ if eq $board.ModCred $board.Domain $board.Actor.Id }}
+    {{ if $acct }}
     [<a href="/banmedia?id={{ .Id }}&board={{ $board.Actor.Name }}">Ban Media</a>]
     [<a href="/deleteattach?id={{ .Id }}&board={{ $board.Actor.Name }}">Delete Attachment</a>]
     [<a href="/marksensitive?id={{ .Id }}&board={{ $board.Actor.Name }}">Mark Sensitive</a>]
@@ -64,11 +65,11 @@
       <div  style="display: inline-block; overflow: auto;">
         <div style="float: left; display: block; margin-right: 5px;">&gt;&gt;</div>
         <div class="post" style="overflow: auto; padding: 5px; margin-bottom: 2px;">
-          {{ if eq $board.ModCred $board.Domain $board.Actor.Id }}
+          {{ if $acct }}
           [<a href="/delete?id={{ .Id }}&board={{ $board.Actor.Name }}">Delete Post</a>]
           {{ end }}
           {{ if and (gt (len .Attachment) 0) (index .Attachment 0).Id }}
-          {{ if eq $board.ModCred $board.Domain $board.Actor.Id }}
+          {{ if $acct }}
           [<a href="/banmedia?id={{ .Id }}&board={{ $board.Actor.Name }}">Ban Media</a>]
           [<a href="/deleteattach?id={{ .Id }}&board={{ $board.Actor.Name }}">Delete Attachment</a>]
           [<a href="/marksensitive?id={{ .Id }}&board={{ $board.Actor.Name }}">Mark Sensitive</a>]

@@ -15,29 +15,22 @@ import (
 )
 
 func AdminVerify(ctx *fiber.Ctx) error {
-	identifier := ctx.FormValue("id")
-	code := ctx.FormValue("code")
+	user := ctx.FormValue("username")
+	pass := ctx.FormValue("password")
 
-	// TODO: Drop this down to a username/password system like how it is
-	// literally everywhere else, I think.
-	// This doesn't make sense at all.
-	// Why is it looking for details by what I assume is the fucking password?
-
-	v, err := db.GetVerificationByCode(code)
-	if err != nil {
-		// TODO: Invalid username or password
-		return err
+	if !db.CheckPassword(user, pass) {
+		return ctx.Status(400).SendString("invalid username or password")
 	}
 
-	if v.Identifier != identifier {
-		// This route only makes sense because of the identifier/code nonsense
-		_, err = ctx.Status(500).WriteString("identifier mismatch")
+	a := db.Acct{Username: user}
+	s, err := a.Session()
+	if err != nil {
 		return err
 	}
 
 	ctx.Cookie(&fiber.Cookie{
-		Name:    "session_token",
-		Value:   v.Board + "|" + v.Code,
+		Name:    "session",
+		Value:   s,
 		Expires: time.Now().UTC().Add(60 * 60 * 48 * time.Second),
 	})
 
@@ -45,14 +38,14 @@ func AdminVerify(ctx *fiber.Ctx) error {
 }
 
 func AdminIndex(ctx *fiber.Ctx) error {
-	id, _ := util.GetPasswordFromSession(ctx)
+	acct, hasAuth := ctx.Locals("acct").(*db.Acct)
 	actor, _ := activitypub.GetActorFromPath(ctx.Path(), "/"+config.Key+"/")
 
 	if actor.Id == "" {
 		actor, _ = activitypub.GetActorByNameFromDB(config.Domain)
 	}
 
-	if id == "" || (id != actor.Id && id != config.Domain) {
+	if !hasAuth {
 		return ctx.Render("verify", fiber.Map{"key": config.Key})
 	}
 
@@ -101,7 +94,7 @@ func AdminIndex(ctx *fiber.Ctx) error {
 	adminData.Actor = actor.Id
 	adminData.Key = config.Key
 	adminData.Domain = config.Domain
-	adminData.Board.ModCred, _ = util.GetPasswordFromSession(ctx)
+	adminData.Acct = acct
 	adminData.Title = actor.Name + " Admin page"
 
 	adminData.Boards = activitypub.Boards
@@ -116,7 +109,7 @@ func AdminIndex(ctx *fiber.Ctx) error {
 	adminData.Meta.Url = adminData.Board.Actor.Id
 	adminData.Meta.Title = adminData.Title
 
-	adminData.Themes = &config.Themes
+	adminData.Themes = config.Themes
 
 	return ctx.Render("admin", fiber.Map{
 		"page":    adminData,
@@ -198,21 +191,20 @@ func AdminAddBoard(ctx *fiber.Ctx) error {
 }
 
 func AdminActorIndex(ctx *fiber.Ctx) error {
+	acct, hasAuth := ctx.Locals("acct").(*db.Acct)
 	var data AdminPage
 
-	id, pass := util.GetPasswordFromSession(ctx)
 	actor, _ := activitypub.GetActorFromPath(ctx.Path(), "/"+config.Key+"/")
 
 	if actor.Id == "" {
 		actor, _ = activitypub.GetActorByNameFromDB(config.Domain)
 	}
 
-	var hasAuth bool
-	hasAuth, data.Board.ModCred = db.HasAuth(pass, actor.Id)
-
-	if !hasAuth || (id != actor.Id && id != config.Domain) {
+	if !hasAuth {
 		return ctx.Render("verify", fiber.Map{"key": config.Key})
 	}
+
+	data.Acct = acct
 
 	reqActivity := activitypub.Activity{Id: actor.Following}
 	follow, _ := reqActivity.GetCollection()
@@ -270,10 +262,10 @@ func AdminActorIndex(ctx *fiber.Ctx) error {
 	data.Meta.Url = data.Board.Actor.Id
 	data.Meta.Title = data.Title
 
-	data.Themes = &config.Themes
+	data.Themes = config.Themes
 
 	data.RecentPosts, _ = actor.GetRecentPosts()
-	data.ThemeCookie = GetThemeCookie(ctx)
+	data.ThemeCookie = themeCookie(ctx)
 
 	return ctx.Render("manage", fiber.Map{
 		"page":    data,
@@ -283,16 +275,14 @@ func AdminActorIndex(ctx *fiber.Ctx) error {
 }
 
 func AdminAddJanny(ctx *fiber.Ctx) error {
-	id, pass := util.GetPasswordFromSession(ctx)
+	acct, hasAuth := ctx.Locals("acct").(*db.Acct)
 	actor, _ := activitypub.GetActorFromPath(ctx.Path(), "/"+config.Key+"/")
 
 	if actor.Id == "" {
 		actor, _ = activitypub.GetActorByNameFromDB(config.Domain)
 	}
 
-	hasAuth, _type := db.HasAuth(pass, actor.Id)
-
-	if !hasAuth || _type != "admin" || (id != actor.Id && id != config.Domain) {
+	if !hasAuth || acct.Type != db.Admin {
 		return util.MakeError(errors.New("Error"), "AdminJanny")
 	}
 
@@ -318,16 +308,14 @@ func AdminAddJanny(ctx *fiber.Ctx) error {
 }
 
 func AdminEditSummary(ctx *fiber.Ctx) error {
-	id, pass := util.GetPasswordFromSession(ctx)
+	acct, hasAuth := ctx.Locals("acct").(*db.Acct)
 	actor, _ := activitypub.GetActorFromPath(ctx.Path(), "/"+config.Key+"/")
 
 	if actor.Id == "" {
 		actor, _ = activitypub.GetActorByNameFromDB(config.Domain)
 	}
 
-	hasAuth, _type := db.HasAuth(pass, actor.Id)
-
-	if !hasAuth || _type != "admin" || (id != actor.Id && id != config.Domain) {
+	if !hasAuth || acct.Type != db.Admin {
 		return util.MakeError(errors.New("Error"), "AdminEditSummary")
 	}
 
@@ -348,16 +336,14 @@ func AdminEditSummary(ctx *fiber.Ctx) error {
 }
 
 func AdminDeleteJanny(ctx *fiber.Ctx) error {
-	id, pass := util.GetPasswordFromSession(ctx)
+	acct, hasAuth := ctx.Locals("acct").(*db.Acct)
 	actor, _ := activitypub.GetActorFromPath(ctx.Path(), "/"+config.Key+"/")
 
 	if actor.Id == "" {
 		actor, _ = activitypub.GetActorByNameFromDB(config.Domain)
 	}
 
-	hasAuth, _type := db.HasAuth(pass, actor.Id)
-
-	if !hasAuth || _type != "admin" || (id != actor.Id && id != config.Domain) {
+	if !hasAuth || acct.Type != db.Admin {
 		return util.MakeError(errors.New("Error"), "AdminJanny")
 	}
 

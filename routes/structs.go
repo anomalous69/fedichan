@@ -6,34 +6,39 @@ import (
 	"github.com/KushBlazingJudah/fedichan/util"
 )
 
-type PageData struct {
-	Title             string
-	PreferredUsername string
-	Board             activitypub.Board
-	Pages             []int
-	CurrentPage       int
-	TotalPage         int
-	Boards            []activitypub.Board
-	Posts             []activitypub.ObjectBase
-	Key               string
-	PostId            string
-	Instance          activitypub.Actor
-	ReturnTo          string
-	NewsItems         []db.NewsItem
-	BoardRemainer     []int
-	Meta              Meta
-	PostType          string
+type common struct {
+	Title    string
+	Board    activitypub.Board
+	Boards   []activitypub.Board
+	Instance activitypub.Actor
+	Meta     Meta
+	Acct     *db.Acct
 
-	Themes      *[]string
+	Themes      []string
 	ThemeCookie string
 }
 
+type PageData struct {
+	common
+
+	PreferredUsername string
+	Pages             []int
+	CurrentPage       int
+	TotalPage         int
+	Posts             []activitypub.ObjectBase
+	Key               string
+	PostId            string
+	ReturnTo          string
+	NewsItems         []db.NewsItem
+	BoardRemainer     []int
+	PostType          string
+}
+
 type AdminPage struct {
-	Title         string
-	Board         activitypub.Board
+	common
+
 	Key           string
 	Actor         string
-	Boards        []activitypub.Board
 	Following     []string
 	Followers     []string
 	Domain        string
@@ -41,11 +46,6 @@ type AdminPage struct {
 	PostBlacklist []util.PostBlacklist
 	AutoSubscribe bool
 	RecentPosts   []activitypub.ObjectBase
-	Instance      activitypub.Actor
-	Meta          Meta
-
-	Themes      *[]string
-	ThemeCookie string
 }
 
 type Meta struct {

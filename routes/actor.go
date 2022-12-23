@@ -188,7 +188,7 @@ func ActorFollowers(ctx *fiber.Ctx) error {
 }
 
 func MakeActorPost(ctx *fiber.Ctx) error {
-	pw, _ := util.GetPasswordFromSession(ctx)
+	acct, reg := ctx.Locals("acct").(*db.Acct)
 
 	header, _ := ctx.FormFile("file")
 
@@ -242,7 +242,7 @@ func MakeActorPost(ctx *fiber.Ctx) error {
 	}
 
 	// Waive captcha for authenticated users, otherwise complain
-	if pw == "" && ctx.FormValue("captcha") == "" {
+	if !reg && ctx.FormValue("captcha") == "" {
 		return ctx.Render("403", fiber.Map{
 			"message": "Incorrect Captcha",
 		})
@@ -281,8 +281,7 @@ func MakeActorPost(ctx *fiber.Ctx) error {
 				return util.MakeError(err, "ActorPost")
 			}
 		} else if key == "name" {
-			board, modcred := util.GetPasswordFromSession(ctx)
-			name, tripcode, _ := db.CreateNameTripCode(ctx.FormValue("name"), board, modcred)
+			name, tripcode, _ := db.CreateNameTripCode(ctx.FormValue("name"), acct)
 
 			err := we.WriteField(key, name)
 			if err != nil {
@@ -320,7 +319,7 @@ func MakeActorPost(ctx *fiber.Ctx) error {
 	}
 
 	req.Header.Set("Content-Type", we.FormDataContentType())
-	if c := ctx.Cookies("session_token"); c != "" {
+	if c := ctx.Cookies("session"); c != "" {
 		// This is a hack to pass through the token while we still make
 		// requests to the outbox
 		req.Header.Set("Authorization", "Bearer "+c)
@@ -364,6 +363,7 @@ func MakeActorPost(ctx *fiber.Ctx) error {
 }
 
 func ActorPost(ctx *fiber.Ctx) error {
+	acct, hasAuth := ctx.Locals("acct").(*db.Acct)
 	actor, err := activitypub.GetActorByNameFromDB(ctx.Params("actor"))
 
 	if err != nil {
@@ -409,9 +409,9 @@ func ActorPost(ctx *fiber.Ctx) error {
 	data.Board.To = actor.Outbox
 	data.Board.Actor = actor
 	data.Board.Summary = actor.Summary
-	data.Board.ModCred, _ = util.GetPasswordFromSession(ctx)
 	data.Board.Domain = config.Domain
 	data.Board.Restricted = actor.Restricted
+	data.Acct = acct
 	data.ReturnTo = "feed"
 	data.PostType = "reply"
 
@@ -420,7 +420,7 @@ func ActorPost(ctx *fiber.Ctx) error {
 	}
 
 	// Ignore captcha if we're authenticated
-	if data.Board.ModCred != data.Board.Domain && data.Board.ModCred != data.Board.Actor.Id {
+	if !hasAuth {
 		capt, err := util.GetRandomCaptcha()
 		if err != nil {
 			return util.MakeError(err, "OutboxGet")
@@ -448,8 +448,8 @@ func ActorPost(ctx *fiber.Ctx) error {
 		}
 	}
 
-	data.Themes = &config.Themes
-	data.ThemeCookie = GetThemeCookie(ctx)
+	data.Themes = config.Themes
+	data.ThemeCookie = themeCookie(ctx)
 
 	return ctx.Render("npost", fiber.Map{
 		"page": data,
@@ -457,6 +457,7 @@ func ActorPost(ctx *fiber.Ctx) error {
 }
 
 func ActorCatalog(ctx *fiber.Ctx) error {
+	acct, hasAuth := ctx.Locals("acct").(*db.Acct)
 	actorName := ctx.Params("actor")
 	actor, err := activitypub.GetActorByNameFromDB(actorName)
 
@@ -477,9 +478,9 @@ func ActorCatalog(ctx *fiber.Ctx) error {
 	data.Board.To = actor.Outbox
 	data.Board.Actor = actor
 	data.Board.Summary = actor.Summary
-	data.Board.ModCred, _ = util.GetPasswordFromSession(ctx)
 	data.Board.Domain = config.Domain
 	data.Board.Restricted = actor.Restricted
+	data.Acct = acct
 	data.Key = config.Key
 	data.ReturnTo = "catalog"
 	data.PostType = "new"
@@ -492,7 +493,7 @@ func ActorCatalog(ctx *fiber.Ctx) error {
 	}
 
 	// Ignore captcha if we're authenticated
-	if data.Board.ModCred != data.Board.Domain && data.Board.ModCred != data.Board.Actor.Id {
+	if !hasAuth {
 		capt, err := util.GetRandomCaptcha()
 		if err != nil {
 			return util.MakeError(err, "OutboxGet")
@@ -510,8 +511,8 @@ func ActorCatalog(ctx *fiber.Ctx) error {
 	data.Meta.Url = data.Board.Actor.Id
 	data.Meta.Title = data.Title
 
-	data.Themes = &config.Themes
-	data.ThemeCookie = GetThemeCookie(ctx)
+	data.Themes = config.Themes
+	data.ThemeCookie = themeCookie(ctx)
 
 	return ctx.Render("catalog", fiber.Map{
 		"page": data,
@@ -519,6 +520,7 @@ func ActorCatalog(ctx *fiber.Ctx) error {
 }
 
 func ActorPosts(ctx *fiber.Ctx) error {
+	acct, hasAuth := ctx.Locals("acct").(*db.Acct)
 	actor, err := activitypub.GetActorByNameFromDB(ctx.Params("actor"))
 
 	if err != nil {
@@ -561,9 +563,9 @@ func ActorPosts(ctx *fiber.Ctx) error {
 	data.Board.InReplyTo = ""
 	data.Board.To = actor.Outbox
 	data.Board.Actor = actor
-	data.Board.ModCred, _ = util.GetPasswordFromSession(ctx)
 	data.Board.Domain = config.Domain
 	data.Board.Restricted = actor.Restricted
+	data.Acct = acct
 	data.CurrentPage = page
 	data.ReturnTo = "feed"
 	data.PostType = "new"
@@ -571,7 +573,7 @@ func ActorPosts(ctx *fiber.Ctx) error {
 	data.Board.Post.Actor = actor.Id
 
 	// Ignore captcha if we're authenticated
-	if data.Board.ModCred != data.Board.Domain && data.Board.ModCred != data.Board.Actor.Id {
+	if !hasAuth {
 		capt, err := util.GetRandomCaptcha()
 		if err != nil {
 			return util.MakeError(err, "OutboxGet")
@@ -594,8 +596,8 @@ func ActorPosts(ctx *fiber.Ctx) error {
 	data.Meta.Url = data.Board.Actor.Id
 	data.Meta.Title = data.Title
 
-	data.Themes = &config.Themes
-	data.ThemeCookie = GetThemeCookie(ctx)
+	data.Themes = config.Themes
+	data.ThemeCookie = themeCookie(ctx)
 
 	return ctx.Render("nposts", fiber.Map{
 		"page": data,
@@ -603,6 +605,7 @@ func ActorPosts(ctx *fiber.Ctx) error {
 }
 
 func ActorArchive(ctx *fiber.Ctx) error {
+	acct, _ := ctx.Locals("acct").(*db.Acct)
 	actorName := ctx.Params("actor")
 	actor, err := activitypub.GetActorByNameFromDB(actorName)
 
@@ -623,9 +626,9 @@ func ActorArchive(ctx *fiber.Ctx) error {
 	returnData.Board.To = actor.Outbox
 	returnData.Board.Actor = actor
 	returnData.Board.Summary = actor.Summary
-	returnData.Board.ModCred, _ = util.GetPasswordFromSession(ctx)
 	returnData.Board.Domain = config.Domain
 	returnData.Board.Restricted = actor.Restricted
+	returnData.Acct = acct
 	returnData.Key = config.Key
 	returnData.ReturnTo = "archive"
 
@@ -650,8 +653,8 @@ func ActorArchive(ctx *fiber.Ctx) error {
 	returnData.Meta.Url = returnData.Board.Actor.Id
 	returnData.Meta.Title = returnData.Title
 
-	returnData.Themes = &config.Themes
-	returnData.ThemeCookie = GetThemeCookie(ctx)
+	returnData.Themes = config.Themes
+	returnData.ThemeCookie = themeCookie(ctx)
 
 	return ctx.Render("archive", fiber.Map{
 		"page": returnData,

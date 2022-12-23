@@ -9,8 +9,6 @@ import (
 	"time"
 
 	"github.com/KushBlazingJudah/fedichan/config"
-	"github.com/gofiber/fiber/v2"
-	_ "github.com/lib/pq"
 )
 
 // Captcha is temporarily broken while I sort out import cycles
@@ -134,25 +132,6 @@ func DeleteCaptchaCode(verify string) error {
 
 	err = os.Remove("./" + verify)
 	return MakeError(err, "DeleteCaptchaCode")
-}
-
-func GetPasswordFromSession(ctx *fiber.Ctx) (string, string) {
-	cookie := ctx.Cookies("session_token")
-	if cookie == "" {
-		// Try Authorization header
-		cookie = ctx.Get("Authorization")
-		if cookie == "" || !strings.HasPrefix(cookie, "Bearer ") {
-			return "", ""
-		}
-		cookie = strings.TrimPrefix(cookie, "Bearer ")
-	}
-	parts := strings.Split(cookie, "|")
-
-	if len(parts) > 1 {
-		return parts[0], parts[1]
-	}
-
-	return "", ""
 }
 
 func MakeCaptchas(total int) error {
