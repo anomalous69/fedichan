@@ -60,7 +60,6 @@ func main() {
 	// Admin routes
 	app.All("/"+config.Key+"/", routes.AdminIndex)
 	app.Post("/"+config.Key+"/verify", routes.AdminVerify)
-	app.Post("/"+config.Key+"/auth", routes.AdminAuth)
 	app.All("/"+config.Key+"/follow", routes.AdminFollow)
 	app.Post("/"+config.Key+"/addboard", routes.AdminAddBoard)
 	app.Post("/"+config.Key+"/newspost", routes.NewsPost)

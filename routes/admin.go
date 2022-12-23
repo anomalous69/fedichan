@@ -1,10 +1,7 @@
 package routes
 
 import (
-	"bytes"
-	"encoding/json"
 	"errors"
-	"io"
 	"net/http"
 	"regexp"
 	"sort"
@@ -21,66 +18,30 @@ func AdminVerify(ctx *fiber.Ctx) error {
 	identifier := ctx.FormValue("id")
 	code := ctx.FormValue("code")
 
-	var verify util.Verify
-	verify.Identifier = identifier
-	verify.Code = code
+	// TODO: Drop this down to a username/password system like how it is
+	// literally everywhere else, I think.
+	// This doesn't make sense at all.
+	// Why is it looking for details by what I assume is the fucking password?
 
-	j, _ := json.Marshal(&verify)
-
-	req, err := http.NewRequest("POST", config.Domain+"/"+config.Key+"/auth", bytes.NewBuffer(j))
-
+	v, err := util.GetVerificationByCode(code)
 	if err != nil {
-		return util.MakeError(err, "AdminVerify")
+		// TODO: Invalid username or password
+		return err
 	}
 
-	req.Header.Set("Content-Type", config.ActivityStreams)
-
-	resp, err := http.DefaultClient.Do(req)
-
-	if err != nil {
-		return util.MakeError(err, "AdminVerify")
-	}
-
-	defer resp.Body.Close()
-
-	rBody, _ := io.ReadAll(resp.Body)
-
-	body := string(rBody)
-
-	if resp.StatusCode != 200 {
-		return ctx.Redirect("/", http.StatusPermanentRedirect)
+	if v.Identifier != identifier {
+		// This route only makes sense because of the identifier/code nonsense
+		_, err = ctx.Status(500).WriteString("identifier mismatch")
+		return err
 	}
 
 	ctx.Cookie(&fiber.Cookie{
 		Name:    "session_token",
-		Value:   body + "|" + verify.Code,
+		Value:   v.Board + "|" + v.Code,
 		Expires: time.Now().UTC().Add(60 * 60 * 48 * time.Second),
 	})
 
 	return ctx.Redirect("/", http.StatusSeeOther)
-}
-
-// TODO remove this route it is mostly unneeded
-func AdminAuth(ctx *fiber.Ctx) error {
-	var verify util.Verify
-
-	err := json.Unmarshal(ctx.Body(), &verify)
-
-	if err != nil {
-		return util.MakeError(err, "AdminAuth")
-	}
-
-	v, _ := util.GetVerificationByCode(verify.Code)
-
-	if v.Identifier == verify.Identifier {
-		_, err := ctx.Write([]byte(v.Board))
-		return util.MakeError(err, "AdminAuth")
-	}
-
-	ctx.Response().Header.SetStatusCode(http.StatusBadRequest)
-	_, err = ctx.Write([]byte(""))
-
-	return util.MakeError(err, "AdminAuth")
 }
 
 func AdminIndex(ctx *fiber.Ctx) error {
