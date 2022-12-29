@@ -22,13 +22,13 @@ func ActorInbox(ctx *fiber.Ctx) error {
 	activity, err := activitypub.GetActivityFromJson(ctx)
 
 	if err != nil {
-		return util.MakeError(err, "ActorInbox")
+		return util.WrapError(err)
 	}
 
 	if activity.Actor.PublicKey.Id == "" {
 		nActor, err := activitypub.FingerActor(activity.Actor.Id)
 		if err != nil {
-			return util.MakeError(err, "ActorInbox")
+			return util.WrapError(err)
 		}
 
 		activity.Actor = &nActor
@@ -44,18 +44,18 @@ func ActorInbox(ctx *fiber.Ctx) error {
 		for _, e := range activity.To {
 			actor := activitypub.Actor{Id: e}
 			if err := actor.ProcessInboxCreate(activity); err != nil {
-				return util.MakeError(err, "ActorInbox")
+				return util.WrapError(err)
 			}
 
 			if err := actor.SendToFollowers(activity); err != nil {
-				return util.MakeError(err, "ActorInbox")
+				return util.WrapError(err)
 			}
 		}
 
 		for _, e := range activity.Cc {
 			actor := activitypub.Actor{Id: e}
 			if err := actor.ProcessInboxCreate(activity); err != nil {
-				return util.MakeError(err, "ActorInbox")
+				return util.WrapError(err)
 			}
 		}
 	case "Delete":
@@ -63,24 +63,24 @@ func ActorInbox(ctx *fiber.Ctx) error {
 			actor, err := activitypub.GetActorFromDB(e)
 			if err != nil {
 				continue // try again
-				// return util.MakeError(err, "ActorInbox")
+				// return util.WrapError(err)
 			}
 
 			if actor.Id != "" && actor.Id != config.Domain {
 				if activity.Object.Replies != nil {
 					for _, k := range activity.Object.Replies.OrderedItems {
 						if err := k.Tombstone(); err != nil {
-							return util.MakeError(err, "ActorInbox")
+							return util.WrapError(err)
 						}
 					}
 				}
 
 				if err := activity.Object.Tombstone(); err != nil {
-					return util.MakeError(err, "ActorInbox")
+					return util.WrapError(err)
 				}
 
 				if err := actor.UnArchiveLast(); err != nil {
-					return util.MakeError(err, "ActorInbox")
+					return util.WrapError(err)
 				}
 				break
 			}
@@ -93,30 +93,30 @@ func ActorInbox(ctx *fiber.Ctx) error {
 				response, err := response.SetActorFollower()
 
 				if err != nil {
-					return util.MakeError(err, "ActorInbox")
+					return util.WrapError(err)
 				}
 
 				if err := response.MakeRequestInbox(); err != nil {
-					return util.MakeError(err, "ActorInbox")
+					return util.WrapError(err)
 				}
 
 				alreadyFollowing, err := response.Actor.IsAlreadyFollowing(response.Object.Id)
 
 				if err != nil {
-					return util.MakeError(err, "ActorInbox")
+					return util.WrapError(err)
 				}
 
 				objActor, err := activitypub.FingerActor(response.Object.Actor)
 
 				if err != nil || objActor.Id == "" {
-					return util.MakeError(err, "ActorInbox")
+					return util.WrapError(err)
 				}
 
 				reqActivity := activitypub.Activity{Id: objActor.Following}
 				remoteActorFollowingCol, err := reqActivity.GetCollection()
 
 				if err != nil {
-					return util.MakeError(err, "ActorInbox")
+					return util.WrapError(err)
 				}
 
 				alreadyFollow := false
@@ -130,22 +130,22 @@ func ActorInbox(ctx *fiber.Ctx) error {
 				autoSub, err := response.Actor.GetAutoSubscribe()
 
 				if err != nil {
-					return util.MakeError(err, "ActorInbox")
+					return util.WrapError(err)
 				}
 
 				if autoSub && !alreadyFollow && alreadyFollowing {
 					followActivity, err := response.Actor.MakeFollowActivity(response.Object.Actor)
 
 					if err != nil {
-						return util.MakeError(err, "ActorInbox")
+						return util.WrapError(err)
 					}
 
 					if err := followActivity.MakeRequestOutbox(); err != nil {
-						return util.MakeError(err, "ActorInbox")
+						return util.WrapError(err)
 					}
 				}
 			} else if err != nil {
-				return util.MakeError(err, "ActorInbox")
+				return util.WrapError(err)
 			} else {
 				config.Log.Println("follow request for rejected")
 				response := activity.Reject()
@@ -156,7 +156,7 @@ func ActorInbox(ctx *fiber.Ctx) error {
 		if activity.Object.Object.Type == "Follow" {
 			config.Log.Println("follow rejected")
 			if _, err := activity.SetActorFollowing(); err != nil {
-				return util.MakeError(err, "ActorInbox")
+				return util.WrapError(err)
 			}
 		}
 	}
@@ -167,7 +167,7 @@ func PostActorOutbox(ctx *fiber.Ctx) error {
 	//var activity activitypub.Activity
 	actor, err := activitypub.GetActorFromPath(ctx.Path(), "/")
 	if err != nil {
-		return util.MakeError(err, "ActorOutbox")
+		return util.WrapError(err)
 	}
 
 	if activitypub.AcceptActivity(ctx.Get("Accept")) {
@@ -257,12 +257,12 @@ func MakeActorPost(ctx *fiber.Ctx) error {
 		fw, err := we.CreateFormFile("file", header.Filename)
 
 		if err != nil {
-			return util.MakeError(err, "ActorPost")
+			return util.WrapError(err)
 		}
 		_, err = io.Copy(fw, file)
 
 		if err != nil {
-			return util.MakeError(err, "ActorPost")
+			return util.WrapError(err)
 		}
 	}
 
@@ -271,31 +271,31 @@ func MakeActorPost(ctx *fiber.Ctx) error {
 	form, _ := ctx.MultipartForm()
 
 	if form.Value == nil {
-		return util.MakeError(errors.New("form value nil"), "ActorPost")
+		return util.WrapError(errors.New("form value nil"))
 	}
 
 	for key, r0 := range form.Value {
 		if key == "captcha" {
 			err := we.WriteField(key, ctx.FormValue("captchaCode")+":"+ctx.FormValue("captcha"))
 			if err != nil {
-				return util.MakeError(err, "ActorPost")
+				return util.WrapError(err)
 			}
 		} else if key == "name" {
 			name, tripcode, _ := db.CreateNameTripCode(ctx.FormValue("name"), acct)
 
 			err := we.WriteField(key, name)
 			if err != nil {
-				return util.MakeError(err, "ActorPost")
+				return util.WrapError(err)
 			}
 
 			err = we.WriteField("tripcode", tripcode)
 			if err != nil {
-				return util.MakeError(err, "ActorPost")
+				return util.WrapError(err)
 			}
 		} else {
 			err := we.WriteField(key, r0[0])
 			if err != nil {
-				return util.MakeError(err, "ActorPost")
+				return util.WrapError(err)
 			}
 		}
 	}
@@ -303,7 +303,7 @@ func MakeActorPost(ctx *fiber.Ctx) error {
 	if (ctx.FormValue("inReplyTo") == "" || ctx.FormValue("inReplyTo") == "NaN") && reply != "" {
 		err := we.WriteField("inReplyTo", reply)
 		if err != nil {
-			return util.MakeError(err, "ActorPost")
+			return util.WrapError(err)
 		}
 	}
 
@@ -315,7 +315,7 @@ func MakeActorPost(ctx *fiber.Ctx) error {
 
 	req, err := http.NewRequest("POST", sendTo, &b)
 	if err != nil {
-		return util.MakeError(err, "ActorPost")
+		return util.WrapError(err)
 	}
 
 	req.Header.Set("Content-Type", we.FormDataContentType())
@@ -327,13 +327,13 @@ func MakeActorPost(ctx *fiber.Ctx) error {
 
 	resp, err := util.RouteProxy(req)
 	if err != nil {
-		return util.MakeError(err, "ActorPost")
+		return util.WrapError(err)
 	}
 	defer resp.Body.Close()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return util.MakeError(err, "ActorPost")
+		return util.WrapError(err)
 	}
 
 	if resp.StatusCode == 200 {
@@ -423,7 +423,7 @@ func ActorPost(ctx *fiber.Ctx) error {
 	if !hasAuth {
 		capt, err := util.GetRandomCaptcha()
 		if err != nil {
-			return util.MakeError(err, "OutboxGet")
+			return util.WrapError(err)
 		}
 		data.Board.Captcha = config.Domain + "/" + capt
 		data.Board.CaptchaCode, _ = util.GetCaptchaCode(data.Board.Captcha)
@@ -431,7 +431,7 @@ func ActorPost(ctx *fiber.Ctx) error {
 
 	data.Instance, err = activitypub.GetActorFromDB(config.Domain)
 	if err != nil {
-		return util.MakeError(err, "PostGet")
+		return util.WrapError(err)
 	}
 
 	data.Key = config.Key
@@ -460,13 +460,13 @@ func ActorCatalog(ctx *fiber.Ctx) error {
 	actor, err := activitypub.GetActorByNameFromDB(actorName)
 
 	if err != nil {
-		return util.MakeError(err, "ActorCatalog")
+		return util.WrapError(err)
 	}
 
 	collection, err := actor.GetCatalogCollection()
 
 	if err != nil {
-		return util.MakeError(err, "ActorCatalog")
+		return util.WrapError(err)
 	}
 
 	var data PageData
@@ -487,14 +487,14 @@ func ActorCatalog(ctx *fiber.Ctx) error {
 
 	data.Instance, err = activitypub.GetActorFromDB(config.Domain)
 	if err != nil {
-		return util.MakeError(err, "CatalogGet")
+		return util.WrapError(err)
 	}
 
 	// Ignore captcha if we're authenticated
 	if !hasAuth {
 		capt, err := util.GetRandomCaptcha()
 		if err != nil {
-			return util.MakeError(err, "OutboxGet")
+			return util.WrapError(err)
 		}
 		data.Board.Captcha = config.Domain + "/" + capt
 		data.Board.CaptchaCode, _ = util.GetCaptchaCode(data.Board.Captcha)
@@ -531,13 +531,13 @@ func ActorPosts(ctx *fiber.Ctx) error {
 	var page int
 	if postNum := ctx.Query("page"); postNum != "" {
 		if page, err = strconv.Atoi(postNum); err != nil {
-			return util.MakeError(err, "OutboxGet")
+			return util.WrapError(err)
 		}
 	}
 
 	collection, err := actor.WantToServePage(page)
 	if err != nil {
-		return util.MakeError(err, "OutboxGet")
+		return util.WrapError(err)
 	}
 
 	var offset = 15
@@ -572,7 +572,7 @@ func ActorPosts(ctx *fiber.Ctx) error {
 	if !hasAuth {
 		capt, err := util.GetRandomCaptcha()
 		if err != nil {
-			return util.MakeError(err, "OutboxGet")
+			return util.WrapError(err)
 		}
 		data.Board.Captcha = config.Domain + "/" + capt
 		data.Board.CaptchaCode, _ = util.GetCaptchaCode(data.Board.Captcha)
@@ -604,13 +604,13 @@ func ActorArchive(ctx *fiber.Ctx) error {
 	actor, err := activitypub.GetActorByNameFromDB(actorName)
 
 	if err != nil {
-		return util.MakeError(err, "ActorArchive")
+		return util.WrapError(err)
 	}
 
 	collection, err := actor.GetCollectionType("Archive")
 
 	if err != nil {
-		return util.MakeError(err, "ActorArchive")
+		return util.WrapError(err)
 	}
 
 	var returnData PageData
@@ -632,7 +632,7 @@ func ActorArchive(ctx *fiber.Ctx) error {
 
 	capt, err := util.GetRandomCaptcha()
 	if err != nil {
-		return util.MakeError(err, "ActorArchive")
+		return util.WrapError(err)
 	}
 	returnData.Board.Captcha = config.Domain + "/" + capt
 	returnData.Board.CaptchaCode, _ = util.GetCaptchaCode(returnData.Board.Captcha)

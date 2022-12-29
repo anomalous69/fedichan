@@ -24,7 +24,7 @@ type Signature struct {
 func CreatePem(actor Actor) error {
 	privatekey, err := rsa.GenerateKey(crand.Reader, 2048)
 	if err != nil {
-		return util.MakeError(err, "CreatePem")
+		return util.WrapError(err)
 	}
 
 	privateKeyBytes := x509.MarshalPKCS1PrivateKey(privatekey)
@@ -36,17 +36,17 @@ func CreatePem(actor Actor) error {
 
 	privatePem, err := os.Create("./pem/board/" + actor.Name + "-private.pem")
 	if err != nil {
-		return util.MakeError(err, "CreatePem")
+		return util.WrapError(err)
 	}
 
 	if err := pem.Encode(privatePem, privateKeyBlock); err != nil {
-		return util.MakeError(err, "CreatePem")
+		return util.WrapError(err)
 	}
 
 	publickey := &privatekey.PublicKey
 	publicKeyBytes, err := x509.MarshalPKIXPublicKey(publickey)
 	if err != nil {
-		return util.MakeError(err, "CreatePem")
+		return util.WrapError(err)
 	}
 
 	publicKeyBlock := &pem.Block{
@@ -56,16 +56,16 @@ func CreatePem(actor Actor) error {
 
 	publicPem, err := os.Create("./pem/board/" + actor.Name + "-public.pem")
 	if err != nil {
-		return util.MakeError(err, "CreatePem")
+		return util.WrapError(err)
 	}
 
 	if err := pem.Encode(publicPem, publicKeyBlock); err != nil {
-		return util.MakeError(err, "CreatePem")
+		return util.WrapError(err)
 	}
 
 	_, err = os.Stat("./pem/board/" + actor.Name + "-public.pem")
 	if os.IsNotExist(err) {
-		return util.MakeError(err, "CreatePem")
+		return util.WrapError(err)
 	} else {
 		return StorePemToDB(actor)
 	}
@@ -80,7 +80,7 @@ so DO NOT LOSE IT!!! If you lose it, YOU WILL LOSE ACCESS TO YOUR BOARD!`)
 func CreatePublicKeyFromPrivate(actor *Actor, publicKeyPem string) error {
 	publicFilename, err := GetActorPemFileFromDB(publicKeyPem)
 	if err != nil {
-		return util.MakeError(err, "CreatePublicKeyFromPrivate")
+		return util.WrapError(err)
 	}
 
 	privateFilename := strings.ReplaceAll(publicFilename, "public.pem", "private.pem")
@@ -88,7 +88,7 @@ func CreatePublicKeyFromPrivate(actor *Actor, publicKeyPem string) error {
 		// Not a lost cause
 		priv, err := os.ReadFile(privateFilename)
 		if err != nil {
-			return util.MakeError(err, "CreatePublicKeyFromPrivate")
+			return util.WrapError(err)
 		}
 
 		block, _ := pem.Decode([]byte(priv))
@@ -98,12 +98,12 @@ func CreatePublicKeyFromPrivate(actor *Actor, publicKeyPem string) error {
 
 		key, err := x509.ParsePKCS1PrivateKey(block.Bytes)
 		if err != nil {
-			return util.MakeError(err, "CreatePublicKeyFromPrivate")
+			return util.WrapError(err)
 		}
 
 		publicKeyDer, err := x509.MarshalPKIXPublicKey(&key.PublicKey)
 		if err != nil {
-			return util.MakeError(err, "CreatePublicKeyFromPrivate")
+			return util.WrapError(err)
 		}
 
 		pubKeyBlock := pem.Block{
@@ -114,11 +114,11 @@ func CreatePublicKeyFromPrivate(actor *Actor, publicKeyPem string) error {
 
 		publicFileWriter, err := os.Create(publicFilename)
 		if err != nil {
-			return util.MakeError(err, "CreatePublicKeyFromPrivate")
+			return util.WrapError(err)
 		}
 
 		if err := pem.Encode(publicFileWriter, &pubKeyBlock); err != nil {
-			return util.MakeError(err, "CreatePublicKeyFromPrivate")
+			return util.WrapError(err)
 		}
 	} else {
 		config.Log.Println(`\nUnable to locate private key from public key generation. Now,
@@ -139,14 +139,14 @@ func GetActorPemFromDB(pemID string) (*PublicKeyPem, error) {
 	query := `select id, owner, file from publickeypem where id=$1`
 
 	if err := config.DB.QueryRow(query, pemID).Scan(&pem.Id, &pem.Owner, &pem.PublicKeyPem); err != nil {
-		return nil, util.MakeError(err, "GetActorPemFromDB")
+		return nil, util.WrapError(err)
 	}
 
 	dir, _ := os.Getwd()
 	dir = dir + "" + strings.Replace(pem.PublicKeyPem, ".", "", 1)
 	f, err := os.ReadFile(dir)
 	if err != nil {
-		return pem, util.MakeError(err, "GetActorPemFromDB")
+		return pem, util.WrapError(err)
 	}
 
 	pem.PublicKeyPem = strings.ReplaceAll(string(f), "\r\n", `\n`)
@@ -158,7 +158,7 @@ func GetActorPemFileFromDB(pemID string) (string, error) {
 	query := `select file from publickeypem where id=$1`
 	rows, err := config.DB.Query(query, pemID)
 	if err != nil {
-		return "", util.MakeError(err, "GetActorPemFileFromDB")
+		return "", util.WrapError(err)
 	}
 
 	defer rows.Close()
@@ -174,7 +174,7 @@ func StorePemToDB(actor Actor) error {
 	query := "select publicKeyPem from actor where id=$1"
 	rows, err := config.DB.Query(query, actor.Id)
 	if err != nil {
-		return util.MakeError(err, "StorePemToDB")
+		return util.WrapError(err)
 	}
 
 	defer rows.Close()
@@ -190,13 +190,13 @@ func StorePemToDB(actor Actor) error {
 	publicKeyPem := actor.Id + "#main-key"
 	query = "update actor set publicKeyPem=$1 where id=$2"
 	if _, err := config.DB.Exec(query, publicKeyPem, actor.Id); err != nil {
-		return util.MakeError(err, "StorePemToDB")
+		return util.WrapError(err)
 	}
 
 	file := "./pem/board/" + actor.Name + "-public.pem"
 	query = "insert into publicKeyPem (id, owner, file) values($1, $2, $3)"
 	_, err = config.DB.Exec(query, publicKeyPem, actor.Id, file)
-	return util.MakeError(err, "StorePemToDB")
+	return util.WrapError(err)
 }
 
 func ParseHeaderSignature(signature string) Signature {

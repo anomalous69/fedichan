@@ -47,7 +47,7 @@ func RouteProxy(req *http.Request) (*http.Response, error) {
 		proxyUrl, err := url.Parse("socks5://" + config.TorProxy)
 
 		if err != nil {
-			return nil, MakeError(err, "RouteProxy")
+			return nil, WrapError(err)
 		}
 
 		proxyTransport := &http.Transport{Proxy: http.ProxyURL(proxyUrl)}

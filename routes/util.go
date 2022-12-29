@@ -30,18 +30,18 @@ func GetActorPost(ctx *fiber.Ctx, path string) error {
 
 	if err != nil {
 		ctx.Status(404)
-		return util.MakeError(err, "GetActorPost")
+		return util.WrapError(err)
 	}
 
 	if len(collection.OrderedItems) > 0 {
 		enc, err := json.MarshalIndent(collection, "", "\t")
 		if err != nil {
-			return util.MakeError(err, "GetActorPost")
+			return util.WrapError(err)
 		}
 
 		ctx.Response().Header.Set("Content-Type", "application/ld+json; profile=\"https://www.w3.org/ns/activitystreams\"")
 		_, err = ctx.Write(enc)
-		return util.MakeError(err, "GetActorPost")
+		return util.WrapError(err)
 	}
 
 	return nil
@@ -54,7 +54,7 @@ func ParseOutboxRequest(ctx *fiber.Ctx, actor activitypub.Actor) error {
 	if contentType == "multipart/form-data" || contentType == "application/x-www-form-urlencoded" {
 		valid, err := util.CheckCaptcha(ctx.FormValue("captcha"))
 		if err != nil {
-			return util.MakeError(err, "ParseOutboxRequest")
+			return util.WrapError(err)
 		}
 
 		if waiveCaptcha || valid {
@@ -64,24 +64,24 @@ func ParseOutboxRequest(ctx *fiber.Ctx, actor activitypub.Actor) error {
 				defer f.Close()
 				if header.Size > (7 << 20) {
 					_, err := ctx.Status(403).Write([]byte("7MB max file size"))
-					return util.MakeError(err, "ParseOutboxRequest")
+					return util.WrapError(err)
 				} else if isBanned, err := db.IsMediaBanned(f); err == nil && isBanned {
 					config.Log.Println("media banned")
 					_, err := ctx.Status(403).Write([]byte(""))
-					return util.MakeError(err, "ParseOutboxRequest")
+					return util.WrapError(err)
 				}
 
 				contentType, _ := util.GetFileContentType(f)
 
 				if !util.SupportedMIMEType(contentType) {
 					_, err := ctx.Status(403).Write([]byte("file type not supported"))
-					return util.MakeError(err, "ParseOutboxRequest")
+					return util.WrapError(err)
 				}
 			}
 
 			nObj, err := ObjectFromForm(ctx, activitypub.CreateObject("Note"))
 			if err != nil {
-				return util.MakeError(err, "ParseOutboxRequest")
+				return util.WrapError(err)
 			}
 
 			nObj.Actor = config.Domain + "/" + actor.Name
@@ -89,17 +89,17 @@ func ParseOutboxRequest(ctx *fiber.Ctx, actor activitypub.Actor) error {
 			if locked, _ := nObj.InReplyTo[0].IsLocked(); locked {
 				ctx.Response().Header.SetStatusCode(403)
 				_, err := ctx.Write([]byte("thread is locked"))
-				return util.MakeError(err, "ParseOutboxRequest")
+				return util.WrapError(err)
 			}
 
 			nObj, err = nObj.Write()
 			if err != nil {
-				return util.MakeError(err, "ParseOutboxRequest")
+				return util.WrapError(err)
 			}
 
 			if len(nObj.To) == 0 {
 				if err := actor.ArchivePosts(); err != nil {
-					return util.MakeError(err, "ParseOutboxRequest")
+					return util.WrapError(err)
 				}
 			}
 
@@ -138,21 +138,21 @@ func ParseOutboxRequest(ctx *fiber.Ctx, actor activitypub.Actor) error {
 			}
 
 			_, err = ctx.Status(200).Write([]byte(id))
-			return util.MakeError(err, "ParseOutboxRequest")
+			return util.WrapError(err)
 		}
 
 		_, err = ctx.Status(403).Write([]byte("captcha could not auth"))
-		return util.MakeError(err, "")
+		return util.WrapError(err)
 	} else { // json request
 		activity, err := activitypub.GetActivityFromJson(ctx)
 		if err != nil {
-			return util.MakeError(err, "ParseOutboxRequest")
+			return util.WrapError(err)
 		}
 
 		if res, _ := activity.IsLocal(); res {
 			if res := activity.Actor.VerifyHeaderSignature(ctx); err == nil && !res {
 				_, err = ctx.Status(403).Write([]byte(""))
-				return util.MakeError(err, "ParseOutboxRequest")
+				return util.WrapError(err)
 			}
 
 			switch activity.Type {
@@ -170,11 +170,11 @@ func ParseOutboxRequest(ctx *fiber.Ctx, actor activitypub.Actor) error {
 					rActivity, err = rActivity.SetActorFollowing()
 
 					if err != nil {
-						return util.MakeError(err, "ParseOutboxRequest")
+						return util.WrapError(err)
 					}
 
 					if err := activity.MakeRequestInbox(); err != nil {
-						return util.MakeError(err, "ParseOutboxRequest")
+						return util.WrapError(err)
 					}
 				}
 
@@ -182,13 +182,13 @@ func ParseOutboxRequest(ctx *fiber.Ctx, actor activitypub.Actor) error {
 				activitypub.FollowingBoards, err = actor.GetFollowing()
 
 				if err != nil {
-					return util.MakeError(err, "ParseOutboxRequest")
+					return util.WrapError(err)
 				}
 
 				activitypub.Boards, err = activitypub.GetBoardCollection()
 
 				if err != nil {
-					return util.MakeError(err, "ParseOutboxRequest")
+					return util.WrapError(err)
 				}
 
 			case "Delete":
@@ -205,7 +205,7 @@ func ParseOutboxRequest(ctx *fiber.Ctx, actor activitypub.Actor) error {
 
 				actor, err := db.CreateNewBoard(*activitypub.CreateNewActor(name, prefname, summary, config.AuthReq, restricted))
 				if err != nil {
-					return util.MakeError(err, "ParseOutboxRequest")
+					return util.WrapError(err)
 				}
 
 				if actor.Id != "" {
@@ -228,7 +228,7 @@ func ParseOutboxRequest(ctx *fiber.Ctx, actor activitypub.Actor) error {
 
 					activitypub.FollowingBoards = board
 					activitypub.Boards, err = activitypub.GetBoardCollection()
-					return util.MakeError(err, "ParseOutboxRequest")
+					return util.WrapError(err)
 				}
 
 				_, err = ctx.Status(403).Write([]byte(""))
@@ -238,14 +238,14 @@ func ParseOutboxRequest(ctx *fiber.Ctx, actor activitypub.Actor) error {
 			}
 
 			if err != nil {
-				return util.MakeError(err, "ParseOutboxRequest")
+				return util.WrapError(err)
 			}
 		} else if err != nil {
-			return util.MakeError(err, "ParseOutboxRequest")
+			return util.WrapError(err)
 		} else {
 			config.Log.Println("is NOT activity")
 			_, err = ctx.Status(403).Write([]byte("could not process activity"))
-			return util.MakeError(err, "ParseOutboxRequest")
+			return util.WrapError(err)
 		}
 	}
 
@@ -376,7 +376,7 @@ func ObjectFromForm(ctx *fiber.Ctx, obj activitypub.ObjectBase) (activitypub.Obj
 		obj.Attachment, tempFile, err = activitypub.CreateAttachmentObject(file, header)
 
 		if err != nil {
-			return obj, util.MakeError(err, "ObjectFromForm")
+			return obj, util.WrapError(err)
 		}
 
 		defer tempFile.Close()
@@ -391,7 +391,7 @@ func ObjectFromForm(ctx *fiber.Ctx, obj activitypub.ObjectBase) (activitypub.Obj
 			cmd := exec.Command("exiv2", "rm", "."+fileLoc)
 
 			if err := cmd.Run(); err != nil {
-				return obj, util.MakeError(err, "ObjectFromForm")
+				return obj, util.WrapError(err)
 			}
 		}
 
@@ -425,14 +425,14 @@ func ObjectFromForm(ctx *fiber.Ctx, obj activitypub.ObjectBase) (activitypub.Obj
 				}
 			}
 		} else if err != nil {
-			return obj, util.MakeError(err, "ObjectFromForm")
+			return obj, util.WrapError(err)
 		}
 	}
 
 	replyingTo, err := db.ParseCommentForReplies(ctx.FormValue("comment"), originalPost.Id)
 
 	if err != nil {
-		return obj, util.MakeError(err, "ObjectFromForm")
+		return obj, util.WrapError(err)
 	}
 
 	for _, e := range replyingTo {
@@ -455,7 +455,7 @@ func ObjectFromForm(ctx *fiber.Ctx, obj activitypub.ObjectBase) (activitypub.Obj
 			if local, _ := activity.IsLocal(); !local {
 				actor, err := activitypub.FingerActor(e.Id)
 				if err != nil {
-					return obj, util.MakeError(err, "ObjectFromForm")
+					return obj, util.WrapError(err)
 				}
 
 				if !util.IsInStringArray(obj.To, actor.Id) {

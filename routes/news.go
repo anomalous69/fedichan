@@ -25,7 +25,7 @@ func NewsGet(ctx *fiber.Ctx) error {
 	actor, err := activitypub.GetActorFromDB(config.Domain)
 
 	if err != nil {
-		return util.MakeError(err, "NewsGet")
+		return util.WrapError(err)
 	}
 
 	var data PageData
@@ -42,7 +42,7 @@ func NewsGet(ctx *fiber.Ctx) error {
 
 	data.NewsItems[0], err = db.GetNewsItem(ts)
 	if err != nil {
-		return util.MakeError(err, "NewsGet")
+		return util.WrapError(err)
 	}
 
 	data.Title = actor.PreferredUsername + ": " + data.NewsItems[0].Title
@@ -62,7 +62,7 @@ func NewsGetAll(ctx *fiber.Ctx) error {
 
 	actor, err := activitypub.GetActorFromDB(config.Domain)
 	if err != nil {
-		return util.MakeError(err, "NewsGetAll")
+		return util.WrapError(err)
 	}
 
 	var data PageData
@@ -80,7 +80,7 @@ func NewsGetAll(ctx *fiber.Ctx) error {
 	data.NewsItems, err = db.GetNews(0)
 
 	if err != nil {
-		return util.MakeError(err, "NewsGetAll")
+		return util.WrapError(err)
 	}
 
 	if len(data.NewsItems) == 0 {
@@ -101,7 +101,7 @@ func NewsPost(ctx *fiber.Ctx) error {
 	actor, err := activitypub.GetActorFromDB(config.Domain)
 
 	if err != nil {
-		return util.MakeError(err, "NewPost")
+		return util.WrapError(err)
 	}
 
 	if has := actor.HasValidation(ctx); !has {
@@ -114,7 +114,7 @@ func NewsPost(ctx *fiber.Ctx) error {
 	newsitem.Content = template.HTML(ctx.FormValue("summary"))
 
 	if err := db.WriteNews(newsitem); err != nil {
-		return util.MakeError(err, "NewPost")
+		return util.WrapError(err)
 	}
 
 	return ctx.Redirect("/", http.StatusSeeOther)
@@ -136,7 +136,7 @@ func NewsDelete(ctx *fiber.Ctx) error {
 	}
 
 	if err := db.DeleteNewsItem(tsint); err != nil {
-		return util.MakeError(err, "NewsDelete")
+		return util.WrapError(err)
 	}
 
 	return ctx.Redirect("/news/", http.StatusSeeOther)

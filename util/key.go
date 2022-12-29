@@ -3,7 +3,6 @@ package util
 import (
 	"crypto/sha512"
 	"encoding/hex"
-	"errors"
 	"math/rand"
 	"strings"
 )
@@ -13,7 +12,7 @@ const domain = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 func CreateKey(len int) (string, error) {
 	// TODO: provided that CreateTripCode still uses sha512, the max len can be 128 at most.
 	if len > 128 {
-		return "", MakeError(errors.New("len is greater than 128"), "CreateKey")
+		panic("len > 128")
 	}
 
 	str := CreateTripCode(RandomID(len))

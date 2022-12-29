@@ -1,6 +1,8 @@
 package routes
 
 import (
+	"errors"
+
 	"github.com/KushBlazingJudah/fedichan/activitypub"
 	"github.com/KushBlazingJudah/fedichan/config"
 	"github.com/KushBlazingJudah/fedichan/db"
@@ -8,12 +10,14 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
+var ErrNoAuth = errors.New("not authenticated")
+
 func Index(ctx *fiber.Ctx) error {
 	acct, _ := ctx.Locals("acct").(*db.Acct)
 
 	actor, err := activitypub.GetActorFromDB(config.Domain)
 	if err != nil {
-		return util.MakeError(err, "Index")
+		return util.WrapError(err)
 	}
 
 	// this is a activitpub json request return json instead of html page
@@ -26,7 +30,7 @@ func Index(ctx *fiber.Ctx) error {
 
 	data.NewsItems, err = db.GetNews(3)
 	if err != nil {
-		return util.MakeError(err, "Index")
+		return util.WrapError(err)
 	}
 
 	data.Title = "Welcome to " + actor.PreferredUsername
@@ -67,7 +71,7 @@ func Outbox(ctx *fiber.Ctx) error {
 	actor, err := activitypub.GetActorFromPath(ctx.Path(), "/")
 
 	if err != nil {
-		return util.MakeError(err, "Outbox")
+		return util.WrapError(err)
 	}
 
 	if activitypub.AcceptActivity(ctx.Get("Accept")) {

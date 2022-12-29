@@ -59,14 +59,14 @@ func CreateNewCaptcha() error {
 	cmd.Stderr = os.Stderr
 
 	if err := cmd.Run(); err != nil {
-		return MakeError(err, "CreateNewCaptcha")
+		return WrapError(err)
 	}
 
 	cmd = exec.Command("convert", file, "-fill", "blue", "-pointsize", "62", "-annotate", "+0+70", captcha, "-tile", "pattern:left30", "-gravity", "center", "-transparent", "white", file)
 	cmd.Stderr = os.Stderr
 
 	if err := cmd.Run(); err != nil {
-		return MakeError(err, "CreateNewCaptcha")
+		return WrapError(err)
 	}
 
 	rnd = fmt.Sprintf("%d", rand.Intn(24)-12)
@@ -74,7 +74,7 @@ func CreateNewCaptcha() error {
 	cmd.Stderr = os.Stderr
 
 	if err := cmd.Run(); err != nil {
-		return MakeError(err, "CreateNewCaptcha")
+		return WrapError(err)
 	}
 
 	/*
@@ -94,7 +94,7 @@ func GetRandomCaptcha() (string, error) {
 
 	query := `select identifier from verification where type='captcha' order by random() limit 1`
 	if err := config.DB.QueryRow(query).Scan(&verify); err != nil {
-		return verify, MakeError(err, "GetRandomCaptcha")
+		return verify, WrapError(err)
 	}
 
 	return verify, nil
@@ -105,7 +105,7 @@ func GetCaptchaTotal() (int, error) {
 
 	query := `select count(*) from verification where type='captcha'`
 	if err := config.DB.QueryRow(query).Scan(&count); err != nil {
-		return count, MakeError(err, "GetCaptchaTotal")
+		return count, WrapError(err)
 	}
 
 	return count, nil
@@ -116,7 +116,7 @@ func GetCaptchaCode(verify string) (string, error) {
 
 	query := `select code from verification where identifier=$1 limit 1`
 	if err := config.DB.QueryRow(query, verify).Scan(&code); err != nil {
-		return code, MakeError(err, "GetCaptchaCodeDB")
+		return code, WrapError(err)
 	}
 
 	return code, nil
@@ -127,25 +127,25 @@ func DeleteCaptchaCode(verify string) error {
 	_, err := config.DB.Exec(query, verify)
 
 	if err != nil {
-		return MakeError(err, "DeleteCaptchaCode")
+		return WrapError(err)
 	}
 
 	err = os.Remove("./" + verify)
-	return MakeError(err, "DeleteCaptchaCode")
+	return WrapError(err)
 }
 
 func MakeCaptchas(total int) error {
 	dbtotal, err := GetCaptchaTotal()
 
 	if err != nil {
-		return MakeError(err, "MakeCaptchas")
+		return WrapError(err)
 	}
 
 	difference := total - dbtotal
 
 	for i := 0; i < difference; i++ {
 		if err := CreateNewCaptcha(); err != nil {
-			return MakeError(err, "MakeCaptchas")
+			return WrapError(err)
 		}
 	}
 
@@ -163,18 +163,18 @@ func CheckCaptcha(captcha string) (bool, error) {
 	code, err := GetCaptchaCode(path)
 
 	if err != nil {
-		return false, MakeError(err, "")
+		return false, WrapError(err)
 	}
 
 	if code != "" {
 		err = DeleteCaptchaCode(path)
 		if err != nil {
-			return false, MakeError(err, "")
+			return false, WrapError(err)
 		}
 
 		err = CreateNewCaptcha()
 		if err != nil {
-			return false, MakeError(err, "")
+			return false, WrapError(err)
 		}
 
 	}

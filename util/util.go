@@ -3,7 +3,6 @@ package util
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"errors"
 	"fmt"
 	"mime/multipart"
 	"net/http"
@@ -196,7 +195,7 @@ func GetFileContentType(out multipart.File) (string, error) {
 	_, err := out.Read(buffer)
 
 	if err != nil {
-		return "", MakeError(err, "GetFileContentType")
+		return "", WrapError(err)
 	}
 
 	out.Seek(0, 0)
@@ -218,13 +217,13 @@ func GetContentType(location string) string {
 func CreatedNeededDirectories() error {
 	if _, err := os.Stat("./public"); os.IsNotExist(err) {
 		if err = os.Mkdir("./public", 0755); err != nil {
-			return MakeError(err, "CreatedNeededDirectories")
+			return WrapError(err)
 		}
 	}
 
 	if _, err := os.Stat("./pem/board"); os.IsNotExist(err) {
 		if err = os.MkdirAll("./pem/board", 0700); err != nil {
-			return MakeError(err, "CreatedNeededDirectories")
+			return WrapError(err)
 		}
 	}
 
@@ -235,7 +234,7 @@ func LoadThemes() error {
 	themes, err := os.ReadDir("./views/css/themes")
 
 	if err != nil {
-		MakeError(err, "LoadThemes")
+		WrapError(err)
 	}
 
 	for _, f := range themes {
@@ -247,11 +246,14 @@ func LoadThemes() error {
 	return nil
 }
 
-func MakeError(err error, msg string) error {
+func WrapError(err error) error {
 	if err != nil {
-		_, _, line, _ := runtime.Caller(1)
-		s := fmt.Sprintf("%s:%d : %s", msg, line, err.Error())
-		return errors.New(s)
+		pc, file, line, _ := runtime.Caller(1)
+		fn := runtime.FuncForPC(pc)
+		name := fn.Name()
+		name = name[strings.LastIndex(name, ".")+1:]
+
+		return fmt.Errorf("%s:%d:%s() %v", file, line, name, err)
 	}
 
 	return nil

@@ -15,7 +15,7 @@ func DeleteRegexBlacklist(id int) error {
 	query := `delete from postblacklist where id=$1`
 	_, err := config.DB.Exec(query, id)
 
-	return MakeError(err, "DeleteRegexBlacklist")
+	return WrapError(err)
 }
 
 func GetRegexBlacklist() ([]PostBlacklist, error) {
@@ -25,7 +25,7 @@ func GetRegexBlacklist() ([]PostBlacklist, error) {
 	rows, err := config.DB.Query(query)
 
 	if err != nil {
-		return list, MakeError(err, "GetRegexBlacklist")
+		return list, WrapError(err)
 	}
 
 	defer rows.Close()
@@ -43,7 +43,7 @@ func IsPostBlacklist(comment string) (bool, error) {
 	postblacklist, err := GetRegexBlacklist()
 
 	if err != nil {
-		return false, MakeError(err, "IsPostBlacklist")
+		return false, WrapError(err)
 	}
 
 	for _, e := range postblacklist {
@@ -64,7 +64,7 @@ func WriteRegexBlacklist(regex string) error {
 	if err := config.DB.QueryRow(query, regex).Scan(&re); err != nil {
 		query = `insert into postblacklist (regex) values ($1)`
 		_, err := config.DB.Exec(query, regex)
-		return MakeError(err, "WriteRegexBlacklist")
+		return WrapError(err)
 	}
 
 	return nil

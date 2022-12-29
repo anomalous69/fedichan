@@ -19,13 +19,13 @@ func (obj ObjectBase) WantToCache(actor Actor) (bool, error) {
 	objFollowers, err := reqActivity.GetCollection()
 
 	if err != nil {
-		return false, util.MakeError(err, "WantToCache")
+		return false, util.WrapError(err)
 	}
 
 	actorFollowing, err := actor.GetFollowing()
 
 	if err != nil {
-		return false, util.MakeError(err, "WantToCache")
+		return false, util.WrapError(err)
 	}
 
 	isOP, _ := obj.CheckIfOP()
@@ -50,7 +50,7 @@ func (obj ObjectBase) CreateActivity(activityType string) (Activity, error) {
 
 	actor, err := FingerActor(obj.Actor)
 	if err != nil {
-		return newActivity, util.MakeError(err, "CreateActivity")
+		return newActivity, util.WrapError(err)
 	}
 
 	newActivity.AtContext.Context = "https://www.w3.org/ns/activitystreams"
@@ -136,12 +136,12 @@ func (obj ObjectBase) DeleteAndRepliesRequest() error {
 	activity, err := obj.CreateActivity("Delete")
 
 	if err != nil {
-		return util.MakeError(err, "DeleteAndRepliesRequest")
+		return util.WrapError(err)
 	}
 
 	nObj, err := obj.GetCollectionFromPath()
 	if err != nil {
-		return util.MakeError(err, "DeleteAndRepliesRequest")
+		return util.WrapError(err)
 	}
 
 	activity.Actor.Id = nObj.OrderedItems[0].Actor
@@ -150,7 +150,7 @@ func (obj ObjectBase) DeleteAndRepliesRequest() error {
 	followers, err := objActor.GetFollower()
 
 	if err != nil {
-		return util.MakeError(err, "DeleteAndRepliesRequest")
+		return util.WrapError(err)
 	}
 	for _, e := range followers {
 		activity.To = append(activity.To, e.Id)
@@ -158,7 +158,7 @@ func (obj ObjectBase) DeleteAndRepliesRequest() error {
 
 	following, err := objActor.GetFollowing()
 	if err != nil {
-		return util.MakeError(err, "DeleteAndRepliesRequest")
+		return util.WrapError(err)
 	}
 
 	for _, e := range following {
@@ -169,19 +169,19 @@ func (obj ObjectBase) DeleteAndRepliesRequest() error {
 
 	err = activity.MakeRequestInbox()
 
-	return util.MakeError(err, "DeleteAndRepliesRequest")
+	return util.WrapError(err)
 }
 
 // TODO break this off into seperate for Cache
 func (obj ObjectBase) DeleteAttachment() error {
 	query := `delete from activitystream where id in (select attachment from activitystream where id=$1)`
 	if _, err := config.DB.Exec(query, obj.Id); err != nil {
-		return util.MakeError(err, "DeleteAttachment")
+		return util.WrapError(err)
 	}
 
 	query = `delete from cacheactivitystream where id in (select attachment from cacheactivitystream where id=$1)`
 	_, err := config.DB.Exec(query, obj.Id)
-	return util.MakeError(err, "DeleteAttachment")
+	return util.WrapError(err)
 }
 
 func (obj ObjectBase) DeleteAttachmentFromFile() error {
@@ -208,13 +208,13 @@ func (obj ObjectBase) DeletePreview() error {
 	query := `delete from activitystream where id=$1`
 
 	if _, err := config.DB.Exec(query, obj.Id); err != nil {
-		return util.MakeError(err, "DeletePreview")
+		return util.WrapError(err)
 	}
 
 	query = `delete from cacheactivitystream where id in (select preview from cacheactivitystream where id=$1)`
 
 	_, err := config.DB.Exec(query, obj.Id)
-	return util.MakeError(err, "")
+	return util.WrapError(err)
 }
 
 func (obj ObjectBase) DeletePreviewFromFile() error {
@@ -238,27 +238,27 @@ func (obj ObjectBase) DeletePreviewFromFile() error {
 
 func (obj ObjectBase) DeleteAll() error {
 	if err := obj.DeleteReported(); err != nil {
-		return util.MakeError(err, "DeleteAll")
+		return util.WrapError(err)
 	}
 
 	if err := obj.DeleteAttachmentFromFile(); err != nil {
-		return util.MakeError(err, "DeleteAll")
+		return util.WrapError(err)
 	}
 
 	if err := obj.DeleteAttachment(); err != nil {
-		return util.MakeError(err, "DeleteAll")
+		return util.WrapError(err)
 	}
 
 	if err := obj.DeletePreviewFromFile(); err != nil {
-		return util.MakeError(err, "DeleteAll")
+		return util.WrapError(err)
 	}
 
 	if err := obj.DeletePreview(); err != nil {
-		return util.MakeError(err, "DeleteAll")
+		return util.WrapError(err)
 	}
 
 	if err := obj.Delete(); err != nil {
-		return util.MakeError(err, "DeleteAll")
+		return util.WrapError(err)
 	}
 
 	return obj.DeleteRepliedTo()
@@ -268,43 +268,43 @@ func (obj ObjectBase) DeleteAll() error {
 func (obj ObjectBase) Delete() error {
 	query := `delete from activitystream where id=$1`
 	if _, err := config.DB.Exec(query, obj.Id); err != nil {
-		return util.MakeError(err, "Delete")
+		return util.WrapError(err)
 	}
 
 	query = `delete from cacheactivitystream where id=$1`
 	_, err := config.DB.Exec(query, obj.Id)
-	return util.MakeError(err, "Delete")
+	return util.WrapError(err)
 }
 
 func (obj ObjectBase) DeleteInReplyTo() error {
 	query := `delete from replies where id in (select id from replies where inreplyto=$1)`
 	_, err := config.DB.Exec(query, obj.Id)
-	return util.MakeError(err, "DeleteInReplyTo")
+	return util.WrapError(err)
 }
 
 func (obj ObjectBase) DeleteRepliedTo() error {
 	query := `delete from replies where id=$1`
 	_, err := config.DB.Exec(query, obj.Id)
-	return util.MakeError(err, "DeleteRepliedTo")
+	return util.WrapError(err)
 }
 
 func (obj ObjectBase) DeleteRequest() error {
 	activity, err := obj.CreateActivity("Delete")
 
 	if err != nil {
-		return util.MakeError(err, "DeleteRequest")
+		return util.WrapError(err)
 	}
 
 	nObj, err := obj.GetFromPath()
 
 	if err != nil {
-		return util.MakeError(err, "DeleteRequest")
+		return util.WrapError(err)
 	}
 
 	actor, err := FingerActor(nObj.Actor)
 
 	if err != nil {
-		return util.MakeError(err, "DeleteRequest")
+		return util.WrapError(err)
 	}
 
 	activity.Actor = &actor
@@ -312,7 +312,7 @@ func (obj ObjectBase) DeleteRequest() error {
 	followers, err := objActor.GetFollower()
 
 	if err != nil {
-		return util.MakeError(err, "DeleteRequest")
+		return util.WrapError(err)
 	}
 
 	for _, e := range followers {
@@ -321,7 +321,7 @@ func (obj ObjectBase) DeleteRequest() error {
 
 	following, err := objActor.GetFollowing()
 	if err != nil {
-		return util.MakeError(err, "DeleteRequest")
+		return util.WrapError(err)
 	}
 
 	for _, e := range following {
@@ -332,14 +332,14 @@ func (obj ObjectBase) DeleteRequest() error {
 
 	err = activity.MakeRequestInbox()
 
-	return util.MakeError(err, "DeleteRequest")
+	return util.WrapError(err)
 }
 
 func (obj ObjectBase) DeleteReported() error {
 	query := `delete from reported where id=$1`
 	_, err := config.DB.Exec(query, obj.Id)
 
-	return util.MakeError(err, "DeleteReported")
+	return util.WrapError(err)
 }
 
 func (obj ObjectBase) GetCollectionLocal() (Collection, error) {
@@ -351,7 +351,7 @@ func (obj ObjectBase) GetCollectionLocal() (Collection, error) {
 
 	query := `select x.id, x.name, x.content, x.type, x.published, x.updated, x.attributedto, x.attachment, x.preview, x.actor, x.tripcode, x.sensitive from (select id, name, content, type, published, updated, attributedto, attachment, preview, actor, tripcode, sensitive from activitystream where id=$1 and (type='Note' or type='Archive') union select id, name, content, type, published, updated, attributedto, attachment, preview, actor, tripcode, sensitive from cacheactivitystream where id=$1 and (type='Note' or type='Archive')) as x`
 	if rows, err = config.DB.Query(query, obj.Id); err != nil {
-		return nColl, util.MakeError(err, "GetCollectionLocal")
+		return nColl, util.WrapError(err)
 	}
 
 	defer rows.Close()
@@ -366,7 +366,7 @@ func (obj ObjectBase) GetCollectionLocal() (Collection, error) {
 		err = rows.Scan(&post.Id, &post.Name, &post.Content, &post.Type, &post.Published, &post.Updated, &post.AttributedTo, &attch.Id, &prev.Id, &actor.Id, &post.TripCode, &post.Sensitive)
 
 		if err != nil {
-			return nColl, util.MakeError(err, "GetCollectionLocal")
+			return nColl, util.WrapError(err)
 		}
 
 		post.Sticky, _ = post.IsSticky()
@@ -375,11 +375,11 @@ func (obj ObjectBase) GetCollectionLocal() (Collection, error) {
 		post.Actor = actor.Id
 
 		if post.InReplyTo, err = post.GetInReplyTo(); err != nil {
-			return nColl, util.MakeError(err, "GetCollectionLocal")
+			return nColl, util.WrapError(err)
 		}
 
 		if post.Replies, err = post.GetReplies(); err != nil {
-			return nColl, util.MakeError(err, "GetCollectionLocal")
+			return nColl, util.WrapError(err)
 		}
 
 		if post.Replies != nil {
@@ -387,7 +387,7 @@ func (obj ObjectBase) GetCollectionLocal() (Collection, error) {
 			var imgCnt int
 
 			if postCnt, imgCnt, err = post.GetRepliesCount(); err != nil {
-				return nColl, util.MakeError(err, "GetCollectionLocal")
+				return nColl, util.WrapError(err)
 			}
 
 			post.Replies.TotalItems += postCnt
@@ -397,13 +397,13 @@ func (obj ObjectBase) GetCollectionLocal() (Collection, error) {
 		if attch.Id != "" {
 			post.Attachment, err = attch.GetAttachment()
 			if err != nil {
-				return nColl, util.MakeError(err, "GetCollectionLocal")
+				return nColl, util.WrapError(err)
 			}
 		}
 
 		if prev.Id != "" {
 			if post.Preview, err = prev.GetPreview(); err != nil {
-				return nColl, util.MakeError(err, "GetCollectionLocal")
+				return nColl, util.WrapError(err)
 			}
 		}
 
@@ -426,14 +426,14 @@ func (obj ObjectBase) GetInReplyTo() ([]ObjectBase, error) {
 	rows, err := config.DB.Query(query, obj.Id)
 
 	if err != nil {
-		return result, util.MakeError(err, "GetInReplyTo")
+		return result, util.WrapError(err)
 	}
 
 	defer rows.Close()
 	for rows.Next() {
 		var post ObjectBase
 		if err := rows.Scan(&post.Id); err != nil {
-			return result, util.MakeError(err, "GetInReplyTo")
+			return result, util.WrapError(err)
 		}
 
 		result = append(result, post)
@@ -478,23 +478,23 @@ func (obj ObjectBase) GetCollectionFromPath() (Collection, error) {
 	post.Actor = actor.Id
 
 	if post.InReplyTo, err = post.GetInReplyTo(); err != nil {
-		return nColl, util.MakeError(err, "GetCollectionFromPath")
+		return nColl, util.WrapError(err)
 	}
 
 	if post.Replies, err = post.GetReplies(); err != nil {
-		return nColl, util.MakeError(err, "GetCollectionFromPath")
+		return nColl, util.WrapError(err)
 	}
 
 	if attch.Id != "" {
 		post.Attachment, err = attch.GetAttachment()
 		if err != nil {
-			return nColl, util.MakeError(err, "GetCollectionFromPath")
+			return nColl, util.WrapError(err)
 		}
 	}
 
 	if prev.Id != "" {
 		if post.Preview, err = prev.GetPreview(); err != nil {
-			return nColl, util.MakeError(err, "GetCollectionFromPath")
+			return nColl, util.WrapError(err)
 		}
 	}
 
@@ -520,12 +520,12 @@ func (obj ObjectBase) GetFromPath() (ObjectBase, error) {
 	err := config.DB.QueryRow(query, obj.Id).Scan(&post.Id, &post.Name, &post.Content, &post.Type, &post.Published, &post.AttributedTo, &attch.Id, &prev.Id, &post.Actor)
 
 	if err != nil {
-		return post, util.MakeError(err, "GetFromPath")
+		return post, util.WrapError(err)
 	}
 
 	post.Replies, err = post.GetReplies()
 	if err != nil {
-		return post, util.MakeError(err, "GetFromPath")
+		return post, util.WrapError(err)
 	}
 
 	if post.Replies != nil {
@@ -534,7 +534,7 @@ func (obj ObjectBase) GetFromPath() (ObjectBase, error) {
 
 		postCnt, imgCnt, err = post.GetRepliesCount()
 		if err != nil {
-			return post, util.MakeError(err, "GetFromPath")
+			return post, util.WrapError(err)
 		}
 
 		post.Replies.TotalItems += postCnt
@@ -544,18 +544,18 @@ func (obj ObjectBase) GetFromPath() (ObjectBase, error) {
 	if attch.Id != "" {
 		post.Attachment, err = attch.GetAttachment()
 		if err != nil {
-			return post, util.MakeError(err, "GetFromPath")
+			return post, util.WrapError(err)
 		}
 	}
 
 	if prev.Id != "" {
 		post.Preview, err = post.Preview.GetPreview()
 		if err != nil {
-			return post, util.MakeError(err, "GetFromPath")
+			return post, util.WrapError(err)
 		}
 	}
 
-	return post, util.MakeError(err, "GetFromPath")
+	return post, util.WrapError(err)
 }
 
 func (obj NestedObjectBase) GetPreview() (*NestedObjectBase, error) {
@@ -595,7 +595,7 @@ func (obj ObjectBase) GetReplies() (*CollectionBase, error) {
 
 	query := `select count(x.id) over(), sum(case when RTRIM(x.attachment) = '' then 0 else 1 end) over(), x.id, x.name, x.content, x.type, x.published, x.attributedto, x.attachment, x.preview, x.actor, x.tripcode, x.sensitive from (select * from activitystream where id in (select id from replies where inreplyto=$1) and (type='Note' or type='Archive') union select * from cacheactivitystream where id in (select id from replies where inreplyto=$1) and (type='Note' or type='Archive')) as x order by x.published asc`
 	if rows, err = config.DB.Query(query, obj.Id); err != nil {
-		return nil, util.MakeError(err, "GetReplies")
+		return nil, util.WrapError(err)
 	}
 
 	defer rows.Close()
@@ -610,7 +610,7 @@ func (obj ObjectBase) GetReplies() (*CollectionBase, error) {
 		err = rows.Scan(&postCount, &attachCount, &post.Id, &post.Name, &post.Content, &post.Type, &post.Published, &post.AttributedTo, &attch.Id, &prev.Id, &actor.Id, &post.TripCode, &post.Sensitive)
 
 		if err != nil {
-			return nil, util.MakeError(err, "GetReplies")
+			return nil, util.WrapError(err)
 		}
 
 		post.InReplyTo = append(post.InReplyTo, obj)
@@ -620,20 +620,20 @@ func (obj ObjectBase) GetReplies() (*CollectionBase, error) {
 		post.Replies, err = post.GetRepliesReplies()
 
 		if err != nil {
-			return nil, util.MakeError(err, "GetReplies")
+			return nil, util.WrapError(err)
 		}
 
 		if attch.Id != "" {
 			post.Attachment, err = attch.GetAttachment()
 			if err != nil {
-				return nil, util.MakeError(err, "GetReplies")
+				return nil, util.WrapError(err)
 			}
 		}
 
 		if prev.Id != "" {
 			post.Preview, err = prev.GetPreview()
 			if err != nil {
-				return nil, util.MakeError(err, "GetReplies")
+				return nil, util.WrapError(err)
 			}
 		}
 
@@ -662,7 +662,7 @@ func (obj ObjectBase) GetRepliesLimit(limit int) (*CollectionBase, error) {
 
 	query := `select count(x.id) over(), sum(case when RTRIM(x.attachment) = '' then 0 else 1 end) over(), x.id, x.name, x.content, x.type, x.published, x.attributedto, x.attachment, x.preview, x.actor, x.tripcode, x.sensitive from (select * from activitystream where id in (select id from replies where inreplyto=$1) and type='Note' union select * from cacheactivitystream where id in (select id from replies where inreplyto=$1) and type='Note') as x order by x.published desc limit $2`
 	if rows, err = config.DB.Query(query, obj.Id, limit); err != nil {
-		return nil, util.MakeError(err, "GetRepliesLimit")
+		return nil, util.WrapError(err)
 	}
 
 	defer rows.Close()
@@ -677,7 +677,7 @@ func (obj ObjectBase) GetRepliesLimit(limit int) (*CollectionBase, error) {
 		err = rows.Scan(&postCount, &attachCount, &post.Id, &post.Name, &post.Content, &post.Type, &post.Published, &post.AttributedTo, &attch.Id, &prev.Id, &actor.Id, &post.TripCode, &post.Sensitive)
 
 		if err != nil {
-			return nil, util.MakeError(err, "GetRepliesLimit")
+			return nil, util.WrapError(err)
 		}
 
 		post.InReplyTo = append(post.InReplyTo, obj)
@@ -687,20 +687,20 @@ func (obj ObjectBase) GetRepliesLimit(limit int) (*CollectionBase, error) {
 		post.Replies, err = post.GetRepliesReplies()
 
 		if err != nil {
-			return nil, util.MakeError(err, "GetRepliesLimit")
+			return nil, util.WrapError(err)
 		}
 
 		if attch.Id != "" {
 			post.Attachment, err = attch.GetAttachment()
 			if err != nil {
-				return nil, util.MakeError(err, "GetRepliesLimit")
+				return nil, util.WrapError(err)
 			}
 		}
 
 		if prev.Id != "" {
 			post.Preview, err = prev.GetPreview()
 			if err != nil {
-				return nil, util.MakeError(err, "GetRepliesLimit")
+				return nil, util.WrapError(err)
 			}
 		}
 
@@ -731,7 +731,7 @@ func (obj ObjectBase) GetRepliesReplies() (*CollectionBase, error) {
 
 	query := `select count(x.id) over(), sum(case when RTRIM(x.attachment) = '' then 0 else 1 end) over(), x.id, x.name, x.content, x.type, x.published, x.attributedto, x.attachment, x.preview, x.actor, x.tripcode, x.sensitive from (select * from activitystream where id in (select id from replies where inreplyto=$1) and (type='Note' or type='Archive') union select * from cacheactivitystream where id in (select id from replies where inreplyto=$1) and (type='Note' or type='Archive')) as x order by x.published asc`
 	if rows, err = config.DB.Query(query, obj.Id); err != nil {
-		return nil, util.MakeError(err, "GetRepliesReplies")
+		return nil, util.WrapError(err)
 	}
 
 	defer rows.Close()
@@ -746,7 +746,7 @@ func (obj ObjectBase) GetRepliesReplies() (*CollectionBase, error) {
 
 		err = rows.Scan(&postCount, &attachCount, &post.Id, &post.Name, &post.Content, &post.Type, &post.Published, &post.AttributedTo, &attch.Id, &prev.Id, &actor.Id, &post.TripCode, &post.Sensitive)
 		if err != nil {
-			return nil, util.MakeError(err, "GetRepliesReplies")
+			return nil, util.WrapError(err)
 		}
 
 		post.InReplyTo = append(post.InReplyTo, obj)
@@ -756,14 +756,14 @@ func (obj ObjectBase) GetRepliesReplies() (*CollectionBase, error) {
 		if attch.Id != "" {
 			post.Attachment, err = attch.GetAttachment()
 			if err != nil {
-				return nil, util.MakeError(err, "GetRepliesReplies")
+				return nil, util.WrapError(err)
 			}
 		}
 
 		if prev.Id != "" {
 			post.Preview, err = prev.GetPreview()
 			if err != nil {
-				return nil, util.MakeError(err, "GetRepliesReplies")
+				return nil, util.WrapError(err)
 			}
 		}
 
@@ -797,7 +797,7 @@ func (obj ObjectBase) IsCached() (bool, error) {
 
 	query := `select id from cacheactivitystream where id=$1`
 	if err := config.DB.QueryRow(query, obj.Id).Scan(&nID); err != nil {
-		return false, util.MakeError(err, "GetType")
+		return false, util.WrapError(err)
 	}
 
 	return true, nil
@@ -819,7 +819,7 @@ func (obj ObjectBase) IsReplyInThread(id string) (bool, error) {
 	coll, _, err := reqActivity.CheckValid()
 
 	if err != nil {
-		return false, util.MakeError(err, "IsReplyInThread")
+		return false, util.WrapError(err)
 	}
 
 	for _, e := range coll.OrderedItems[0].Replies.OrderedItems {
@@ -835,12 +835,12 @@ func (obj ObjectBase) IsReplyInThread(id string) (bool, error) {
 func (obj ObjectBase) MarkSensitive(sensitive bool) error {
 	var query = `update activitystream set sensitive=$1 where id=$2`
 	if _, err := config.DB.Exec(query, sensitive, obj.Id); err != nil {
-		return util.MakeError(err, "MarkSensitive")
+		return util.WrapError(err)
 	}
 
 	query = `update cacheactivitystream set sensitive=$1 where id=$2`
 	_, err := config.DB.Exec(query, sensitive, obj.Id)
-	return util.MakeError(err, "MarkSensitive")
+	return util.WrapError(err)
 }
 
 func (obj ObjectBase) SetAttachmentType(_type string) error {
@@ -848,12 +848,12 @@ func (obj ObjectBase) SetAttachmentType(_type string) error {
 
 	query := `update activitystream set type=$1, deleted=$2 where id in (select attachment from activitystream where id=$3)`
 	if _, err := config.DB.Exec(query, _type, datetime, obj.Id); err != nil {
-		return util.MakeError(err, "SetAttachmentType")
+		return util.WrapError(err)
 	}
 
 	query = `update cacheactivitystream set type=$1, deleted=$2 where id in (select attachment from cacheactivitystream  where id=$3)`
 	_, err := config.DB.Exec(query, _type, datetime, obj.Id)
-	return util.MakeError(err, "SetAttachmentType")
+	return util.WrapError(err)
 }
 
 func (obj ObjectBase) SetAttachmentRepliesType(_type string) error {
@@ -861,12 +861,12 @@ func (obj ObjectBase) SetAttachmentRepliesType(_type string) error {
 
 	query := `update activitystream set type=$1, deleted=$2 where id in (select attachment from activitystream where id in (select id from replies where inreplyto=$3))`
 	if _, err := config.DB.Exec(query, _type, datetime, obj.Id); err != nil {
-		return util.MakeError(err, "SetAttachmentRepliesType")
+		return util.WrapError(err)
 	}
 
 	query = `update cacheactivitystream set type=$1, deleted=$2 where id in (select attachment from cacheactivitystream where id in (select id from replies where inreplyto=$3))`
 	_, err := config.DB.Exec(query, _type, datetime, obj.Id)
-	return util.MakeError(err, "SetAttachmentRepliesType")
+	return util.WrapError(err)
 }
 
 func (obj ObjectBase) SetPreviewType(_type string) error {
@@ -874,12 +874,12 @@ func (obj ObjectBase) SetPreviewType(_type string) error {
 
 	query := `update activitystream set type=$1, deleted=$2 where id in (select preview from activitystream where id=$3)`
 	if _, err := config.DB.Exec(query, _type, datetime, obj.Id); err != nil {
-		return util.MakeError(err, "SetPreviewType")
+		return util.WrapError(err)
 	}
 
 	query = `update cacheactivitystream set type=$1, deleted=$2 where id in (select preview from cacheactivitystream where id=$3)`
 	_, err := config.DB.Exec(query, _type, datetime, obj.Id)
-	return util.MakeError(err, "SetPreviewType")
+	return util.WrapError(err)
 }
 
 func (obj ObjectBase) SetPreviewRepliesType(_type string) error {
@@ -887,21 +887,21 @@ func (obj ObjectBase) SetPreviewRepliesType(_type string) error {
 
 	query := `update activitystream set type=$1, deleted=$2 where id in (select preview from activitystream where id in (select id from replies where inreplyto=$3))`
 	if _, err := config.DB.Exec(query, _type, datetime, obj.Id); err != nil {
-		return util.MakeError(err, "SetPreviewRepliesType")
+		return util.WrapError(err)
 	}
 
 	query = `update cacheactivitystream set type=$1, deleted=$2 where id in (select preview from cacheactivitystream where id in (select id from replies where inreplyto=$3))`
 	_, err := config.DB.Exec(query, _type, datetime, obj.Id)
-	return util.MakeError(err, "SetPreviewRepliesType")
+	return util.WrapError(err)
 }
 
 func (obj ObjectBase) SetType(_type string) error {
 	if err := obj.SetAttachmentType(_type); err != nil {
-		return util.MakeError(err, "SetType")
+		return util.WrapError(err)
 	}
 
 	if err := obj.SetPreviewType(_type); err != nil {
-		return util.MakeError(err, "SetType")
+		return util.WrapError(err)
 	}
 
 	return obj._SetType(_type)
@@ -912,33 +912,33 @@ func (obj ObjectBase) _SetType(_type string) error {
 
 	query := `update activitystream set type=$1, deleted=$2 where id=$3`
 	if _, err := config.DB.Exec(query, _type, datetime, obj.Id); err != nil {
-		return util.MakeError(err, "_SetType")
+		return util.WrapError(err)
 	}
 
 	query = `update cacheactivitystream set type=$1, deleted=$2 where id=$3`
 	_, err := config.DB.Exec(query, _type, datetime, obj.Id)
-	return util.MakeError(err, "_SetType")
+	return util.WrapError(err)
 }
 
 func (obj ObjectBase) SetRepliesType(_type string) error {
 	if err := obj.SetAttachmentType(_type); err != nil {
-		return util.MakeError(err, "SetRepliesType")
+		return util.WrapError(err)
 	}
 
 	if err := obj.SetPreviewType(_type); err != nil {
-		return util.MakeError(err, "SetRepliesType")
+		return util.WrapError(err)
 	}
 
 	if err := obj._SetRepliesType(_type); err != nil {
-		return util.MakeError(err, "SetRepliesType")
+		return util.WrapError(err)
 	}
 
 	if err := obj.SetAttachmentRepliesType(_type); err != nil {
-		return util.MakeError(err, "SetRepliesType")
+		return util.WrapError(err)
 	}
 
 	if err := obj.SetPreviewRepliesType(_type); err != nil {
-		return util.MakeError(err, "SetRepliesType")
+		return util.WrapError(err)
 	}
 
 	return obj.SetType(_type)
@@ -949,12 +949,12 @@ func (obj ObjectBase) _SetRepliesType(_type string) error {
 
 	var query = `update activitystream set type=$1, deleted=$2 where id in (select id from replies where inreplyto=$3)`
 	if _, err := config.DB.Exec(query, _type, datetime, obj.Id); err != nil {
-		return util.MakeError(err, "_SetRepliesType")
+		return util.WrapError(err)
 	}
 
 	query = `update cacheactivitystream set type=$1, deleted=$2 where id in (select id from replies where inreplyto=$3)`
 	_, err := config.DB.Exec(query, _type, datetime, obj.Id)
-	return util.MakeError(err, "_SetRepliesType")
+	return util.WrapError(err)
 }
 
 func (obj ObjectBase) TombstoneAttachment() error {
@@ -962,12 +962,12 @@ func (obj ObjectBase) TombstoneAttachment() error {
 
 	query := `update activitystream set type='Tombstone', mediatype='image/png', href=$1, name='', content='', attributedto='deleted', deleted=$2 where id in (select attachment from activitystream where id=$3)`
 	if _, err := config.DB.Exec(query, config.Domain+"/static/notfound.png", datetime, obj.Id); err != nil {
-		return util.MakeError(err, "_SetRepliesType")
+		return util.WrapError(err)
 	}
 
 	query = `update cacheactivitystream set type='Tombstone', mediatype='image/png', href=$1, name='', content='', attributedto='deleted', deleted=$2 where id in (select attachment from cacheactivitystream where id=$3)`
 	_, err := config.DB.Exec(query, config.Domain+"/static/notfound.png", datetime, obj.Id)
-	return util.MakeError(err, "_SetRepliesType")
+	return util.WrapError(err)
 }
 
 func (obj ObjectBase) TombstoneAttachmentReplies() error {
@@ -979,11 +979,11 @@ func (obj ObjectBase) TombstoneAttachmentReplies() error {
 	}
 
 	if err := attachment.DeleteAttachmentFromFile(); err != nil {
-		return util.MakeError(err, "TombstoneAttachmentReplies")
+		return util.WrapError(err)
 	}
 
 	if err := attachment.TombstoneAttachment(); err != nil {
-		return util.MakeError(err, "TombstoneAttachmentReplies")
+		return util.WrapError(err)
 	}
 
 	return nil
@@ -994,12 +994,12 @@ func (obj ObjectBase) TombstonePreview() error {
 
 	query := `update activitystream set type='Tombstone', mediatype='image/png', href=$1, name='', content='', attributedto='deleted', deleted=$2 where id in (select preview from activitystream where id=$3)`
 	if _, err := config.DB.Exec(query, config.Domain+"/static/notfound.png", datetime, obj.Id); err != nil {
-		return util.MakeError(err, "TombstonePreview")
+		return util.WrapError(err)
 	}
 
 	query = `update cacheactivitystream set type='Tombstone', mediatype='image/png', href=$1, name='', content='', attributedto='deleted', deleted=$2 where id in (select preview from cacheactivitystream where id=$3)`
 	_, err := config.DB.Exec(query, config.Domain+"/static/notfound.png", datetime, obj.Id)
-	return util.MakeError(err, "TombstonePreview")
+	return util.WrapError(err)
 }
 
 func (obj ObjectBase) TombstonePreviewReplies() error {
@@ -1011,11 +1011,11 @@ func (obj ObjectBase) TombstonePreviewReplies() error {
 	}
 
 	if err := attachment.DeletePreviewFromFile(); err != nil {
-		return util.MakeError(err, "TombstonePreviewReplies")
+		return util.WrapError(err)
 	}
 
 	if err := attachment.TombstonePreview(); err != nil {
-		return util.MakeError(err, "TombstonePreviewReplies")
+		return util.WrapError(err)
 	}
 
 	return nil
@@ -1023,23 +1023,23 @@ func (obj ObjectBase) TombstonePreviewReplies() error {
 
 func (obj ObjectBase) Tombstone() error {
 	if err := obj.DeleteReported(); err != nil {
-		return util.MakeError(err, "Tombstone")
+		return util.WrapError(err)
 	}
 
 	if err := obj.DeleteAttachmentFromFile(); err != nil {
-		return util.MakeError(err, "Tombstone")
+		return util.WrapError(err)
 	}
 
 	if err := obj.TombstoneAttachment(); err != nil {
-		return util.MakeError(err, "Tombstone")
+		return util.WrapError(err)
 	}
 
 	if err := obj.DeletePreviewFromFile(); err != nil {
-		return util.MakeError(err, "Tombstone")
+		return util.WrapError(err)
 	}
 
 	if err := obj.TombstonePreview(); err != nil {
-		return util.MakeError(err, "Tombstone")
+		return util.WrapError(err)
 	}
 
 	return obj._Tombstone()
@@ -1050,45 +1050,45 @@ func (obj ObjectBase) _Tombstone() error {
 
 	query := `update activitystream set type='Tombstone', name='', content='', attributedto='deleted', tripcode='', deleted=$1 where id=$2`
 	if _, err := config.DB.Exec(query, datetime, obj.Id); err != nil {
-		return util.MakeError(err, "_Tombstone")
+		return util.WrapError(err)
 	}
 
 	query = `update cacheactivitystream set type='Tombstone', name='', content='', attributedto='deleted', tripcode='',  deleted=$1 where id=$2`
 	_, err := config.DB.Exec(query, datetime, obj.Id)
-	return util.MakeError(err, "_Tombstone")
+	return util.WrapError(err)
 }
 
 func (obj ObjectBase) TombstoneReplies() error {
 	if err := obj.DeleteReported(); err != nil {
-		return util.MakeError(err, "TombstoneReplies")
+		return util.WrapError(err)
 	}
 
 	if err := obj.DeleteAttachmentFromFile(); err != nil {
-		return util.MakeError(err, "TombstoneReplies")
+		return util.WrapError(err)
 	}
 
 	if err := obj.TombstoneAttachment(); err != nil {
-		return util.MakeError(err, "TombstoneReplies")
+		return util.WrapError(err)
 	}
 
 	if err := obj.DeletePreviewFromFile(); err != nil {
-		return util.MakeError(err, "TombstoneReplies")
+		return util.WrapError(err)
 	}
 
 	if err := obj.TombstonePreview(); err != nil {
-		return util.MakeError(err, "TombstoneReplies")
+		return util.WrapError(err)
 	}
 
 	if err := obj._TombstoneReplies(); err != nil {
-		return util.MakeError(err, "TombstoneReplies")
+		return util.WrapError(err)
 	}
 
 	if err := obj.TombstoneAttachmentReplies(); err != nil {
-		return util.MakeError(err, "TombstoneReplies")
+		return util.WrapError(err)
 	}
 
 	if err := obj.TombstonePreviewReplies(); err != nil {
-		return util.MakeError(err, "TombstoneReplies")
+		return util.WrapError(err)
 	}
 
 	return obj.Tombstone()
@@ -1099,35 +1099,35 @@ func (obj ObjectBase) _TombstoneReplies() error {
 
 	query := `update activitystream set type='Tombstone', name='', content='', attributedto='deleted', tripcode='', deleted=$1 where id in (select id from replies where inreplyto=$2)`
 	if _, err := config.DB.Exec(query, datetime, obj.Id); err != nil {
-		return util.MakeError(err, "_TombstoneReplies")
+		return util.WrapError(err)
 	}
 
 	query = `update cacheactivitystream set type='Tombstone', name='', content='', attributedto='deleted', tripcode='', deleted=$1 where id in (select id from replies where inreplyto=$2)`
 	_, err := config.DB.Exec(query, datetime, obj.Id)
-	return util.MakeError(err, "_TombstoneReplies")
+	return util.WrapError(err)
 }
 
 func (obj ObjectBase) UpdateType(_type string) error {
 	query := `update activitystream set type=$2 where id=$1 and type !='Tombstone'`
 	if _, err := config.DB.Exec(query, obj.Id, _type); err != nil {
-		return util.MakeError(err, "UpdateType")
+		return util.WrapError(err)
 	}
 
 	query = `update cacheactivitystream set type=$2 where id=$1 and type !='Tombstone'`
 	_, err := config.DB.Exec(query, obj.Id, _type)
-	return util.MakeError(err, "UpdateType")
+	return util.WrapError(err)
 }
 
 func (obj ObjectBase) UpdatePreview(preview string) error {
 	query := `update activitystream set preview=$1 where attachment=$2`
 	_, err := config.DB.Exec(query, preview, obj.Id)
-	return util.MakeError(err, "UpdatePreview")
+	return util.WrapError(err)
 }
 
 func (obj ObjectBase) Write() (ObjectBase, error) {
 	id, err := util.CreateUniqueID(obj.Actor)
 	if err != nil {
-		return obj, util.MakeError(err, "Write")
+		return obj, util.WrapError(err)
 	}
 
 	obj.Id = fmt.Sprintf("%s/%s", obj.Actor, id)
@@ -1136,7 +1136,7 @@ func (obj ObjectBase) Write() (ObjectBase, error) {
 		if obj.Preview.Href != "" {
 			id, err := util.CreateUniqueID(obj.Actor)
 			if err != nil {
-				return obj, util.MakeError(err, "Write")
+				return obj, util.WrapError(err)
 			}
 
 			obj.Preview.Id = fmt.Sprintf("%s/%s", obj.Actor, id)
@@ -1144,13 +1144,13 @@ func (obj ObjectBase) Write() (ObjectBase, error) {
 			obj.Preview.Updated = &now
 			obj.Preview.AttributedTo = obj.Id
 			if err := obj.Preview.WritePreview(); err != nil {
-				return obj, util.MakeError(err, "Write")
+				return obj, util.WrapError(err)
 			}
 		}
 		for i := range obj.Attachment {
 			id, err := util.CreateUniqueID(obj.Actor)
 			if err != nil {
-				return obj, util.MakeError(err, "Write")
+				return obj, util.WrapError(err)
 			}
 
 			obj.Attachment[i].Id = fmt.Sprintf("%s/%s", obj.Actor, id)
@@ -1162,13 +1162,13 @@ func (obj ObjectBase) Write() (ObjectBase, error) {
 		}
 	} else {
 		if err := obj._Write(); err != nil {
-			return obj, util.MakeError(err, "Write")
+			return obj, util.WrapError(err)
 		}
 	}
 
 	err = obj.WriteReply()
 
-	return obj, util.MakeError(err, "Write")
+	return obj, util.WrapError(err)
 }
 
 func (obj ObjectBase) _Write() error {
@@ -1179,14 +1179,14 @@ func (obj ObjectBase) _Write() error {
 	query := `insert into activitystream (id, type, name, content, published, updated, attributedto, actor, tripcode, sensitive) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`
 	_, err := config.DB.Exec(query, obj.Id, obj.Type, obj.Name, obj.Content, obj.Published, obj.Updated, obj.AttributedTo, obj.Actor, obj.TripCode, obj.Sensitive)
 
-	return util.MakeError(err, "_Write")
+	return util.WrapError(err)
 }
 
 func (obj ObjectBase) WriteAttachment() error {
 	query := `insert into activitystream (id, type, name, href, published, updated, attributedTo, mediatype, size) values ($1, $2, $3, $4, $5, $6, $7, $8, $9)`
 	_, err := config.DB.Exec(query, obj.Id, obj.Type, obj.Name, obj.Href, obj.Published, obj.Updated, obj.AttributedTo, obj.MediaType, obj.Size)
 
-	return util.MakeError(err, "WriteAttachment")
+	return util.WrapError(err)
 }
 
 func (obj ObjectBase) WriteAttachmentCache() error {
@@ -1200,7 +1200,7 @@ func (obj ObjectBase) WriteAttachmentCache() error {
 
 		query = `insert into cacheactivitystream (id, type, name, href, published, updated, attributedTo, mediatype, size) values ($1, $2, $3, $4, $5, $6, $7, $8, $9)`
 		_, err = config.DB.Exec(query, obj.Id, obj.Type, obj.Name, obj.Href, obj.Published, obj.Updated, obj.AttributedTo, obj.MediaType, obj.Size)
-		return util.MakeError(err, "WriteAttachmentCache")
+		return util.WrapError(err)
 	}
 
 	return nil
@@ -1221,7 +1221,7 @@ func (obj ObjectBase) _WriteCache() error {
 
 		query = `insert into cacheactivitystream (id, type, name, content, published, updated, attributedto, actor, tripcode, sensitive) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`
 		_, err = config.DB.Exec(query, obj.Id, obj.Type, obj.Name, obj.Content, obj.Published, obj.Updated, obj.AttributedTo, obj.Actor, obj.TripCode, obj.Sensitive)
-		return util.MakeError(err, "_WriteCache")
+		return util.WrapError(err)
 	}
 
 	return nil
@@ -1242,7 +1242,7 @@ func (obj ObjectBase) WriteCacheWithAttachment(attachment ObjectBase) error {
 
 		query = `insert into cacheactivitystream (id, type, name, content, attachment, preview, published, updated, attributedto, actor, tripcode, sensitive) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`
 		_, err = config.DB.Exec(query, obj.Id, obj.Type, obj.Name, obj.Content, attachment.Id, obj.Preview.Id, obj.Published, obj.Updated, obj.AttributedTo, obj.Actor, obj.TripCode, obj.Sensitive)
-		return util.MakeError(err, "WriteCacheWithAttachment")
+		return util.WrapError(err)
 	}
 
 	return nil
@@ -1251,7 +1251,7 @@ func (obj ObjectBase) WriteCacheWithAttachment(attachment ObjectBase) error {
 func (obj NestedObjectBase) WritePreview() error {
 	query := `insert into activitystream (id, type, name, href, published, updated, attributedTo, mediatype, size) values ($1, $2, $3, $4, $5, $6, $7, $8, $9)`
 	_, err := config.DB.Exec(query, obj.Id, obj.Type, obj.Name, obj.Href, obj.Published, obj.Updated, obj.AttributedTo, obj.MediaType, obj.Size)
-	return util.MakeError(err, "WritePreview")
+	return util.WrapError(err)
 }
 
 func (obj NestedObjectBase) WritePreviewCache() error {
@@ -1266,7 +1266,7 @@ func (obj NestedObjectBase) WritePreviewCache() error {
 
 		query = `insert into cacheactivitystream (id, type, name, href, published, updated, attributedTo, mediatype, size) values ($1, $2, $3, $4, $5, $6, $7, $8, $9)`
 		_, err = config.DB.Exec(query, obj.Id, obj.Type, obj.Name, obj.Href, obj.Published, obj.Updated, obj.AttributedTo, obj.MediaType, obj.Size)
-		return util.MakeError(err, "WritePreviewCache")
+		return util.WrapError(err)
 	}
 
 	return nil
@@ -1280,16 +1280,16 @@ func (obj ObjectBase) WriteReply() error {
 
 			nType, err := nObj.GetType()
 			if err != nil {
-				return util.MakeError(err, "WriteReply")
+				return util.WrapError(err)
 			}
 
 			if nType == "Archive" {
 				if err := obj.UpdateType("Archive"); err != nil {
-					return util.MakeError(err, "WriteReply")
+					return util.WrapError(err)
 				}
 			}
 		} else if err != nil {
-			return util.MakeError(err, "WriteReply")
+			return util.WrapError(err)
 		}
 
 		var id string
@@ -1298,7 +1298,7 @@ func (obj ObjectBase) WriteReply() error {
 		if err := config.DB.QueryRow(query, obj.Id, e.Id).Scan(&id); err != nil {
 			query := `insert into replies (id, inreplyto) values ($1, $2)`
 			if _, err := config.DB.Exec(query, obj.Id, e.Id); err != nil {
-				return util.MakeError(err, "WriteReply")
+				return util.WrapError(err)
 			}
 		}
 
@@ -1312,7 +1312,7 @@ func (obj ObjectBase) WriteReply() error {
 
 		if update {
 			if err := e.WriteUpdate(obj.Published); err != nil {
-				return util.MakeError(err, "WriteReply")
+				return util.WrapError(err)
 			}
 		}
 	}
@@ -1324,7 +1324,7 @@ func (obj ObjectBase) WriteReply() error {
 		if err := config.DB.QueryRow(query, obj.Id).Scan(&id); err != nil {
 			query := `insert into replies (id, inreplyto) values ($1, $2)`
 			if _, err := config.DB.Exec(query, obj.Id, ""); err != nil {
-				return util.MakeError(err, "WriteReply")
+				return util.WrapError(err)
 			}
 		}
 	}
@@ -1335,7 +1335,7 @@ func (obj ObjectBase) WriteReply() error {
 func (obj ObjectBase) WriteCache() (ObjectBase, error) {
 	if isBlacklisted, err := util.IsPostBlacklist(obj.Content); err != nil || isBlacklisted {
 		config.Log.Println("Blacklist post blocked")
-		return obj, util.MakeError(err, "WriteObjectToCache")
+		return obj, util.WrapError(err)
 	}
 
 	if len(obj.Attachment) > 0 {
@@ -1365,12 +1365,12 @@ func (obj ObjectBase) WriteCache() (ObjectBase, error) {
 func (obj ObjectBase) WriteUpdate(updated time.Time) error {
 	query := `update activitystream set updated=$1 where id=$2`
 	if _, err := config.DB.Exec(query, updated, obj.Id); err != nil {
-		return util.MakeError(err, "WriteUpdate")
+		return util.WrapError(err)
 	}
 
 	query = `update cacheactivitystream set updated=$1 where id=$2`
 	_, err := config.DB.Exec(query, updated, obj.Id)
-	return util.MakeError(err, "WriteUpdate")
+	return util.WrapError(err)
 }
 
 func (obj ObjectBase) WriteWithAttachment(attachment ObjectBase) {
@@ -1392,25 +1392,25 @@ func (obj ObjectBase) MarkSticky(actorID string) error {
 
 	var query = `select count(id) from replies where inreplyto='' and id=$1`
 	if err := config.DB.QueryRow(query, obj.Id).Scan(&count); err != nil {
-		return util.MakeError(err, "MarkSticky")
+		return util.WrapError(err)
 	}
 
 	if count == 1 {
 		var nCount int
 		query = `select count(activity_id) from sticky where activity_id=$1`
 		if err := config.DB.QueryRow(query, obj.Id).Scan(&nCount); err != nil {
-			return util.MakeError(err, "MarkSticky")
+			return util.WrapError(err)
 		}
 
 		if nCount > 0 {
 			query = `delete from sticky where activity_id=$1`
 			if _, err := config.DB.Exec(query, obj.Id); err != nil {
-				return util.MakeError(err, "MarkSticky")
+				return util.WrapError(err)
 			}
 		} else {
 			query = `insert into sticky (actor_id, activity_id) values ($1, $2)`
 			if _, err := config.DB.Exec(query, actorID, obj.Id); err != nil {
-				return util.MakeError(err, "MarkSticky")
+				return util.WrapError(err)
 			}
 		}
 	}
@@ -1423,7 +1423,7 @@ func (obj ObjectBase) MarkLocked(actorID string) error {
 
 	var query = `select count(id) from replies where inreplyto='' and id=$1`
 	if err := config.DB.QueryRow(query, obj.Id).Scan(&count); err != nil {
-		return util.MakeError(err, "MarkLocked")
+		return util.WrapError(err)
 	}
 
 	if count == 1 {
@@ -1431,18 +1431,18 @@ func (obj ObjectBase) MarkLocked(actorID string) error {
 
 		query = `select count(activity_id) from locked where activity_id=$1`
 		if err := config.DB.QueryRow(query, obj.Id).Scan(&nCount); err != nil {
-			return util.MakeError(err, "MarkLocked")
+			return util.WrapError(err)
 		}
 
 		if nCount > 0 {
 			query = `delete from locked where activity_id=$1`
 			if _, err := config.DB.Exec(query, obj.Id); err != nil {
-				return util.MakeError(err, "MarkLocked")
+				return util.WrapError(err)
 			}
 		} else {
 			query = `insert into locked (actor_id, activity_id) values ($1, $2)`
 			if _, err := config.DB.Exec(query, actorID, obj.Id); err != nil {
-				return util.MakeError(err, "MarkLocked")
+				return util.WrapError(err)
 			}
 		}
 	}
@@ -1455,7 +1455,7 @@ func (obj ObjectBase) IsSticky() (bool, error) {
 
 	query := `select count(activity_id) from sticky where activity_id=$1 `
 	if err := config.DB.QueryRow(query, obj.Id).Scan(&count); err != nil {
-		return false, util.MakeError(err, "IsSticky")
+		return false, util.WrapError(err)
 	}
 
 	if count != 0 {
@@ -1470,7 +1470,7 @@ func (obj ObjectBase) IsLocked() (bool, error) {
 
 	query := `select count(activity_id) from locked where activity_id=$1 `
 	if err := config.DB.QueryRow(query, obj.Id).Scan(&count); err != nil {
-		return false, util.MakeError(err, "IsSticky")
+		return false, util.WrapError(err)
 	}
 
 	if count != 0 {
@@ -1502,7 +1502,7 @@ func (obj ObjectBase) SendEmailNotify() error {
 			smtp.PlainAuth("", from, pass, config.SiteEmailServer),
 			from, []string{to}, []byte(msg))
 
-		return util.MakeError(err, "SendEmailNotify")
+		return util.WrapError(err)
 	*/
 
 	// TODO

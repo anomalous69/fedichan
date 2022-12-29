@@ -45,7 +45,7 @@ func (activity Activity) AddFollowersTo() (Activity, error) {
 			config.Log.Printf("failed to get collection from %s: %v", reqActivity.Id, err)
 			continue
 
-			// return activity, util.MakeError(err, "AddFollowersTo")
+			// return activity, util.WrapError(err)
 		}
 
 		// get followers of activity actor
@@ -86,14 +86,14 @@ func (activity Activity) CheckValid() (Collection, bool, error) {
 
 	req, err := http.NewRequest("GET", activity.Id, nil)
 	if err != nil {
-		return respCollection, false, util.MakeError(err, "CheckValid")
+		return respCollection, false, util.WrapError(err)
 	}
 
 	req.Header.Set("Accept", config.ActivityStreams)
 
 	resp, err := util.RouteProxy(req)
 	if err != nil {
-		return respCollection, false, util.MakeError(err, "CheckValid")
+		return respCollection, false, util.WrapError(err)
 	}
 	defer resp.Body.Close()
 
@@ -102,7 +102,7 @@ func (activity Activity) CheckValid() (Collection, bool, error) {
 	}
 
 	if err := json.NewDecoder(resp.Body).Decode(&respCollection); err != nil {
-		return respCollection, false, util.MakeError(err, "CheckValid")
+		return respCollection, false, util.WrapError(err)
 	}
 
 	if respCollection.AtContext.Context == "https://www.w3.org/ns/activitystreams" && respCollection.OrderedItems[0].Id != "" {
@@ -117,13 +117,13 @@ func (activity Activity) GetCollection() (Collection, error) {
 
 	req, err := http.NewRequest("GET", activity.Id, nil)
 	if err != nil {
-		return nColl, util.MakeError(err, "GetCollection")
+		return nColl, util.WrapError(err)
 	}
 
 	req.Header.Set("Accept", config.ActivityStreams)
 	resp, err := util.RouteProxy(req)
 	if err != nil {
-		return nColl, util.MakeError(err, "GetCollection")
+		return nColl, util.WrapError(err)
 	}
 
 	if resp.StatusCode == 200 {
@@ -131,7 +131,7 @@ func (activity Activity) GetCollection() (Collection, error) {
 		body, _ := io.ReadAll(resp.Body)
 		if len(body) > 0 {
 			if err := json.Unmarshal(body, &nColl); err != nil {
-				return nColl, util.MakeError(err, "GetCollection")
+				return nColl, util.WrapError(err)
 			}
 		}
 	}
@@ -170,7 +170,7 @@ func (activity Activity) Process() error {
 			if res, err := GetActorFromDB(e); res.Id != "" {
 				config.Log.Println("actor is in the database")
 			} else if err != nil {
-				return util.MakeError(err, "Process")
+				return util.WrapError(err)
 			} else {
 				config.Log.Println("actor is NOT in the database")
 			}
@@ -213,12 +213,12 @@ func (activity Activity) Report(reason string) (bool, error) {
 	activityCol, err := reqActivity.GetCollection()
 
 	if err != nil {
-		return false, util.MakeError(err, "Report")
+		return false, util.WrapError(err)
 	}
 
 	query := `insert into reported (id, count, board, reason) values ($1, $2, $3, $4)`
 	if _, err = config.DB.Exec(query, activity.Object.Object.Id, 1, activityCol.Actor.Id, reason); err != nil {
-		return false, util.MakeError(err, "Report")
+		return false, util.WrapError(err)
 	}
 
 	return true, nil
@@ -230,7 +230,7 @@ func (activity Activity) SetActorFollower() (Activity, error) {
 	alreadyFollower, err := activity.Actor.IsAlreadyFollower(activity.Object.Actor)
 
 	if err != nil {
-		return activity, util.MakeError(err, "SetFollower")
+		return activity, util.WrapError(err)
 	}
 
 	if activity.Actor.Id == activity.Object.Actor {
@@ -241,17 +241,17 @@ func (activity Activity) SetActorFollower() (Activity, error) {
 	if alreadyFollower {
 		query = `delete from follower where id=$1 and follower=$2`
 		if _, err := config.DB.Exec(query, activity.Actor.Id, activity.Object.Actor); err != nil {
-			return activity, util.MakeError(err, "SetFollower")
+			return activity, util.WrapError(err)
 		}
 
 		activity.Type = "Accept"
 		activity.Summary = activity.Object.Actor + " Unfollow " + activity.Actor.Id
-		return activity, util.MakeError(err, "SetFollower")
+		return activity, util.WrapError(err)
 	}
 
 	query = `insert into follower (id, follower) values ($1, $2)`
 	if _, err := config.DB.Exec(query, activity.Actor.Id, activity.Object.Actor); err != nil {
-		return activity, util.MakeError(err, "SetFollower")
+		return activity, util.WrapError(err)
 	}
 
 	activity.Type = "Accept"
@@ -265,20 +265,20 @@ func (activity Activity) SetActorFollowing() (Activity, error) {
 	alreadyFollowing, err := objActor.IsAlreadyFollowing(activity.Actor.Id)
 
 	if err != nil {
-		return activity, util.MakeError(err, "SetActorFollowing")
+		return activity, util.WrapError(err)
 	}
 
 	actor, err := FingerActor(activity.Actor.Id)
 
 	if err != nil {
-		return activity, util.MakeError(err, "SetActorFollowing")
+		return activity, util.WrapError(err)
 	}
 
 	reqActivity := Activity{Id: actor.Followers}
 	remoteActorFollowerCol, err := reqActivity.GetCollection()
 
 	if err != nil {
-		return activity, util.MakeError(err, "SetActorFollowing")
+		return activity, util.WrapError(err)
 	}
 
 	alreadyFollower := false
@@ -300,12 +300,12 @@ func (activity Activity) SetActorFollowing() (Activity, error) {
 		if res, _ := activity.Actor.IsLocal(); !res {
 			go activity.Actor.DeleteCache()
 		} else if err != nil {
-			return activity, util.MakeError(err, "SetActorFollowing")
+			return activity, util.WrapError(err)
 		}
 
 		query = `delete from following where id=$1 and following=$2`
 		if _, err := config.DB.Exec(query, activity.Object.Actor, activity.Actor.Id); err != nil {
-			return activity, util.MakeError(err, "SetActorFollowing")
+			return activity, util.WrapError(err)
 		}
 
 		activity.Type = "Accept"
@@ -321,7 +321,7 @@ func (activity Activity) SetActorFollowing() (Activity, error) {
 
 		query = `insert into following (id, following) values ($1, $2)`
 		if _, err := config.DB.Exec(query, activity.Object.Actor, activity.Actor.Id); err != nil {
-			return activity, util.MakeError(err, "SetActorFollowing")
+			return activity, util.WrapError(err)
 		}
 
 		activity.Type = "Accept"
@@ -352,7 +352,7 @@ func (activity Activity) MakeRequestInbox() error {
 
 						req, err := http.NewRequest("POST", actor.Inbox, bytes.NewBuffer(j))
 						if err != nil {
-							return util.MakeError(err, "MakeRequest")
+							return util.WrapError(err)
 						}
 
 						date := time.Now().UTC().Format(time.RFC1123)
@@ -363,7 +363,7 @@ func (activity Activity) MakeRequestInbox() error {
 						encSig, err := activity.Actor.ActivitySign(sig)
 
 						if err != nil {
-							return util.MakeError(err, "MakeRequest")
+							return util.WrapError(err)
 						}
 
 						signature := fmt.Sprintf("keyId=\"%s\",headers=\"(request-target) host date\",signature=\"%s\"", activity.Actor.PublicKey.Id, encSig)
@@ -400,7 +400,7 @@ func (activity Activity) MakeRequestOutbox() error {
 	j, _ := json.Marshal(activity)
 
 	if activity.Actor.Outbox == "" {
-		return util.MakeError(errors.New("invalid outbox"), "MakeRequestOutbox")
+		return util.WrapError(errors.New("invalid outbox"))
 	}
 
 	go func(actor Actor, activity Activity) error {
@@ -413,7 +413,7 @@ func (activity Activity) MakeRequestOutbox() error {
 			req, err := http.NewRequest("POST", activity.Actor.Outbox, bytes.NewBuffer(j))
 
 			if err != nil {
-				return util.MakeError(err, "MakeRequestOutbox")
+				return util.WrapError(err)
 			}
 
 			re := regexp.MustCompile("https?://(www.)?")
@@ -427,7 +427,7 @@ func (activity Activity) MakeRequestOutbox() error {
 			encSig, err := activity.Actor.ActivitySign(sig)
 
 			if err != nil {
-				return util.MakeError(err, "MakeRequestOutbox")
+				return util.WrapError(err)
 			}
 
 			signature := fmt.Sprintf("keyId=\"%s\",headers=\"(request-target) host date\",signature=\"%s\"", activity.Actor.PublicKey.Id, encSig)
@@ -452,5 +452,5 @@ func (activity Activity) MakeRequestOutbox() error {
 
 	}(*activity.Actor, activity)
 
-	return util.MakeError(nil, "MakeRequestOutbox")
+	return nil
 }

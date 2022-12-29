@@ -66,7 +66,7 @@ func GetActor(id string) (Actor, error) {
 
 	req, err := http.NewRequest("GET", strings.TrimSpace(id), nil)
 	if err != nil {
-		return respActor, util.MakeError(err, "GetActor")
+		return respActor, util.WrapError(err)
 	}
 
 	req.Header.Set("Accept", config.ActivityStreams)
@@ -74,14 +74,14 @@ func GetActor(id string) (Actor, error) {
 	resp, err := util.RouteProxy(req)
 
 	if err != nil {
-		return respActor, util.MakeError(err, "GetActor")
+		return respActor, util.WrapError(err)
 	}
 
 	defer resp.Body.Close()
 	body, _ := io.ReadAll(resp.Body)
 
 	if err := json.Unmarshal(body, &respActor); err != nil {
-		return respActor, util.MakeError(err, "GetActor")
+		return respActor, util.WrapError(err)
 	}
 
 	ActorCache[actor+"@"+instance] = respActor
@@ -104,7 +104,7 @@ func FingerActor(path string) (Actor, error) {
 	} else {
 		resp, err := FingerRequest(actor, instance)
 		if err != nil {
-			return nActor, util.MakeError(err, "FingerActor finger request")
+			return nActor, util.WrapError(err)
 		}
 
 		if resp != nil && resp.StatusCode == 200 {
@@ -112,11 +112,11 @@ func FingerActor(path string) (Actor, error) {
 
 			body, err := io.ReadAll(resp.Body)
 			if err != nil {
-				return nActor, util.MakeError(err, "FingerActor read resp")
+				return nActor, util.WrapError(err)
 			}
 
 			if err := json.Unmarshal(body, &nActor); err != nil {
-				return nActor, util.MakeError(err, "FingerActor unmarshal")
+				return nActor, util.WrapError(err)
 			}
 
 			ActorCache[actor+"@"+instance] = nActor
@@ -133,7 +133,7 @@ func FingerRequest(actor string, instance string) (*http.Response, error) {
 	req, err := http.NewRequest("GET", "http://"+instance+"/.well-known/webfinger?resource="+acct, nil)
 
 	if err != nil {
-		return nil, util.MakeError(err, "FingerRequest")
+		return nil, util.WrapError(err)
 	}
 
 	resp, err := util.RouteProxy(req)
@@ -150,7 +150,7 @@ func FingerRequest(actor string, instance string) (*http.Response, error) {
 		}
 
 		if err := json.Unmarshal(body, &finger); err != nil {
-			return resp, util.MakeError(err, "FingerRequest")
+			return resp, util.WrapError(err)
 		}
 	}
 
@@ -160,7 +160,7 @@ func FingerRequest(actor string, instance string) (*http.Response, error) {
 				req, err = http.NewRequest("GET", e.Href, nil)
 
 				if err != nil {
-					return resp, util.MakeError(err, "FingerRequest")
+					return resp, util.WrapError(err)
 				}
 
 				break
@@ -170,7 +170,7 @@ func FingerRequest(actor string, instance string) (*http.Response, error) {
 
 	req.Header.Set("Accept", config.ActivityStreams)
 	if resp, err = util.RouteProxy(req); err != nil {
-		return resp, util.MakeError(err, "FingerRequest")
+		return resp, util.WrapError(err)
 	}
 
 	return resp, nil
@@ -198,14 +198,14 @@ func GetBoardCollection() ([]Board, error) {
 		boardActor, err := GetActorFromDB(e.Id)
 
 		if err != nil {
-			return collection, util.MakeError(err, "GetBoardCollection")
+			return collection, util.WrapError(err)
 		}
 
 		if boardActor.Id == "" {
 			boardActor, err = FingerActor(e.Id)
 
 			if err != nil {
-				return collection, util.MakeError(err, "GetBoardCollection")
+				return collection, util.WrapError(err)
 			}
 		}
 
@@ -245,7 +245,7 @@ func GetActorFromPath(location string, prefix string) (Actor, error) {
 	nActor, err := GetActorByNameFromDB(actor)
 
 	if err != nil {
-		return nActor, util.MakeError(err, "GetActorFromPath")
+		return nActor, util.WrapError(err)
 	}
 
 	if nActor.Id == "" {
@@ -260,11 +260,11 @@ func StartupArchive() error {
 		actor, err := GetActorFromDB(e.Id)
 
 		if err != nil {
-			return util.MakeError(err, "StartupArchive")
+			return util.WrapError(err)
 		}
 
 		if err := actor.ArchivePosts(); err != nil {
-			return util.MakeError(err, "StartupArchive")
+			return util.WrapError(err)
 		}
 	}
 

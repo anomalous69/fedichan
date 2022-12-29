@@ -1,7 +1,6 @@
 package routes
 
 import (
-	"errors"
 	"net/http"
 	"regexp"
 	"sort"
@@ -52,7 +51,7 @@ func AdminIndex(ctx *fiber.Ctx) error {
 	actor, err := activitypub.GetActor(config.Domain)
 
 	if err != nil {
-		return util.MakeError(err, "AdminIndex")
+		return util.WrapError(err)
 	}
 
 	reqActivity := activitypub.Activity{Id: actor.Following}
@@ -126,12 +125,12 @@ func AdminFollow(ctx *fiber.Ctx) error {
 
 	if isLocal, _ := objActor.IsLocal(); !isLocal && followActivity.Actor.Id == config.Domain {
 		_, err := ctx.Write([]byte("main board can only follow local boards. Create a new board and then follow outside boards from it."))
-		return util.MakeError(err, "AdminIndex")
+		return util.WrapError(err)
 	}
 
 	if actor, _ := activitypub.FingerActor(follow); actor.Id != "" {
 		if err := followActivity.MakeRequestOutbox(); err != nil {
-			return util.MakeError(err, "AdminFollow")
+			return util.WrapError(err)
 		}
 	}
 
@@ -279,7 +278,7 @@ func AdminAddJanny(ctx *fiber.Ctx) error {
 	}
 
 	if !hasAuth || acct.Type != db.Admin {
-		return util.MakeError(errors.New("Error"), "AdminJanny")
+		return util.WrapError(ErrNoAuth)
 	}
 
 	var verify db.Verify
@@ -289,7 +288,7 @@ func AdminAddJanny(ctx *fiber.Ctx) error {
 
 	/* TODO
 	if err := actor.CreateVerification(verify); err != nil {
-		return util.MakeError(err, "CreateNewBoardDB")
+		return util.WrapError(err)
 	}
 	*/
 
@@ -312,14 +311,14 @@ func AdminEditSummary(ctx *fiber.Ctx) error {
 	}
 
 	if !hasAuth || acct.Type != db.Admin {
-		return util.MakeError(errors.New("Error"), "AdminEditSummary")
+		return util.WrapError(ErrNoAuth)
 	}
 
 	summary := ctx.FormValue("summary")
 
 	query := `update actor set summary=$1 where id=$2`
 	if _, err := config.DB.Exec(query, summary, actor.Id); err != nil {
-		return util.MakeError(err, "AdminEditSummary")
+		return util.WrapError(err)
 	}
 
 	var redirect string
@@ -340,7 +339,7 @@ func AdminDeleteJanny(ctx *fiber.Ctx) error {
 	}
 
 	if !hasAuth || acct.Type != db.Admin {
-		return util.MakeError(errors.New("Error"), "AdminJanny")
+		return util.WrapError(ErrNoAuth)
 	}
 
 	var verify db.Verify
@@ -348,7 +347,7 @@ func AdminDeleteJanny(ctx *fiber.Ctx) error {
 
 	/* TODO
 	if err := actor.DeleteVerification(verify); err != nil {
-		return util.MakeError(err, "AdminDeleteJanny")
+		return util.WrapError(err)
 	}
 	*/
 

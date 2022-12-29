@@ -32,7 +32,7 @@ func AcceptActivity(header string) bool {
 func CreateAttachmentObject(file multipart.File, header *multipart.FileHeader) ([]ObjectBase, *os.File, error) {
 	contentType, err := util.GetFileContentType(file)
 	if err != nil {
-		return nil, nil, util.MakeError(err, "CreateAttachmentObject")
+		return nil, nil, util.WrapError(err)
 	}
 
 	filename := header.Filename
@@ -44,7 +44,7 @@ func CreateAttachmentObject(file multipart.File, header *multipart.FileHeader) (
 
 	tempFile, err := os.CreateTemp("./public", "*."+fileType)
 	if err != nil {
-		return nil, nil, util.MakeError(err, "CreateAttachmentObject")
+		return nil, nil, util.WrapError(err)
 	}
 
 	var nAttachment []ObjectBase
@@ -106,7 +106,7 @@ func GetActivityFromJson(ctx *fiber.Ctx) (Activity, error) {
 	var nType string
 
 	if err := json.Unmarshal(ctx.Body(), &respActivity); err != nil {
-		return nActivity, util.MakeError(err, "GetActivityFromJson")
+		return nActivity, util.WrapError(err)
 	}
 
 	if res, err := HasContextFromJson(respActivity.AtContextRaw.Context); err == nil && res {
@@ -115,14 +115,14 @@ func GetActivityFromJson(ctx *fiber.Ctx) (Activity, error) {
 		if respActivity.Type == "Note" {
 			jObj, err = GetObjectFromJson(ctx.Body())
 			if err != nil {
-				return nActivity, util.MakeError(err, "GetActivityFromJson")
+				return nActivity, util.WrapError(err)
 			}
 
 			nType = "Create"
 		} else {
 			jObj, err = GetObjectFromJson(respActivity.ObjectRaw)
 			if err != nil {
-				return nActivity, util.MakeError(err, "GetActivityFromJson")
+				return nActivity, util.WrapError(err)
 			}
 
 			nType = respActivity.Type
@@ -130,17 +130,17 @@ func GetActivityFromJson(ctx *fiber.Ctx) (Activity, error) {
 
 		actor, err := GetActorFromJson(respActivity.ActorRaw)
 		if err != nil {
-			return nActivity, util.MakeError(err, "GetActivityFromJson")
+			return nActivity, util.WrapError(err)
 		}
 
 		to, err := GetToFromJson(respActivity.ToRaw)
 		if err != nil {
-			return nActivity, util.MakeError(err, "GetActivityFromJson")
+			return nActivity, util.WrapError(err)
 		}
 
 		cc, err := GetToFromJson(respActivity.CcRaw)
 		if err != nil {
-			return nActivity, util.MakeError(err, "GetActivityFromJson")
+			return nActivity, util.WrapError(err)
 		}
 
 		nActivity.AtContext.Context = "https://www.w3.org/ns/activitystreams"
@@ -160,7 +160,7 @@ func GetActivityFromJson(ctx *fiber.Ctx) (Activity, error) {
 		nActivity.Name = respActivity.Name
 		nActivity.Object = jObj
 	} else if err != nil {
-		return nActivity, util.MakeError(err, "GetActivityFromJson")
+		return nActivity, util.WrapError(err)
 	}
 
 	return nActivity, nil
@@ -171,7 +171,7 @@ func GetObjectFromJson(obj []byte) (ObjectBase, error) {
 	var nObj ObjectBase
 
 	if err := json.Unmarshal(obj, &generic); err != nil {
-		return ObjectBase{}, util.MakeError(err, "GetObjectFromJson")
+		return ObjectBase{}, util.WrapError(err)
 	}
 
 	if generic != nil {
@@ -181,7 +181,7 @@ func GetObjectFromJson(obj []byte) (ObjectBase, error) {
 			var arrContext ObjectArray
 
 			if err := json.Unmarshal(obj, &arrContext.Object); err != nil {
-				return nObj, util.MakeError(err, "GetObjectFromJson")
+				return nObj, util.WrapError(err)
 			}
 
 			if len(arrContext.Object) > 0 {
@@ -193,7 +193,7 @@ func GetObjectFromJson(obj []byte) (ObjectBase, error) {
 			var arrContext Object
 
 			if err := json.Unmarshal(obj, &arrContext.Object); err != nil {
-				return nObj, util.MakeError(err, "GetObjectFromJson")
+				return nObj, util.WrapError(err)
 			}
 
 			nObj = *arrContext.Object
@@ -203,7 +203,7 @@ func GetObjectFromJson(obj []byte) (ObjectBase, error) {
 			var arrContext ObjectString
 
 			if err := json.Unmarshal(obj, &arrContext.Object); err != nil {
-				return nObj, util.MakeError(err, "GetObjectFromJson")
+				return nObj, util.WrapError(err)
 			}
 
 			lObj.Id = arrContext.Object
@@ -219,7 +219,7 @@ func HasContextFromJson(context []byte) (bool, error) {
 
 	err := json.Unmarshal(context, &generic)
 	if err != nil {
-		return false, util.MakeError(err, "HasContextFromJson")
+		return false, util.WrapError(err)
 	}
 
 	hasContext := false
@@ -242,7 +242,7 @@ func HasContextFromJson(context []byte) (bool, error) {
 		}
 	}
 
-	return hasContext, util.MakeError(err, "GetObjectsWithoutPreviewsCallback")
+	return hasContext, util.WrapError(err)
 }
 
 func GetActorByNameFromDB(name string) (Actor, error) {
@@ -253,18 +253,18 @@ func GetActorByNameFromDB(name string) (Actor, error) {
 	err := config.DB.QueryRow(query, name).Scan(&nActor.Type, &nActor.Id, &nActor.Name, &nActor.PreferredUsername, &nActor.Inbox, &nActor.Outbox, &nActor.Following, &nActor.Followers, &nActor.Restricted, &nActor.Summary, &publicKeyPem)
 
 	if err != nil {
-		return nActor, util.MakeError(err, "GetActorByNameFromDB")
+		return nActor, util.WrapError(err)
 	}
 
 	nActor.PublicKey, err = GetActorPemFromDB(publicKeyPem)
 
 	if err != nil {
-		return nActor, util.MakeError(err, "GetActorFromDB")
+		return nActor, util.WrapError(err)
 	}
 
 	if nActor.Id != "" && nActor.PublicKey == nil {
 		if err := CreatePublicKeyFromPrivate(&nActor, publicKeyPem); err != nil {
-			return nActor, util.MakeError(err, "GetActorByNameFromDB")
+			return nActor, util.WrapError(err)
 		}
 	}
 
@@ -279,18 +279,18 @@ func GetActorFromDB(id string) (Actor, error) {
 	err := config.DB.QueryRow(query, id).Scan(&nActor.Type, &nActor.Id, &nActor.Name, &nActor.PreferredUsername, &nActor.Inbox, &nActor.Outbox, &nActor.Following, &nActor.Followers, &nActor.Restricted, &nActor.Summary, &publicKeyPem)
 
 	if err != nil {
-		return nActor, util.MakeError(err, "GetActorFromDB")
+		return nActor, util.WrapError(err)
 	}
 
 	nActor.PublicKey, err = GetActorPemFromDB(publicKeyPem)
 
 	if err != nil {
-		return nActor, util.MakeError(err, "GetActorFromDB")
+		return nActor, util.WrapError(err)
 	}
 
 	if nActor.Id != "" && nActor.PublicKey.PublicKeyPem == "" {
 		if err := CreatePublicKeyFromPrivate(&nActor, publicKeyPem); err != nil {
-			return nActor, util.MakeError(err, "GetActorFromDB")
+			return nActor, util.WrapError(err)
 		}
 	}
 
@@ -302,7 +302,7 @@ func GetActorFromJson(actor []byte) (Actor, error) {
 	var nActor Actor
 	err := json.Unmarshal(actor, &generic)
 	if err != nil {
-		return nActor, util.MakeError(err, "GetActorFromJson")
+		return nActor, util.WrapError(err)
 	}
 
 	if generic != nil {
@@ -316,7 +316,7 @@ func GetActorFromJson(actor []byte) (Actor, error) {
 			nActor.Id = str
 		}
 
-		return nActor, util.MakeError(err, "GetActorFromJson")
+		return nActor, util.WrapError(err)
 	}
 
 	return nActor, nil
@@ -331,7 +331,7 @@ func GetToFromJson(to []byte) ([]string, error) {
 
 	err := json.Unmarshal(to, &generic)
 	if err != nil {
-		return nil, util.MakeError(err, "GetToFromJson")
+		return nil, util.WrapError(err)
 	}
 
 	if generic != nil {
@@ -344,7 +344,7 @@ func GetToFromJson(to []byte) ([]string, error) {
 			err = json.Unmarshal(to, &str)
 			nStr = append(nStr, str)
 		}
-		return nStr, util.MakeError(err, "GetToFromJson")
+		return nStr, util.WrapError(err)
 	}
 
 	return nil, nil

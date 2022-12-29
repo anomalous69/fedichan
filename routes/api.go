@@ -22,7 +22,7 @@ func Media(ctx *fiber.Ctx) error {
 func RouteImages(ctx *fiber.Ctx, media string) error {
 	req, err := http.NewRequest("GET", config.MediaHashs[media], nil)
 	if err != nil {
-		return util.MakeError(err, "RouteImages")
+		return util.WrapError(err)
 	}
 
 	client := http.Client{
@@ -33,7 +33,7 @@ func RouteImages(ctx *fiber.Ctx, media string) error {
 	if err != nil {
 		fileBytes, err := os.ReadFile("./views/notfound.png")
 		if err != nil {
-			return util.MakeError(err, "RouteImages")
+			return util.WrapError(err)
 		}
 
 		_, err = ctx.Write(fileBytes)
@@ -44,11 +44,11 @@ func RouteImages(ctx *fiber.Ctx, media string) error {
 	if resp.StatusCode != 200 {
 		fileBytes, err := os.ReadFile("./views/notfound.png")
 		if err != nil {
-			return util.MakeError(err, "RouteImages")
+			return util.WrapError(err)
 		}
 
 		_, err = ctx.Write(fileBytes)
-		return util.MakeError(err, "RouteImages")
+		return util.WrapError(err)
 	}
 
 	body, _ := io.ReadAll(resp.Body)
