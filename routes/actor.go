@@ -1,9 +1,7 @@
 package routes
 
 import (
-	"bytes"
 	"encoding/json"
-	"errors"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -163,20 +161,6 @@ func ActorInbox(ctx *fiber.Ctx) error {
 	return nil
 }
 
-func PostActorOutbox(ctx *fiber.Ctx) error {
-	//var activity activitypub.Activity
-	actor, err := activitypub.GetActorFromPath(ctx.Path(), "/")
-	if err != nil {
-		return util.WrapError(err)
-	}
-
-	if activitypub.AcceptActivity(ctx.Get("Accept")) {
-		return actor.GetOutbox(ctx)
-	}
-
-	return NewPost(ctx, actor)
-}
-
 func ActorFollowing(ctx *fiber.Ctx) error {
 	actor, _ := activitypub.GetActorFromDB(config.Domain + "/" + ctx.Params("actor"))
 	return actor.GetFollowingResp(ctx)
@@ -188,9 +172,30 @@ func ActorFollowers(ctx *fiber.Ctx) error {
 }
 
 func MakeActorPost(ctx *fiber.Ctx) error {
-	acct, reg := ctx.Locals("acct").(*db.Acct)
+	actor, err := activitypub.GetActorFromDB(config.Domain + "/" + ctx.FormValue("boardName"))
+	if err != nil {
+		return ctx.SendStatus(404)
+	}
 
-	header, _ := ctx.FormFile("file")
+	_, reg := ctx.Locals("acct").(*db.Acct)
+
+	// Waive captcha for authenticated users, otherwise complain
+	// Do this as early as possible to prevent wasting time
+	if !reg {
+		valid, err := util.CheckCaptcha(ctx.FormValue("captcha"))
+		if err != nil {
+			// Silently log it
+			config.Log.Printf("CheckCaptcha error: %v", err)
+		}
+
+		if !valid {
+			return ctx.Render("403", fiber.Map{
+				"message": "Incorrect Captcha",
+			})
+		}
+	}
+
+	header, err := ctx.FormFile("file")
 
 	if ctx.FormValue("inReplyTo") == "" && header == nil {
 		return ctx.Render("403", fiber.Map{
@@ -199,164 +204,94 @@ func MakeActorPost(ctx *fiber.Ctx) error {
 	}
 
 	var file multipart.File
+	if header != nil && err == nil {
+		file, err = header.Open()
+		if err != nil {
+			return err
+		}
+		defer file.Close()
 
-	if header != nil {
-		file, _ = header.Open()
-	}
+		// TODO: Do this according to the set limit
+		if header.Size > (7 << 20) {
+			return ctx.Render("403", fiber.Map{
+				"message": "7MB max file size",
+			})
+		} else if isBanned, err := db.IsMediaBanned(file); err == nil && isBanned {
+			config.Log.Println("media banned")
+			_, err := ctx.Status(403).Write([]byte(""))
+			return util.WrapError(err)
+		}
 
-	if file != nil && header.Size > (7<<20) {
-		return ctx.Render("403", fiber.Map{
-			"message": "7MB max file size",
-		})
-	}
+		contentType, _ := util.GetFileContentType(file)
 
-	if is, _ := util.IsPostBlacklist(ctx.FormValue("comment")); is {
-		config.Log.Println("Blacklist post blocked")
-		return ctx.Redirect("/", 301)
-	}
+		if !util.SupportedMIMEType(contentType) {
+			_, err := ctx.Status(403).Write([]byte("file type not supported"))
+			return util.WrapError(err)
+		}
 
-	if ctx.FormValue("inReplyTo") == "" || file == nil {
-		if strings.TrimSpace(ctx.FormValue("comment")) == "" && ctx.FormValue("subject") == "" {
+		file.Seek(0, io.SeekStart)
+	} else {
+		// No file attached or couldn't load it
+		// Disallow blank posting
+		if strings.TrimSpace(ctx.FormValue("comment")) == "" {
 			return ctx.Render("403", fiber.Map{
 				"message": "Comment or Subject required",
 			})
 		}
 	}
 
+	// Sanity check values
 	if len(ctx.FormValue("comment")) > 4500 {
 		return ctx.Render("403", fiber.Map{
 			"message": "Comment limit 4500 characters",
 		})
-	}
-
-	if strings.Count(ctx.FormValue("comment"), "\r\n") > 50 || strings.Count(ctx.FormValue("comment"), "\n") > 50 || strings.Count(ctx.FormValue("comment"), "\r") > 50 {
-		return ctx.Render("403", fiber.Map{
-			"message": "Too many new lines - try again.",
-		})
-	}
-
-	if len(ctx.FormValue("subject")) > 100 || len(ctx.FormValue("name")) > 100 || len(ctx.FormValue("options")) > 100 {
+	} else if len(ctx.FormValue("subject")) > 100 || len(ctx.FormValue("name")) > 100 || len(ctx.FormValue("options")) > 100 {
 		return ctx.Render("403", fiber.Map{
 			"message": "Name, Subject or Options limit 100 characters",
 		})
-	}
-
-	// Waive captcha for authenticated users, otherwise complain
-	if !reg && ctx.FormValue("captcha") == "" {
+	} else if strings.Count(ctx.FormValue("comment"), "\n") > 50 {
 		return ctx.Render("403", fiber.Map{
-			"message": "Incorrect Captcha",
+			"message": "Too many new lines - try again.",
 		})
+	} else if is, _ := util.IsPostBlacklist(ctx.FormValue("comment")); is {
+		config.Log.Println("Blacklist post blocked")
+		return ctx.Redirect("/", 301)
 	}
 
-	b := bytes.Buffer{}
-	we := multipart.NewWriter(&b)
-
-	if file != nil {
-		var fw io.Writer
-
-		fw, err := we.CreateFormFile("file", header.Filename)
-
-		if err != nil {
-			return util.WrapError(err)
-		}
-		_, err = io.Copy(fw, file)
-
-		if err != nil {
-			return util.WrapError(err)
-		}
+	nObj, err := ObjectFromForm(ctx, activitypub.CreateObject("Note"))
+	if err != nil {
+		return util.WrapError(err)
 	}
 
-	reply, _ := db.ParseCommentForReply(ctx.FormValue("comment"))
-
-	form, _ := ctx.MultipartForm()
-
-	if form.Value == nil {
-		return util.WrapError(errors.New("form value nil"))
+	if err := NewPost(actor, &nObj); err != nil {
+		return err
 	}
 
-	for key, r0 := range form.Value {
-		if key == "captcha" {
-			err := we.WriteField(key, ctx.FormValue("captchaCode")+":"+ctx.FormValue("captcha"))
-			if err != nil {
-				return util.WrapError(err)
-			}
-		} else if key == "name" {
-			name, tripcode, _ := db.CreateNameTripCode(ctx.FormValue("name"), acct)
-
-			err := we.WriteField(key, name)
-			if err != nil {
-				return util.WrapError(err)
-			}
-
-			err = we.WriteField("tripcode", tripcode)
-			if err != nil {
-				return util.WrapError(err)
-			}
+	var id string
+	op := len(nObj.InReplyTo) - 1
+	if op >= 0 {
+		if nObj.InReplyTo[op].Id == "" {
+			id = nObj.Id
 		} else {
-			err := we.WriteField(key, r0[0])
-			if err != nil {
-				return util.WrapError(err)
-			}
+			id = nObj.InReplyTo[0].Id + "|" + nObj.Id
 		}
 	}
 
-	if (ctx.FormValue("inReplyTo") == "" || ctx.FormValue("inReplyTo") == "NaN") && reply != "" {
-		err := we.WriteField("inReplyTo", reply)
-		if err != nil {
-			return util.WrapError(err)
+	var obj activitypub.ObjectBase
+
+	// TODO: We really don't need this
+	obj = ParseOptions(ctx, obj)
+
+	for _, e := range obj.Option {
+		if e == "noko" || e == "nokosage" {
+			return ctx.Redirect(config.Domain+"/"+ctx.FormValue("boardName")+"/"+util.ShortURL(actor.Outbox, id), 301)
 		}
 	}
 
-	we.Close()
-
-	// TODO: Remove sendTo
-
-	sendTo := ctx.FormValue("sendTo")
-
-	req, err := http.NewRequest("POST", sendTo, &b)
-	if err != nil {
-		return util.WrapError(err)
-	}
-
-	req.Header.Set("Content-Type", we.FormDataContentType())
-	if c := ctx.Cookies("session"); c != "" {
-		// This is a hack to pass through the token while we still make
-		// requests to the outbox
-		req.Header.Set("Authorization", "Bearer "+c)
-	}
-
-	resp, err := util.RouteProxy(req)
-	if err != nil {
-		return util.WrapError(err)
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return util.WrapError(err)
-	}
-
-	if resp.StatusCode == 200 {
-		var obj activitypub.ObjectBase
-
-		obj = ParseOptions(ctx, obj)
-		for _, e := range obj.Option {
-			if e == "noko" || e == "nokosage" {
-				return ctx.Redirect(config.Domain+"/"+ctx.FormValue("boardName")+"/"+util.ShortURL(ctx.FormValue("sendTo"), string(body)), 301)
-			}
-		}
-
-		if ctx.FormValue("returnTo") == "catalog" {
-			return ctx.Redirect(config.Domain+"/"+ctx.FormValue("boardName")+"/catalog", 301)
-		} else {
-			return ctx.Redirect(config.Domain+"/"+ctx.FormValue("boardName"), 301)
-		}
-	}
-
-	if resp.StatusCode == 403 {
-		return ctx.Render("403", fiber.Map{
-			"message": string(body),
-		})
+	if ctx.FormValue("returnTo") == "catalog" {
+		return ctx.Redirect(config.Domain+"/"+ctx.FormValue("boardName")+"/catalog", 301)
+	} else {
+		return ctx.Redirect(config.Domain+"/"+ctx.FormValue("boardName"), 301)
 	}
 
 	return ctx.Redirect(config.Domain+"/"+ctx.FormValue("boardName"), 301)

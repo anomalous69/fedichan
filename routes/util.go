@@ -2,6 +2,7 @@ package routes
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"html/template"
 	"io"
@@ -47,105 +48,50 @@ func GetActorPost(ctx *fiber.Ctx, path string) error {
 	return nil
 }
 
-func NewPost(ctx *fiber.Ctx, actor activitypub.Actor) error {
-	_, waiveCaptcha := ctx.Locals("acct").(*db.Acct)
-	contentType := util.GetContentType(ctx.Get("content-type"))
+func NewPost(actor activitypub.Actor, nObj *activitypub.ObjectBase) error {
+	nObj.Actor = config.Domain + "/" + actor.Name
 
-	if contentType != "multipart/form-data" && contentType != "application/x-www-form-urlencoded" {
-		return ctx.SendStatus(400)
+	if locked, _ := nObj.InReplyTo[0].IsLocked(); locked {
+		return errors.New("locked thread")
 	}
 
-	valid, err := util.CheckCaptcha(ctx.FormValue("captcha"))
+	_nObj, err := nObj.Write()
 	if err != nil {
 		return util.WrapError(err)
 	}
+	*nObj = _nObj
 
-	if waiveCaptcha || valid {
-		header, _ := ctx.FormFile("file")
-		if header != nil {
-			f, _ := header.Open()
-			defer f.Close()
-			if header.Size > (7 << 20) {
-				_, err := ctx.Status(403).Write([]byte("7MB max file size"))
-				return util.WrapError(err)
-			} else if isBanned, err := db.IsMediaBanned(f); err == nil && isBanned {
-				config.Log.Println("media banned")
-				_, err := ctx.Status(403).Write([]byte(""))
-				return util.WrapError(err)
-			}
-
-			contentType, _ := util.GetFileContentType(f)
-
-			if !util.SupportedMIMEType(contentType) {
-				_, err := ctx.Status(403).Write([]byte("file type not supported"))
-				return util.WrapError(err)
-			}
-		}
-
-		nObj, err := ObjectFromForm(ctx, activitypub.CreateObject("Note"))
-		if err != nil {
+	if len(nObj.To) == 0 {
+		if err := actor.ArchivePosts(); err != nil {
 			return util.WrapError(err)
 		}
-
-		nObj.Actor = config.Domain + "/" + actor.Name
-
-		if locked, _ := nObj.InReplyTo[0].IsLocked(); locked {
-			ctx.Response().Header.SetStatusCode(403)
-			_, err := ctx.Write([]byte("thread is locked"))
-			return util.WrapError(err)
-		}
-
-		nObj, err = nObj.Write()
-		if err != nil {
-			return util.WrapError(err)
-		}
-
-		if len(nObj.To) == 0 {
-			if err := actor.ArchivePosts(); err != nil {
-				return util.WrapError(err)
-			}
-		}
-
-		go func(nObj activitypub.ObjectBase) {
-			activity, err := nObj.CreateActivity("Create")
-			if err != nil {
-				config.Log.Printf("ParseOutboxRequest Create Activity: %s", err)
-			}
-
-			activity, err = activity.AddFollowersTo()
-			if err != nil {
-				config.Log.Printf("ParseOutboxRequest Add FollowersTo: %s", err)
-			}
-
-			if err := activity.Send(); err != nil {
-				config.Log.Printf("ParseOutboxRequest MakeRequestInbox: %s", err)
-			}
-		}(nObj)
-
-		go func(obj activitypub.ObjectBase) {
-			err := obj.SendEmailNotify()
-
-			if err != nil {
-				config.Log.Println(err)
-			}
-		}(nObj)
-
-		var id string
-		op := len(nObj.InReplyTo) - 1
-		if op >= 0 {
-			if nObj.InReplyTo[op].Id == "" {
-				id = nObj.Id
-			} else {
-				id = nObj.InReplyTo[0].Id + "|" + nObj.Id
-			}
-		}
-
-		_, err = ctx.Status(200).Write([]byte(id))
-		return util.WrapError(err)
 	}
 
-	_, err = ctx.Status(403).Write([]byte("captcha could not auth"))
-	return util.WrapError(err)
+	go func(nObj activitypub.ObjectBase) {
+		activity, err := nObj.CreateActivity("Create")
+		if err != nil {
+			config.Log.Printf("ParseOutboxRequest Create Activity: %s", err)
+		}
+
+		activity, err = activity.AddFollowersTo()
+		if err != nil {
+			config.Log.Printf("ParseOutboxRequest Add FollowersTo: %s", err)
+		}
+
+		if err := activity.Send(); err != nil {
+			config.Log.Printf("ParseOutboxRequest MakeRequestInbox: %s", err)
+		}
+	}(*nObj)
+
+	go func(obj activitypub.ObjectBase) {
+		err := obj.SendEmailNotify()
+
+		if err != nil {
+			config.Log.Println(err)
+		}
+	}(*nObj)
+
+	return nil
 }
 
 func TemplateFunctions(engine *html.Engine) {
@@ -256,6 +202,8 @@ func TemplateFunctions(engine *html.Engine) {
 }
 
 func ObjectFromForm(ctx *fiber.Ctx, obj activitypub.ObjectBase) (activitypub.ObjectBase, error) {
+	acct, _ := ctx.Locals("acct").(*db.Acct)
+
 	var err error
 	var file multipart.File
 
@@ -294,8 +242,10 @@ func ObjectFromForm(ctx *fiber.Ctx, obj activitypub.ObjectBase) (activitypub.Obj
 		obj.Preview = obj.Attachment[0].CreatePreview()
 	}
 
-	obj.AttributedTo = util.EscapeString(ctx.FormValue("name"))
-	obj.TripCode = util.EscapeString(ctx.FormValue("tripcode"))
+	name, tripcode, _ := db.CreateNameTripCode(ctx.FormValue("name"), acct)
+
+	obj.AttributedTo = util.EscapeString(name)
+	obj.TripCode = util.EscapeString(tripcode)
 	obj.Name = util.EscapeString(ctx.FormValue("subject"))
 	obj.Content = util.EscapeString(ctx.FormValue("comment"))
 	obj.Sensitive = (ctx.FormValue("sensitive") != "")

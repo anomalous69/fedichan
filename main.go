@@ -120,7 +120,6 @@ func main() {
 	app.Get("/:actor/catalog", routes.ActorCatalog)
 	app.Post("/:actor/inbox", routes.ActorInbox)
 	app.Get("/:actor/outbox", routes.GetActorOutbox)
-	app.Post("/:actor/outbox", routes.PostActorOutbox)
 	app.Get("/:actor/following", routes.ActorFollowing)
 	app.Get("/:actor/followers", routes.ActorFollowers)
 	app.Get("/:actor/archive", routes.ActorArchive)

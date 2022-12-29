@@ -70,33 +70,6 @@ func ParseCommentForReplies(comment string, op string) ([]activitypub.ObjectBase
 	return validLinks, nil
 }
 
-func ParseCommentForReply(comment string) (string, error) {
-	re := regexp.MustCompile(`(>>(https?://[A-Za-z0-9_.:\-~]+\/[A-Za-z0-9_.\-~]+\/)(f[A-Za-z0-9_.\-~]+-)?([A-Za-z0-9_.\-~]+)?#?([A-Za-z0-9_.\-~]+)?)`)
-	match := re.FindAllStringSubmatch(comment, -1)
-
-	var links []string
-
-	for i := 0; i < len(match); i++ {
-		str := strings.Replace(match[i][0], ">>", "", 1)
-		links = append(links, str)
-	}
-
-	if len(links) > 0 {
-		reqActivity := activitypub.Activity{Id: strings.ReplaceAll(links[0], ">", "")}
-		_, isValid, err := reqActivity.CheckValid()
-
-		if err != nil {
-			return "", wrapErr(err)
-		}
-
-		if isValid {
-			return links[0], nil
-		}
-	}
-
-	return "", nil
-}
-
 func ParseLinkTitle(actorName string, op string, content string) string {
 	re := regexp.MustCompile(`(>>(https?://[A-Za-z0-9_.:\-~]+\/[A-Za-z0-9_.\-~]+\/)\w+(#.+)?)`)
 	match := re.FindAllStringSubmatch(content, -1)
