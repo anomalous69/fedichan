@@ -17,6 +17,7 @@ import (
 )
 
 func ActorInbox(ctx *fiber.Ctx) error {
+	actor, _ := activitypub.GetActorFromDB(config.Domain + "/" + ctx.Params("actor"))
 	activity, err := activitypub.GetActivityFromJson(ctx)
 
 	if err != nil {
@@ -38,6 +39,14 @@ func ActorInbox(ctx *fiber.Ctx) error {
 	}
 
 	switch activity.Type {
+	case "Accept":
+		if activity.Object.Object.Type == "Follow" {
+			if _, err := activity.SetActorFollowing(); err != nil {
+				return util.WrapError(err)
+			}
+		} else {
+			return ctx.SendStatus(400)
+		}
 	case "Create":
 		for _, e := range activity.To {
 			actor := activitypub.Actor{Id: e}
@@ -87,7 +96,7 @@ func ActorInbox(ctx *fiber.Ctx) error {
 	case "Follow":
 		for _, e := range activity.To {
 			if _, err := activitypub.GetActorFromDB(e); err == nil {
-				response := activity.AcceptFollow()
+				response := activity.AcceptFollow(actor)
 				response, err := response.SetActorFollower()
 
 				if err != nil {
