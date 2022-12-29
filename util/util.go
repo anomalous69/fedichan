@@ -2,7 +2,6 @@ package util
 
 import (
 	"crypto/sha256"
-	"database/sql"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -246,29 +245,6 @@ func LoadThemes() error {
 	}
 
 	return nil
-}
-
-func GetBoardAuth(board string) ([]string, error) {
-	var auth []string
-	var rows *sql.Rows
-	var err error
-
-	query := `select type from actorauth where board=$1`
-	if rows, err = config.DB.Query(query, board); err != nil {
-		return auth, MakeError(err, "GetBoardAuth")
-	}
-
-	defer rows.Close()
-	for rows.Next() {
-		var _type string
-		if err := rows.Scan(&_type); err != nil {
-			return auth, MakeError(err, "GetBoardAuth")
-		}
-
-		auth = append(auth, _type)
-	}
-
-	return auth, nil
 }
 
 func MakeError(err error, msg string) error {

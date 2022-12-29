@@ -69,13 +69,6 @@ func CreateNewBoard(actor activitypub.Actor) (activitypub.Actor, error) {
 
 		config.Log.Println("board added")
 
-		for _, e := range actor.AuthRequirement {
-			query = `insert into actorauth (type, board) values ($1, $2)`
-			if _, err := config.DB.Exec(query, e, actor.Name); err != nil {
-				return activitypub.Actor{}, wrapErr(err)
-			}
-		}
-
 		/* TODO
 		if actor.Id == config.Domain {
 			var verify Verify
