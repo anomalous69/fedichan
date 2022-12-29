@@ -1,16 +1,16 @@
-{{ template "partials/top" .page }}
+{{ template "partials/top" . }}
 
 <hr>
 
 <ul id="navlinks">
-  <li>[<a href="/{{ .page.Board.Name }}">Return</a>]</li>
-  {{ template "partials/post_nav" .page }}
+  <li>[<a href="/{{ .Board.Name }}">Return</a>]</li>
+  {{ template "partials/post_nav" . }}
   <li>[<a href="#bottom" id="top">Bottom</a>]</li>
 </ul>
 
 <hr>
 
-{{ template "partials/posts" .page }}
+{{ template "partials/posts" . }}
 
 <hr>
 
@@ -18,22 +18,22 @@
   <tr>
     <td>
       <ul id="navlinks">
-        <li>[<a href="/{{ .page.Board.Name }}">Return</a>]</li>
-        {{ template "partials/post_nav" .page }}
+        <li>[<a href="/{{ .Board.Name }}">Return</a>]</li>
+        {{ template "partials/post_nav" . }}
         <li>[<a href="#top" id="bottom">Top</a>]</li>
         <li><input id="autoreload-checkbox" type="checkbox" onclick="autoTimer()"> Auto refresh <span id="autoreload-countdown" style="visibility: hidden;">0</span></li>
       </ul>
     </td>
 
-    {{ if gt (len .page.Posts) 0 }}
-    {{ if eq (index .page.Posts 0).Type "Note" }}
+    {{ if gt (len .Posts) 0 }}
+    {{ if eq (index .Posts 0).Type "Note" }}
     <td style="text-align: center;">
-      <span>[<a id="reply-content" href="javascript:quote('{{ .page.Board.Actor.Id }}', '{{ (index .page.Posts 0).Id }}', 'reply')">Post a Reply</a>]</span>
+      <span>[<a id="reply-content" href="javascript:quote('{{ .Board.Actor.Id }}', '{{ (index .Posts 0).Id }}', 'reply')">Post a Reply</a>]</span>
     </td>
     {{ end }}
 
     <td>
-      {{ $replies := (index .page.Posts 0).Replies}}
+      {{ $replies := (index .Posts 0).Replies}}
       <span id="threadStats" data-total="{{if $replies}}{{$replies.TotalItems}}{{else}}0{{end}}" data-imgs="{{if $replies}}{{$replies.TotalImgs}}{{else}}0{{end}}">{{if $replies}}{{$replies.TotalItems}}{{else}}0{{end}} / {{if $replies}}{{$replies.TotalImgs}}{{else}}0{{end}}</span>
     </td>
     {{ end }}
@@ -42,9 +42,9 @@
 
 <hr>
 
-{{ template "partials/bottom" .page }}
-{{ template "partials/footer" .page }}
-{{ template "partials/general_scripts" .page }}
-{{ template "partials/post_scripts" .page }}
+{{ template "partials/bottom" . }}
+{{ template "partials/footer" . }}
+{{ template "partials/general_scripts" . }}
+{{ template "partials/post_scripts" . }}
 
 <script src="/static/js/timer.js"></script>

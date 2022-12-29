@@ -55,9 +55,7 @@ func Index(ctx *fiber.Ctx) error {
 	data.Themes = config.Themes
 	data.ThemeCookie = themeCookie(ctx)
 
-	return ctx.Render("index", fiber.Map{
-		"page": data,
-	}, "layouts/main")
+	return ctx.Render("index", data, "layouts/main")
 }
 
 func Inbox(ctx *fiber.Ctx) error {

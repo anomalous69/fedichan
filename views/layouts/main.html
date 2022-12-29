@@ -1,47 +1,47 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>{{ .page.Title }}</title>
+    <title>{{ .Title }}</title>
     <meta charset="UTF-8">
     <meta name='robots' content='noindex, nofollow'/>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="keywords" content="Federated Imageboard based on Activtypub">
-    <meta name="description" content="{{ .page.Meta.Description }}">
-    <meta property="og:url" content="{{ .page.Meta.Url }}">
-    <meta property="og:site_name" content="{{ .page.Instance.PreferredUsername }}" />
+    <meta name="description" content="{{ .Meta.Description }}">
+    <meta property="og:url" content="{{ .Meta.Url }}">
+    <meta property="og:site_name" content="{{ .Instance.PreferredUsername }}" />
 
-    <meta property="og:title" content="{{ .page.Meta.Title }}">
-    <meta property="og:description" content="{{ .page.Meta.Description }}">
+    <meta property="og:title" content="{{ .Meta.Title }}">
+    <meta property="og:description" content="{{ .Meta.Description }}">
 
     <meta property="og:locale" content="en_US" />
     <meta property="og:type" content="website" />
 
-    <meta name="twitter:title" content="{{ .page.Meta.Title }}">
-    <meta name="twitter:description" content="{{ .page.Meta.Description }}">
+    <meta name="twitter:title" content="{{ .Meta.Title }}">
+    <meta name="twitter:description" content="{{ .Meta.Description }}">
     <meta name="twitter:card" content="summary_large_image">
 
-    {{ if not (eq .page.Meta.Preview "") }}
-    <meta property="og:image" content="{{ .page.Meta.Preview }}" />
-    <meta name="twitter:image" content="{{ .page.Meta.Preview }}" />
+    {{ if not (eq .Meta.Preview "") }}
+    <meta property="og:image" content="{{ .Meta.Preview }}" />
+    <meta name="twitter:image" content="{{ .Meta.Preview }}" />
     {{ end }}
 
     <link rel="icon" type="image/png"  href="/static/favicon.png">
 
-    {{ if gt (len .page.ThemeCookie) 0 }}
-    <link rel="stylesheet" type="text/css" href="/static/css/themes/{{.page.ThemeCookie}}.css" title="selected theme">
+    {{ if gt (len .ThemeCookie) 0 }}
+    <link rel="stylesheet" type="text/css" href="/static/css/themes/{{.ThemeCookie}}.css" title="selected theme">
     {{ else }}
     <link rel="stylesheet" type="text/css" href="/static/css/themes/default.css" title="default">
     {{ end }}
-    {{ range .page.Themes }}
+    {{ range .Themes }}
     <link rel="alternate stylesheet" type="text/css" href="/static/css/themes/{{.}}.css" title="{{.}}" disabled>
     {{ end }}
   </head>
-  <body {{ if not .page.Board.Restricted }}class="nsfw"{{ end }} onload="applyTheme()">
+  <body {{ if not .Board.Restricted }}class="nsfw"{{ end }} onload="applyTheme()">
     <div style="padding-bottom:5px;">
       <ul id="boardlinks">
-        {{ $l := len .page.Boards }}
+        {{ $l := len .Boards }}
         <li>[<a href="/">Home</a>]</li>
-        {{range $i, $e := .page.Boards}}
+        {{range $i, $e := .Boards}}
         {{ if eq (sub $l 1) 0 }}
         <li>[ <a href="{{.Location}}">{{$e.Name}} </a>]</li>
         {{ else if eq $i 0 }}
@@ -53,8 +53,8 @@
         {{ end }}
         {{ end }}
       </ul>
-      {{ if .page.Acct }}
-      <span id="manageboard">[<a href="/{{ .page.Key }}/{{ .page.Board.Name }}">Manage Board</a>]</span>
+      {{ if .Acct }}
+      <span id="manageboard">[<a href="/{{ .Key }}/{{ .Board.Name }}">Manage Board</a>]</span>
       {{ end }}
     </div>
     {{ embed }}

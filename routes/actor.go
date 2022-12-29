@@ -390,7 +390,7 @@ func ActorPost(ctx *fiber.Ctx) error {
 	collection, err := obj.GetCollectionFromPath()
 
 	if err != nil {
-		return ctx.Status(404).Render("404", fiber.Map{})
+		return ctx.Status(404).Render("404", nil)
 	}
 
 	var data PageData
@@ -451,9 +451,7 @@ func ActorPost(ctx *fiber.Ctx) error {
 	data.Themes = config.Themes
 	data.ThemeCookie = themeCookie(ctx)
 
-	return ctx.Render("npost", fiber.Map{
-		"page": data,
-	}, "layouts/main")
+	return ctx.Render("npost", data, "layouts/main")
 }
 
 func ActorCatalog(ctx *fiber.Ctx) error {
@@ -514,9 +512,7 @@ func ActorCatalog(ctx *fiber.Ctx) error {
 	data.Themes = config.Themes
 	data.ThemeCookie = themeCookie(ctx)
 
-	return ctx.Render("catalog", fiber.Map{
-		"page": data,
-	}, "layouts/main")
+	return ctx.Render("catalog", data, "layouts/main")
 }
 
 func ActorPosts(ctx *fiber.Ctx) error {
@@ -524,7 +520,7 @@ func ActorPosts(ctx *fiber.Ctx) error {
 	actor, err := activitypub.GetActorByNameFromDB(ctx.Params("actor"))
 
 	if err != nil {
-		return ctx.Status(404).Render("404", fiber.Map{})
+		return ctx.Status(404).Render("404", nil)
 	}
 
 	if activitypub.AcceptActivity(ctx.Get("Accept")) {
@@ -599,9 +595,7 @@ func ActorPosts(ctx *fiber.Ctx) error {
 	data.Themes = config.Themes
 	data.ThemeCookie = themeCookie(ctx)
 
-	return ctx.Render("nposts", fiber.Map{
-		"page": data,
-	}, "layouts/main")
+	return ctx.Render("nposts", data, "layouts/main")
 }
 
 func ActorArchive(ctx *fiber.Ctx) error {
@@ -656,9 +650,7 @@ func ActorArchive(ctx *fiber.Ctx) error {
 	returnData.Themes = config.Themes
 	returnData.ThemeCookie = themeCookie(ctx)
 
-	return ctx.Render("archive", fiber.Map{
-		"page": returnData,
-	}, "layouts/main")
+	return ctx.Render("archive", returnData, "layouts/main")
 }
 
 func GetActorOutbox(ctx *fiber.Ctx) error {

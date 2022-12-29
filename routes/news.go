@@ -19,7 +19,7 @@ func NewsGet(ctx *fiber.Ctx) error {
 	ts, err := strconv.Atoi(timestamp)
 
 	if err != nil {
-		return ctx.Status(404).Render("404", fiber.Map{})
+		return ctx.Status(404).Render("404", nil)
 	}
 
 	actor, err := activitypub.GetActorFromDB(config.Domain)
@@ -54,7 +54,7 @@ func NewsGet(ctx *fiber.Ctx) error {
 	data.Themes = config.Themes
 	data.ThemeCookie = themeCookie(ctx)
 
-	return ctx.Render("news", fiber.Map{"page": data}, "layouts/main")
+	return ctx.Render("news", data, "layouts/main")
 }
 
 func NewsGetAll(ctx *fiber.Ctx) error {
@@ -94,7 +94,7 @@ func NewsGetAll(ctx *fiber.Ctx) error {
 	data.Themes = config.Themes
 	data.ThemeCookie = themeCookie(ctx)
 
-	return ctx.Render("anews", fiber.Map{"page": data}, "layouts/main")
+	return ctx.Render("anews", data, "layouts/main")
 }
 
 func NewsPost(ctx *fiber.Ctx) error {
@@ -132,7 +132,7 @@ func NewsDelete(ctx *fiber.Ctx) error {
 	tsint, err := strconv.Atoi(timestamp)
 
 	if err != nil {
-		return ctx.Status(404).Render("404", fiber.Map{})
+		return ctx.Status(404).Render("404", nil)
 	}
 
 	if err := db.DeleteNewsItem(tsint); err != nil {

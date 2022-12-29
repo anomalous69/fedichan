@@ -1,6 +1,6 @@
 <div style="margin: 0 auto; width: 400px;">
   <h3>Add Board</h3>
-  <form id="new-post" action="/{{ .page.Key }}/addboard" method="post" enctype="application/x-www-form-urlencoded">
+  <form id="new-post" action="/{{ .Key }}/addboard" method="post" enctype="application/x-www-form-urlencoded">
     <label>Name:</label><br>
     <input type="text" name="name" placeholder="g" required><br>
     <label>Prefered Name:</label><br>
@@ -23,14 +23,14 @@
 
 <div id="following" class="box2" style="margin-bottom: 25px; padding: 12px;">
   <h4 style="margin: 0; margin-bottom: 5px;">Subscribed</h4>
-  <form id="follow-form" action="/{{ .page.Key }}/follow" method="post" enctype="application/x-www-form-urlencoded">
+  <form id="follow-form" action="/{{ .Key }}/follow" method="post" enctype="application/x-www-form-urlencoded">
     <input id="follow" name="follow" style="margin-bottom: 12px;" placeholder="http://localhost:3000/g"></input><input type="submit" value="Subscribe"><br>
-    <input type="hidden" name="actor" value="{{ .page.Actor }}">
+    <input type="hidden" name="actor" value="{{ .Actor }}">
   </form>
   <ul style="display: inline-block; padding: 0; margin: 0; list-style-type: none;">
-    {{ $actor := .page.Actor }}
-    {{ $key := .page.Key }}
-    {{ range .page.Following }}
+    {{ $actor := .Actor }}
+    {{ $key := .Key }}
+    {{ range .Following }}
     <li>[<a href="/{{ $key }}/follow?follow={{ . }}&actor={{ $actor }}">Unfollow</a>]<a href="{{ . }}">{{ . }}</a></li>
     {{ end }}
   </ul>
@@ -39,7 +39,7 @@
 <div id="followers" class="box2" style="margin-bottom: 25px; padding: 12px; display:none;">
   <h4 style="margin: 0; margin-bottom: 5px;">Followers</h4>
   <ul style="display: inline-block; padding: 0; margin: 0; list-style-type: none;">
-    {{ range .page.Followers }}
+    {{ range .Followers }}
     <li><a href="http://localhost:3000/g">{{ . }}</a></li>
     {{ end }}
   </ul>
@@ -48,8 +48,8 @@
 <div id="reported" class="box2" style="margin-bottom: 25px; padding: 12px;">
   <h4 style="margin: 0; margin-bottom: 5px;">Reported</h4>
   <ul style="display: inline-block; padding: 0; margin: 0; list-style-type: none;">
-    {{ $domain := .page.Domain }}
-    {{ range .reports }}
+    {{ $domain := .Domain }}
+    {{ range .Reports }}
     <h4 style="margin: 0;"><a href="{{ print $domain "/" (index . 0).Actor.Name }}">/{{ (index . 0).Actor.Name }}/</a></h4>
     {{ range . }}
     <li style="padding: 12px;">
@@ -70,7 +70,7 @@
 
 <div class="box2" style="margin-bottom: 25px; padding: 12px;">
   <h3>Create News</h3>
-  <form id="news" action="/{{ .page.Key }}/newspost" method="post" enctype="application/x-www-form-urlencoded">
+  <form id="news" action="/{{ .Key }}/newspost" method="post" enctype="application/x-www-form-urlencoded">
     <label>Title:</label><br>
     <input type="text" name="title" placeholder="New Board" required><input type="submit" value="Post"><br>
     <label>Content:</label><br>
@@ -86,14 +86,14 @@
     <label>Test Case:</label><br>
     <textarea name="testCase" rows="8" cols="50" placeholder="enter a test case to block, if it passes the regex will be added to the blacklist.&#10;&#10;(?i) for case insesitive &#10;(?s) to span multiple lines"></textarea><br>
   </form>
-  {{ if .page.PostBlacklist }}
+  {{ if .PostBlacklist }}
   <ul style="display: inline-block; padding: 0; margin: 0; margin-top: 25px; list-style-type: none;">
-    {{ range .page.PostBlacklist }}
+    {{ range .PostBlacklist }}
     <li>{{ .Regex }} [<a href="/blacklist?remove={{ .Id }}">remove</a>]</li>
     {{ end }}
   </ul>
   {{ end }}
 </div>
 
-{{ template "partials/footer" .page }}
-{{ template "partials/general_scripts" .page }}
+{{ template "partials/footer" . }}
+{{ template "partials/general_scripts" . }}

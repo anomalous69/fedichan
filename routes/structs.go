@@ -46,6 +46,8 @@ type AdminPage struct {
 	PostBlacklist []util.PostBlacklist
 	AutoSubscribe bool
 	RecentPosts   []activitypub.ObjectBase
+	Reports       map[string][]db.Reports
+	Jannies       []db.Verify
 }
 
 type Meta struct {

@@ -346,7 +346,7 @@ func BoardAddToIndex(ctx *fiber.Ctx) error {
 func BoardPopArchive(ctx *fiber.Ctx) error {
 	_, hasAuth := ctx.Locals("acct").(*db.Acct)
 	if !hasAuth {
-		return ctx.Status(404).Render("404", fiber.Map{})
+		return ctx.Status(404).Render("404", nil)
 	}
 
 	id := ctx.Query("id")
@@ -364,7 +364,7 @@ func BoardPopArchive(ctx *fiber.Ctx) error {
 func BoardAutoSubscribe(ctx *fiber.Ctx) error {
 	_, hasAuth := ctx.Locals("acct").(*db.Acct)
 	if !hasAuth {
-		return ctx.Status(404).Render("404", fiber.Map{})
+		return ctx.Status(404).Render("404", nil)
 	}
 
 	actor, err := activitypub.GetActorFromDB(config.Domain)
@@ -394,7 +394,7 @@ func BoardAutoSubscribe(ctx *fiber.Ctx) error {
 func BoardBlacklist(ctx *fiber.Ctx) error {
 	_, hasAuth := ctx.Locals("acct").(*db.Acct)
 	if !hasAuth {
-		return ctx.Status(404).Render("404", fiber.Map{})
+		return ctx.Status(404).Render("404", nil)
 	}
 
 	if ctx.Method() == "GET" {
@@ -543,7 +543,7 @@ func ReportGet(ctx *fiber.Ctx) error {
 	data.Board.Domain = config.Domain
 	data.Boards = activitypub.Boards
 
-	return ctx.Render("report", fiber.Map{"page": data}, "layouts/main")
+	return ctx.Render("report", data, "layouts/main")
 }
 
 func Sticky(ctx *fiber.Ctx) error {

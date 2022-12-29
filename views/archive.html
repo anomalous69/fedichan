@@ -1,17 +1,17 @@
-{{ template "partials/top" .page }}
+{{ template "partials/top" . }}
 
-{{ $board := .page.Board }}
-{{ $acct := .page.Acct }}
+{{ $board := .Board }}
+{{ $acct := .Acct }}
 
 <hr>
 <ul id="navlinks">
   <li>[<a href="/{{ $board.Name }}">Return</a>]</li>
-  {{ template "partials/post_nav" .page }}
+  {{ template "partials/post_nav" . }}
   <li>[<a href="#bottom" id="top">Bottom</a>]</li>
 </ul>
 <hr>
 
-{{ if .page.Posts }}
+{{ if .Posts }}
 <table align="center" style="table-layout:fixed; width:90%;">
   <tr>
     {{ if $acct }}
@@ -21,7 +21,7 @@
     <th>Excerpt</th>
     <th style="width: 60px;"></th>
   </tr>
-  {{ range $i, $e := .page.Posts }}
+  {{ range $i, $e := .Posts }}
   {{ if mod $i 2 }}
   <tr class="box-alt">
     {{ if $acct }}
@@ -49,13 +49,13 @@
 
 <ul id="navlinks">
   <li>[<a href="/{{ $board.Name }}">Return</a>]</li>
-  {{ template "partials/post_nav" .page }}
+  {{ template "partials/post_nav" . }}
   <li>[<a href="#top" id="bottom">Top</a>]</li>
 </ul>
 
 <hr>
 
-{{ template "partials/bottom" .page }}
-{{ template "partials/footer" .page }}
-{{ template "partials/general_scripts" .page }}
-{{ template "partials/post_scripts" .page }}
+{{ template "partials/bottom" . }}
+{{ template "partials/footer" . }}
+{{ template "partials/general_scripts" . }}
+{{ template "partials/post_scripts" . }}
