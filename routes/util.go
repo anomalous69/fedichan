@@ -47,209 +47,105 @@ func GetActorPost(ctx *fiber.Ctx, path string) error {
 	return nil
 }
 
-func ParseOutboxRequest(ctx *fiber.Ctx, actor activitypub.Actor) error {
+func NewPost(ctx *fiber.Ctx, actor activitypub.Actor) error {
 	_, waiveCaptcha := ctx.Locals("acct").(*db.Acct)
 	contentType := util.GetContentType(ctx.Get("content-type"))
 
-	if contentType == "multipart/form-data" || contentType == "application/x-www-form-urlencoded" {
-		valid, err := util.CheckCaptcha(ctx.FormValue("captcha"))
-		if err != nil {
-			return util.WrapError(err)
-		}
-
-		if waiveCaptcha || valid {
-			header, _ := ctx.FormFile("file")
-			if header != nil {
-				f, _ := header.Open()
-				defer f.Close()
-				if header.Size > (7 << 20) {
-					_, err := ctx.Status(403).Write([]byte("7MB max file size"))
-					return util.WrapError(err)
-				} else if isBanned, err := db.IsMediaBanned(f); err == nil && isBanned {
-					config.Log.Println("media banned")
-					_, err := ctx.Status(403).Write([]byte(""))
-					return util.WrapError(err)
-				}
-
-				contentType, _ := util.GetFileContentType(f)
-
-				if !util.SupportedMIMEType(contentType) {
-					_, err := ctx.Status(403).Write([]byte("file type not supported"))
-					return util.WrapError(err)
-				}
-			}
-
-			nObj, err := ObjectFromForm(ctx, activitypub.CreateObject("Note"))
-			if err != nil {
-				return util.WrapError(err)
-			}
-
-			nObj.Actor = config.Domain + "/" + actor.Name
-
-			if locked, _ := nObj.InReplyTo[0].IsLocked(); locked {
-				ctx.Response().Header.SetStatusCode(403)
-				_, err := ctx.Write([]byte("thread is locked"))
-				return util.WrapError(err)
-			}
-
-			nObj, err = nObj.Write()
-			if err != nil {
-				return util.WrapError(err)
-			}
-
-			if len(nObj.To) == 0 {
-				if err := actor.ArchivePosts(); err != nil {
-					return util.WrapError(err)
-				}
-			}
-
-			go func(nObj activitypub.ObjectBase) {
-				activity, err := nObj.CreateActivity("Create")
-				if err != nil {
-					config.Log.Printf("ParseOutboxRequest Create Activity: %s", err)
-				}
-
-				activity, err = activity.AddFollowersTo()
-				if err != nil {
-					config.Log.Printf("ParseOutboxRequest Add FollowersTo: %s", err)
-				}
-
-				if err := activity.MakeRequestInbox(); err != nil {
-					config.Log.Printf("ParseOutboxRequest MakeRequestInbox: %s", err)
-				}
-			}(nObj)
-
-			go func(obj activitypub.ObjectBase) {
-				err := obj.SendEmailNotify()
-
-				if err != nil {
-					config.Log.Println(err)
-				}
-			}(nObj)
-
-			var id string
-			op := len(nObj.InReplyTo) - 1
-			if op >= 0 {
-				if nObj.InReplyTo[op].Id == "" {
-					id = nObj.Id
-				} else {
-					id = nObj.InReplyTo[0].Id + "|" + nObj.Id
-				}
-			}
-
-			_, err = ctx.Status(200).Write([]byte(id))
-			return util.WrapError(err)
-		}
-
-		_, err = ctx.Status(403).Write([]byte("captcha could not auth"))
-		return util.WrapError(err)
-	} else { // json request
-		activity, err := activitypub.GetActivityFromJson(ctx)
-		if err != nil {
-			return util.WrapError(err)
-		}
-
-		if res, _ := activity.IsLocal(); res {
-			if res := activity.Actor.VerifyHeaderSignature(ctx); err == nil && !res {
-				_, err = ctx.Status(403).Write([]byte(""))
-				return util.WrapError(err)
-			}
-
-			switch activity.Type {
-			case "Create":
-				_, err = ctx.Status(403).Write([]byte(""))
-
-			case "Follow":
-				validActor := (activity.Object.Actor != "")
-				validLocalActor := (activity.Actor.Id == actor.Id)
-
-				var rActivity activitypub.Activity
-
-				if validActor && validLocalActor {
-					rActivity = activity.AcceptFollow()
-					rActivity, err = rActivity.SetActorFollowing()
-
-					if err != nil {
-						return util.WrapError(err)
-					}
-
-					if err := activity.MakeRequestInbox(); err != nil {
-						return util.WrapError(err)
-					}
-				}
-
-				actor, _ := activitypub.GetActorFromDB(config.Domain)
-				activitypub.FollowingBoards, err = actor.GetFollowing()
-
-				if err != nil {
-					return util.WrapError(err)
-				}
-
-				activitypub.Boards, err = activitypub.GetBoardCollection()
-
-				if err != nil {
-					return util.WrapError(err)
-				}
-
-			case "Delete":
-				config.Log.Println("This is a delete")
-				_, err = ctx.Status(403).Write([]byte("could not process activity"))
-			case "Note":
-				_, err = ctx.Status(403).Write([]byte("could not process activity"))
-
-			case "New":
-				name := activity.Object.Alias
-				prefname := activity.Object.Name
-				summary := activity.Object.Summary
-				restricted := activity.Object.Sensitive
-
-				actor, err := db.CreateNewBoard(*activitypub.CreateNewActor(name, prefname, summary, config.AuthReq, restricted))
-				if err != nil {
-					return util.WrapError(err)
-				}
-
-				if actor.Id != "" {
-					var board []activitypub.ObjectBase
-					var item activitypub.ObjectBase
-					var removed bool = false
-
-					item.Id = actor.Id
-					for _, e := range activitypub.FollowingBoards {
-						if e.Id != item.Id {
-							board = append(board, e)
-						} else {
-							removed = true
-						}
-					}
-
-					if !removed {
-						board = append(board, item)
-					}
-
-					activitypub.FollowingBoards = board
-					activitypub.Boards, err = activitypub.GetBoardCollection()
-					return util.WrapError(err)
-				}
-
-				_, err = ctx.Status(403).Write([]byte(""))
-
-			default:
-				_, err = ctx.Status(403).Write([]byte("could not process activity"))
-			}
-
-			if err != nil {
-				return util.WrapError(err)
-			}
-		} else if err != nil {
-			return util.WrapError(err)
-		} else {
-			config.Log.Println("is NOT activity")
-			_, err = ctx.Status(403).Write([]byte("could not process activity"))
-			return util.WrapError(err)
-		}
+	if contentType != "multipart/form-data" && contentType != "application/x-www-form-urlencoded" {
+		return ctx.SendStatus(400)
 	}
 
-	return nil
+	valid, err := util.CheckCaptcha(ctx.FormValue("captcha"))
+	if err != nil {
+		return util.WrapError(err)
+	}
+
+	if waiveCaptcha || valid {
+		header, _ := ctx.FormFile("file")
+		if header != nil {
+			f, _ := header.Open()
+			defer f.Close()
+			if header.Size > (7 << 20) {
+				_, err := ctx.Status(403).Write([]byte("7MB max file size"))
+				return util.WrapError(err)
+			} else if isBanned, err := db.IsMediaBanned(f); err == nil && isBanned {
+				config.Log.Println("media banned")
+				_, err := ctx.Status(403).Write([]byte(""))
+				return util.WrapError(err)
+			}
+
+			contentType, _ := util.GetFileContentType(f)
+
+			if !util.SupportedMIMEType(contentType) {
+				_, err := ctx.Status(403).Write([]byte("file type not supported"))
+				return util.WrapError(err)
+			}
+		}
+
+		nObj, err := ObjectFromForm(ctx, activitypub.CreateObject("Note"))
+		if err != nil {
+			return util.WrapError(err)
+		}
+
+		nObj.Actor = config.Domain + "/" + actor.Name
+
+		if locked, _ := nObj.InReplyTo[0].IsLocked(); locked {
+			ctx.Response().Header.SetStatusCode(403)
+			_, err := ctx.Write([]byte("thread is locked"))
+			return util.WrapError(err)
+		}
+
+		nObj, err = nObj.Write()
+		if err != nil {
+			return util.WrapError(err)
+		}
+
+		if len(nObj.To) == 0 {
+			if err := actor.ArchivePosts(); err != nil {
+				return util.WrapError(err)
+			}
+		}
+
+		go func(nObj activitypub.ObjectBase) {
+			activity, err := nObj.CreateActivity("Create")
+			if err != nil {
+				config.Log.Printf("ParseOutboxRequest Create Activity: %s", err)
+			}
+
+			activity, err = activity.AddFollowersTo()
+			if err != nil {
+				config.Log.Printf("ParseOutboxRequest Add FollowersTo: %s", err)
+			}
+
+			if err := activity.Send(); err != nil {
+				config.Log.Printf("ParseOutboxRequest MakeRequestInbox: %s", err)
+			}
+		}(nObj)
+
+		go func(obj activitypub.ObjectBase) {
+			err := obj.SendEmailNotify()
+
+			if err != nil {
+				config.Log.Println(err)
+			}
+		}(nObj)
+
+		var id string
+		op := len(nObj.InReplyTo) - 1
+		if op >= 0 {
+			if nObj.InReplyTo[op].Id == "" {
+				id = nObj.Id
+			} else {
+				id = nObj.InReplyTo[0].Id + "|" + nObj.Id
+			}
+		}
+
+		_, err = ctx.Status(200).Write([]byte(id))
+		return util.WrapError(err)
+	}
+
+	_, err = ctx.Status(403).Write([]byte("captcha could not auth"))
+	return util.WrapError(err)
 }
 
 func TemplateFunctions(engine *html.Engine) {

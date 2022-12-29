@@ -62,7 +62,7 @@ func CreateAttachmentObject(file multipart.File, header *multipart.FileHeader) (
 	return nAttachment, tempFile, nil
 }
 
-func CreateNewActor(board string, prefName string, summary string, authReq []string, restricted bool) *Actor {
+func CreateNewActor(board string, prefName string, summary string, restricted bool) *Actor {
 	actor := new(Actor)
 
 	var path string
@@ -83,7 +83,6 @@ func CreateNewActor(board string, prefName string, summary string, authReq []str
 	actor.PreferredUsername = prefName
 	actor.Restricted = restricted
 	actor.Summary = summary
-	actor.AuthRequirement = authReq
 
 	return actor
 }

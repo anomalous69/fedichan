@@ -34,6 +34,7 @@ var SupportedFiles = []string{"image/gif", "image/jpeg", "image/png", "image/web
 var Log = log.New(os.Stdout, "", log.Ltime)
 var MediaHashs = make(map[string]string)
 var Key = GetConfigValue("modkey", "")
+var Debug = GetConfigValue("debug", "")
 var Themes []string
 var DB *sql.DB
 

@@ -12,6 +12,7 @@ import (
 	"github.com/KushBlazingJudah/fedichan/util"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/gofiber/fiber/v2/middleware/pprof"
 	"github.com/gofiber/template/html"
 )
 
@@ -38,6 +39,11 @@ func main() {
 
 	app.Static("/static", "./views")
 	app.Static("/public", "./public")
+
+	if config.Debug == "yes" {
+		config.Log.Printf("pprof enabled!")
+		app.Use(pprof.New())
+	}
 
 	// Authentication middleware
 	// Creates the `acct` local if the session is good

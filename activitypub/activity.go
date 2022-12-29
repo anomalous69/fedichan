@@ -333,11 +333,15 @@ func (activity Activity) SetActorFollowing() (Activity, error) {
 	return activity, nil
 }
 
-func (activity Activity) MakeRequestInbox() error {
+func (activity Activity) Send() error {
+	// TODO: Should requests be async or sync?
+	// Currently they are async. Good for responsiveness but may cause confusion
+
 	j, _ := json.MarshalIndent(activity, "", "\t")
 
 	for _, e := range activity.To {
 		if e != activity.Actor.Id {
+			// TODO: webfinger
 			actor := Actor{Id: e, Inbox: e + "/inbox"}
 
 			name, instance := GetActorAndInstance(actor.Id)
@@ -392,65 +396,6 @@ func (activity Activity) MakeRequestInbox() error {
 
 		time.Sleep(150 * time.Millisecond)
 	}
-
-	return nil
-}
-
-func (activity Activity) MakeRequestOutbox() error {
-	j, _ := json.Marshal(activity)
-
-	if activity.Actor.Outbox == "" {
-		return util.WrapError(errors.New("invalid outbox"))
-	}
-
-	go func(actor Actor, activity Activity) error {
-		var status int
-		var try int
-
-		for try != 5 && status != 200 {
-			time.Sleep(time.Duration(try) * time.Minute)
-
-			req, err := http.NewRequest("POST", activity.Actor.Outbox, bytes.NewBuffer(j))
-
-			if err != nil {
-				return util.WrapError(err)
-			}
-
-			re := regexp.MustCompile("https?://(www.)?")
-
-			_, instance := GetActorAndInstance(activity.Actor.Id)
-
-			date := time.Now().UTC().Format(time.RFC1123)
-			path := strings.Replace(activity.Actor.Outbox, instance, "", 1)
-			path = re.ReplaceAllString(path, "")
-			sig := fmt.Sprintf("(request-target): %s %s\nhost: %s\ndate: %s", "post", path, instance, date)
-			encSig, err := activity.Actor.ActivitySign(sig)
-
-			if err != nil {
-				return util.WrapError(err)
-			}
-
-			signature := fmt.Sprintf("keyId=\"%s\",headers=\"(request-target) host date\",signature=\"%s\"", activity.Actor.PublicKey.Id, encSig)
-
-			req.Header.Set("Content-Type", config.ActivityStreams)
-			req.Header.Set("Date", date)
-			req.Header.Set("Signature", signature)
-			req.Host = instance
-
-			resp, err := util.RouteProxy(req)
-
-			if err != nil {
-				try += 1
-				continue
-			}
-
-			status = resp.StatusCode
-			try += 1
-		}
-
-		return nil
-
-	}(*activity.Actor, activity)
 
 	return nil
 }

@@ -36,7 +36,7 @@ func ActorInbox(ctx *fiber.Ctx) error {
 
 	if !activity.Actor.VerifyHeaderSignature(ctx) {
 		response := activity.Reject()
-		return response.MakeRequestInbox()
+		return response.Send()
 	}
 
 	switch activity.Type {
@@ -96,7 +96,7 @@ func ActorInbox(ctx *fiber.Ctx) error {
 					return util.WrapError(err)
 				}
 
-				if err := response.MakeRequestInbox(); err != nil {
+				if err := response.Send(); err != nil {
 					return util.WrapError(err)
 				}
 
@@ -140,7 +140,7 @@ func ActorInbox(ctx *fiber.Ctx) error {
 						return util.WrapError(err)
 					}
 
-					if err := followActivity.MakeRequestOutbox(); err != nil {
+					if err := followActivity.Send(); err != nil {
 						return util.WrapError(err)
 					}
 				}
@@ -149,7 +149,7 @@ func ActorInbox(ctx *fiber.Ctx) error {
 			} else {
 				config.Log.Println("follow request for rejected")
 				response := activity.Reject()
-				return response.MakeRequestInbox()
+				return response.Send()
 			}
 		}
 	case "Reject":
@@ -174,7 +174,7 @@ func PostActorOutbox(ctx *fiber.Ctx) error {
 		return actor.GetOutbox(ctx)
 	}
 
-	return ParseOutboxRequest(ctx, actor)
+	return NewPost(ctx, actor)
 }
 
 func ActorFollowing(ctx *fiber.Ctx) error {

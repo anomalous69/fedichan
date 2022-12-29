@@ -69,17 +69,11 @@ func Inbox(ctx *fiber.Ctx) error {
 
 func Outbox(ctx *fiber.Ctx) error {
 	actor, err := activitypub.GetActorFromPath(ctx.Path(), "/")
-
 	if err != nil {
 		return util.WrapError(err)
 	}
 
-	if activitypub.AcceptActivity(ctx.Get("Accept")) {
-		actor.GetOutbox(ctx)
-		return nil
-	}
-
-	return ParseOutboxRequest(ctx, actor)
+	return actor.GetOutbox(ctx)
 }
 
 func Following(ctx *fiber.Ctx) error {

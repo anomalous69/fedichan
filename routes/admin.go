@@ -129,7 +129,7 @@ func AdminFollow(ctx *fiber.Ctx) error {
 	}
 
 	if actor, _ := activitypub.FingerActor(follow); actor.Id != "" {
-		if err := followActivity.MakeRequestOutbox(); err != nil {
+		if err := followActivity.Send(); err != nil {
 			return util.WrapError(err)
 		}
 	}
@@ -148,13 +148,9 @@ func AdminFollow(ctx *fiber.Ctx) error {
 
 func AdminAddBoard(ctx *fiber.Ctx) error {
 	actor, _ := activitypub.GetActorFromDB(config.Domain)
-
 	if hasValidation := actor.HasValidation(ctx); !hasValidation {
 		return nil
 	}
-
-	var newActorActivity activitypub.Activity
-	var board activitypub.Actor
 
 	var restrict bool
 	if ctx.FormValue("restricted") == "True" {
@@ -163,26 +159,31 @@ func AdminAddBoard(ctx *fiber.Ctx) error {
 		restrict = false
 	}
 
-	board.Name = ctx.FormValue("name")
-	board.PreferredUsername = ctx.FormValue("prefname")
-	board.Summary = ctx.FormValue("summary")
-	board.Restricted = restrict
+	newBoard := *activitypub.CreateNewActor(ctx.FormValue("name"), ctx.FormValue("prefname"), ctx.FormValue("summary"), restrict)
+	actor, err := db.CreateNewBoard(newBoard)
+	if err != nil {
+		return err
+	}
 
-	newActorActivity.AtContext.Context = "https://www.w3.org/ns/activitystreams"
-	newActorActivity.Type = "New"
+	// Set main as following the new board
+	ok := false
 
-	var nobj activitypub.ObjectBase
-	newActorActivity.Actor = &actor
-	newActorActivity.Object = nobj
+	// TODO: Replace with a generic Has function
+	for _, e := range activitypub.FollowingBoards {
+		if e.Id == newBoard.Id {
+			ok = true
+			break
+		}
+	}
 
-	newActorActivity.Object.Alias = board.Name
-	newActorActivity.Object.Name = board.PreferredUsername
-	newActorActivity.Object.Summary = board.Summary
-	newActorActivity.Object.Sensitive = board.Restricted
+	if !ok {
+		activitypub.FollowingBoards = append(activitypub.FollowingBoards, activitypub.ObjectBase{Id: actor.Id})
+	}
 
-	newActorActivity.MakeRequestOutbox()
-
-	time.Sleep(time.Duration(500) * time.Millisecond)
+	activitypub.Boards, err = activitypub.GetBoardCollection()
+	if err != nil {
+		return err
+	}
 
 	return ctx.Redirect("/"+config.Key, http.StatusSeeOther)
 }

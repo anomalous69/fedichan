@@ -132,7 +132,7 @@ func (actor Actor) AutoFollow() error {
 			}
 
 			if nActor.Id != "" {
-				followActivity.MakeRequestOutbox()
+				followActivity.Send()
 			}
 		}
 	}
@@ -935,7 +935,7 @@ func (actor Actor) SendToFollowers(activity Activity) error {
 	activity.To = make([]string, 0)
 	activity.Cc = cc
 
-	err = activity.MakeRequestInbox()
+	err = activity.Send()
 
 	return util.WrapError(err)
 }

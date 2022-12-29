@@ -167,7 +167,7 @@ func (obj ObjectBase) DeleteAndRepliesRequest() error {
 		}
 	}
 
-	err = activity.MakeRequestInbox()
+	err = activity.Send()
 
 	return util.WrapError(err)
 }
@@ -330,7 +330,7 @@ func (obj ObjectBase) DeleteRequest() error {
 		}
 	}
 
-	err = activity.MakeRequestInbox()
+	err = activity.Send()
 
 	return util.WrapError(err)
 }
@@ -593,7 +593,7 @@ func (obj ObjectBase) GetReplies() (*CollectionBase, error) {
 	var rows *sql.Rows
 	var err error
 
-	query := `select count(x.id) over(), sum(case when RTRIM(x.attachment) = '' then 0 else 1 end) over(), x.id, x.name, x.content, x.type, x.published, x.attributedto, x.attachment, x.preview, x.actor, x.tripcode, x.sensitive from (select * from activitystream where id in (select id from replies where inreplyto=$1) and (type='Note' or type='Archive') union select * from cacheactivitystream where id in (select id from replies where inreplyto=$1) and (type='Note' or type='Archive')) as x order by x.published asc`
+	query := `select x.id, x.name, x.content, x.type, x.published, x.attributedto, x.attachment, x.preview, x.actor, x.tripcode, x.sensitive from (select * from activitystream where id in (select id from replies where inreplyto=$1) and (type='Note' or type='Archive') union select * from cacheactivitystream where id in (select id from replies where inreplyto=$1) and (type='Note' or type='Archive')) as x order by x.published asc`
 	if rows, err = config.DB.Query(query, obj.Id); err != nil {
 		return nil, util.WrapError(err)
 	}
@@ -607,11 +607,11 @@ func (obj ObjectBase) GetReplies() (*CollectionBase, error) {
 
 		var prev NestedObjectBase
 
-		err = rows.Scan(&postCount, &attachCount, &post.Id, &post.Name, &post.Content, &post.Type, &post.Published, &post.AttributedTo, &attch.Id, &prev.Id, &actor.Id, &post.TripCode, &post.Sensitive)
-
+		err = rows.Scan(&post.Id, &post.Name, &post.Content, &post.Type, &post.Published, &post.AttributedTo, &attch.Id, &prev.Id, &actor.Id, &post.TripCode, &post.Sensitive)
 		if err != nil {
 			return nil, util.WrapError(err)
 		}
+		postCount++
 
 		post.InReplyTo = append(post.InReplyTo, obj)
 
@@ -624,6 +624,7 @@ func (obj ObjectBase) GetReplies() (*CollectionBase, error) {
 		}
 
 		if attch.Id != "" {
+			attachCount++
 			post.Attachment, err = attch.GetAttachment()
 			if err != nil {
 				return nil, util.WrapError(err)

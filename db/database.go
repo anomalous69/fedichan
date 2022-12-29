@@ -59,62 +59,50 @@ func RunDatabaseSchema() error {
 func CreateNewBoard(actor activitypub.Actor) (activitypub.Actor, error) {
 	if _, err := activitypub.GetActorFromDB(actor.Id); err == nil {
 		return activitypub.Actor{}, wrapErr(err)
-	} else {
-		query := `insert into actor (type, id, name, preferedusername, inbox, outbox, following, followers, summary, restricted) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`
-		_, err := config.DB.Exec(query, actor.Type, actor.Id, actor.Name, actor.PreferredUsername, actor.Inbox, actor.Outbox, actor.Following, actor.Followers, actor.Summary, actor.Restricted)
+	}
+
+	query := `insert into actor (type, id, name, preferedusername, inbox, outbox, following, followers, summary, restricted) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`
+	_, err := config.DB.Exec(query, actor.Type, actor.Id, actor.Name, actor.PreferredUsername, actor.Inbox, actor.Outbox, actor.Following, actor.Followers, actor.Summary, actor.Restricted)
+
+	if err != nil {
+		return activitypub.Actor{}, wrapErr(err)
+	}
+
+	config.Log.Println("board added")
+
+	activitypub.CreatePem(actor)
+
+	if actor.Name != "main" {
+		var nObject activitypub.ObjectBase
+		var nActivity activitypub.Activity
+
+		nActor, err := activitypub.GetActorFromDB(config.Domain)
 
 		if err != nil {
-			return activitypub.Actor{}, wrapErr(err)
+			return actor, wrapErr(err)
 		}
 
-		config.Log.Println("board added")
+		nActivity.AtContext.Context = "https://www.w3.org/ns/activitystreams"
+		nActivity.Type = "Follow"
+		nActivity.Actor = &nActor
+		nActivity.Object = nObject
+		mActor, err := activitypub.GetActorFromDB(actor.Id)
 
-		/* TODO
-		if actor.Id == config.Domain {
-			var verify Verify
-			verify.Type = "admin"
-			verify.Identifier = actor.Id
-
-			if err := actor.CreateVerification(verify); err != nil {
-				return activitypub.Actor{}, wrapErr(err)
-			}
+		if err != nil {
+			return actor, wrapErr(err)
 		}
-		*/
 
-		activitypub.CreatePem(actor)
+		nActivity.Object.Actor = mActor.Id
+		nActivity.To = append(nActivity.To, actor.Id)
 
-		if actor.Name != "main" {
-			var nObject activitypub.ObjectBase
-			var nActivity activitypub.Activity
+		activityRequest := nActivity.AcceptFollow()
 
-			nActor, err := activitypub.GetActorFromDB(config.Domain)
+		if _, err := activityRequest.SetActorFollowing(); err != nil {
+			return actor, wrapErr(err)
+		}
 
-			if err != nil {
-				return actor, wrapErr(err)
-			}
-
-			nActivity.AtContext.Context = "https://www.w3.org/ns/activitystreams"
-			nActivity.Type = "Follow"
-			nActivity.Actor = &nActor
-			nActivity.Object = nObject
-			mActor, err := activitypub.GetActorFromDB(actor.Id)
-
-			if err != nil {
-				return actor, wrapErr(err)
-			}
-
-			nActivity.Object.Actor = mActor.Id
-			nActivity.To = append(nActivity.To, actor.Id)
-
-			activityRequest := nActivity.AcceptFollow()
-
-			if _, err := activityRequest.SetActorFollowing(); err != nil {
-				return actor, wrapErr(err)
-			}
-
-			if err := activityRequest.MakeRequestInbox(); err != nil {
-				return actor, wrapErr(err)
-			}
+		if err := activityRequest.Send(); err != nil {
+			return actor, wrapErr(err)
 		}
 	}
 
@@ -311,7 +299,7 @@ func PrintAdminAuth() error {
 
 func InitInstance() error {
 	if config.InstanceName != "" {
-		if _, err := CreateNewBoard(*activitypub.CreateNewActor("", config.InstanceName, config.InstanceSummary, config.AuthReq, false)); err != nil {
+		if _, err := CreateNewBoard(*activitypub.CreateNewActor("", config.InstanceName, config.InstanceSummary, false)); err != nil {
 			return wrapErr(err)
 		}
 	}
