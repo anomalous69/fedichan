@@ -34,63 +34,44 @@ func ActorInbox(ctx *fiber.Ctx) error {
 	}
 
 	if !activity.Actor.VerifyHeaderSignature(ctx) {
-		response := activity.Reject()
-		return response.Send()
+		return ctx.SendStatus(400)
 	}
 
 	switch activity.Type {
 	case "Accept":
 		if activity.Object.Object.Type == "Follow" {
-			if _, err := activity.SetActorFollowing(); err != nil {
+			if err := activity.SetActorFollowing(); err != nil {
 				return util.WrapError(err)
 			}
 		} else {
 			return ctx.SendStatus(400)
 		}
 	case "Create":
-		for _, e := range activity.To {
-			actor := activitypub.Actor{Id: e}
-			if err := actor.ProcessInboxCreate(activity); err != nil {
-				return util.WrapError(err)
-			}
-
-			if err := actor.SendToFollowers(activity); err != nil {
-				return util.WrapError(err)
-			}
+		if err := actor.ProcessInboxCreate(activity); err != nil {
+			return util.WrapError(err)
 		}
 
-		for _, e := range activity.Cc {
-			actor := activitypub.Actor{Id: e}
-			if err := actor.ProcessInboxCreate(activity); err != nil {
-				return util.WrapError(err)
-			}
+		if err := actor.SendToFollowers(activity); err != nil {
+			return util.WrapError(err)
 		}
 	case "Delete":
-		for _, e := range activity.To {
-			actor, err := activitypub.GetActorFromDB(e)
-			if err != nil {
-				continue // try again
-				// return util.WrapError(err)
-			}
-
-			if actor.Id != "" && actor.Id != config.Domain {
-				if activity.Object.Replies != nil {
-					for _, k := range activity.Object.Replies.OrderedItems {
-						if err := k.Tombstone(); err != nil {
-							return util.WrapError(err)
-						}
+		if actor.Id != "" && actor.Id != config.Domain {
+			if activity.Object.Replies != nil {
+				for _, k := range activity.Object.Replies.OrderedItems {
+					if err := k.Tombstone(); err != nil {
+						return util.WrapError(err)
 					}
 				}
-
-				if err := activity.Object.Tombstone(); err != nil {
-					return util.WrapError(err)
-				}
-
-				if err := actor.UnArchiveLast(); err != nil {
-					return util.WrapError(err)
-				}
-				break
 			}
+
+			if err := activity.Object.Tombstone(); err != nil {
+				return util.WrapError(err)
+			}
+
+			if err := actor.UnArchiveLast(); err != nil {
+				return util.WrapError(err)
+			}
+			break
 		}
 
 	case "Follow":
@@ -162,7 +143,7 @@ func ActorInbox(ctx *fiber.Ctx) error {
 	case "Reject":
 		if activity.Object.Object.Type == "Follow" {
 			config.Log.Println("follow rejected")
-			if _, err := activity.SetActorFollowing(); err != nil {
+			if err := activity.SetActorFollowing(); err != nil {
 				return util.WrapError(err)
 			}
 		}

@@ -260,77 +260,30 @@ func (activity Activity) SetActorFollower() (Activity, error) {
 	return activity, nil
 }
 
-func (activity Activity) SetActorFollowing() (Activity, error) {
+func (activity Activity) SetActorFollowing() error {
+	if activity.Actor.Id == activity.Object.Actor {
+		// TODO: Return an error
+		return nil
+	}
+
 	objActor, _ := GetActor(activity.Object.Actor)
 	alreadyFollowing, err := objActor.IsAlreadyFollowing(activity.Actor.Id)
-
 	if err != nil {
-		return activity, util.WrapError(err)
+		return util.WrapError(err)
 	}
 
-	actor, err := FingerActor(activity.Actor.Id)
-
-	if err != nil {
-		return activity, util.WrapError(err)
-	}
-
-	reqActivity := Activity{Id: actor.Followers}
-	remoteActorFollowerCol, err := reqActivity.GetCollection()
-
-	if err != nil {
-		return activity, util.WrapError(err)
-	}
-
-	alreadyFollower := false
-
-	for _, e := range remoteActorFollowerCol.Items {
-		if e.Id == activity.Object.Actor {
-			alreadyFollower = true
-		}
-	}
-
-	if activity.Actor.Id == activity.Object.Actor {
-		activity.Type = "Reject"
-		return activity, nil
-	}
-
-	var query string
-
-	if alreadyFollowing && alreadyFollower {
-		if res, _ := activity.Actor.IsLocal(); !res {
-			go activity.Actor.DeleteCache()
-		} else if err != nil {
-			return activity, util.WrapError(err)
-		}
-
-		query = `delete from following where id=$1 and following=$2`
-		if _, err := config.DB.Exec(query, activity.Object.Actor, activity.Actor.Id); err != nil {
-			return activity, util.WrapError(err)
-		}
-
-		activity.Type = "Accept"
-		activity.Summary = activity.Object.Actor + " Unfollowing " + activity.Actor.Id
-
-		return activity, nil
-	}
-
-	if !alreadyFollowing && !alreadyFollower {
+	if !alreadyFollowing {
 		if res, _ := activity.Actor.IsLocal(); !res {
 			go activity.Actor.WriteCache()
 		}
 
-		query = `insert into following (id, following) values ($1, $2)`
+		query := `insert into following (id, following) values ($1, $2)`
 		if _, err := config.DB.Exec(query, activity.Object.Actor, activity.Actor.Id); err != nil {
-			return activity, util.WrapError(err)
+			return util.WrapError(err)
 		}
-
-		activity.Type = "Accept"
-		activity.Summary = activity.Object.Actor + " Following " + activity.Actor.Id
-
-		return activity, nil
 	}
 
-	return activity, nil
+	return nil
 }
 
 func (activity Activity) Send() error {

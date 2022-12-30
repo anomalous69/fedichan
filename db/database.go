@@ -97,7 +97,7 @@ func CreateNewBoard(actor activitypub.Actor) (activitypub.Actor, error) {
 
 		activityRequest := nActivity.AcceptFollow(mActor)
 
-		if _, err := activityRequest.SetActorFollowing(); err != nil {
+		if err := activityRequest.SetActorFollowing(); err != nil {
 			return actor, wrapErr(err)
 		}
 
