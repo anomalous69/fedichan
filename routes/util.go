@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"html"
 	"html/template"
 	"io"
 	"mime/multipart"
@@ -18,7 +19,7 @@ import (
 	"github.com/KushBlazingJudah/fedichan/db"
 	"github.com/KushBlazingJudah/fedichan/util"
 	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/template/html"
+	fhtml "github.com/gofiber/template/html"
 )
 
 func themeCookie(c *fiber.Ctx) string {
@@ -94,7 +95,7 @@ func NewPost(actor activitypub.Actor, nObj *activitypub.ObjectBase) error {
 	return nil
 }
 
-func TemplateFunctions(engine *html.Engine) {
+func TemplateFunctions(engine *fhtml.Engine) {
 	engine.AddFunc("mod", func(i, j int) bool {
 		return i%j == 0
 	})
@@ -131,11 +132,10 @@ func TemplateFunctions(engine *html.Engine) {
 	engine.AddFunc("convertSize", util.ConvertSize)
 	engine.AddFunc("isOnion", util.IsOnion)
 
-	engine.AddFunc("parseReplyLink", func(actorId string, op string, id string, content string) template.HTML {
+	engine.AddFunc("parseReplyLink", func(actorId string, op string, id string, content string) string {
 		actor, _ := activitypub.FingerActor(actorId)
-		title := strings.ReplaceAll(db.ParseLinkTitle(actor.Id+"/", op, content), `/\&lt;`, ">")
-		link := "<a href=\"/" + actor.Name + "/" + util.ShortURL(actor.Outbox, op) + "#" + util.ShortURL(actor.Outbox, id) + "\" title=\"" + title + "\" class=\"replyLink\">&gt;&gt;" + util.ShortURL(actor.Outbox, id) + "</a>"
-		return template.HTML(link)
+		title := html.EscapeString(db.ParseLinkTitle(actor.Id+"/", op, content))
+		return fmt.Sprintf(`<a href="/%s/%s#%s" title="%s" class="replyLink">&gt;&gt;%s</a>`, actor.Name, util.ShortURL(actor.Outbox, op), util.ShortURL(actor.Outbox, id), title, util.ShortURL(actor.Outbox, id))
 	})
 
 	engine.AddFunc("shortExcerpt", func(post activitypub.ObjectBase) template.HTML {
@@ -315,81 +315,25 @@ func ObjectFromForm(ctx *fiber.Ctx, obj activitypub.ObjectBase) (activitypub.Obj
 }
 
 func ParseAttachment(obj activitypub.ObjectBase, catalog bool) template.HTML {
-	// TODO: convert all of these to Sprintf statements, or use strings.Builder or something, anything but this really
-	// string concatenation is highly inefficient _especially_ when being used like this
-
 	if len(obj.Attachment) < 1 {
 		return ""
 	}
 
-	var media string
-
 	if regexp.MustCompile(`image\/`).MatchString(obj.Attachment[0].MediaType) {
-		media = "<img "
-		media += "id=\"img\" "
-		media += "main=\"1\" "
-		media += "enlarge=\"0\" "
-		media += "attachment=\"" + obj.Attachment[0].Href + "\""
-		if catalog {
-			media += "style=\"max-width: 180px; max-height: 180px;\" "
-		} else {
-			media += "style=\"float: left; margin-right: 10px; margin-bottom: 10px; max-width: 250px; max-height: 250px;\""
+		src := obj.Preview.Href
+		if src == "" {
+			src = obj.Attachment[0].Href
 		}
-		if obj.Preview.Id != "" {
-			media += "src=\"" + util.MediaProxy(obj.Preview.Href) + "\""
-			media += "preview=\"" + util.MediaProxy(obj.Preview.Href) + "\""
-		} else {
-			media += "src=\"" + util.MediaProxy(obj.Attachment[0].Href) + "\""
-			media += "preview=\"" + util.MediaProxy(obj.Attachment[0].Href) + "\""
-		}
+		src = util.MediaProxy(src)
 
-		media += ">"
-
-		return template.HTML(media)
+		return template.HTML(fmt.Sprintf(`<img class="media" main="1" enlarge="0" attachment="%s" src="%s" preview="%s">`, obj.Attachment[0].Href, src, src))
+	} else if regexp.MustCompile(`audio\/`).MatchString(obj.Attachment[0].MediaType) {
+		return template.HTML(fmt.Sprintf(`<audio class="media" controls preload="metadata"><source src="%s" type="%s">Audio is not supported.</audio>`, util.MediaProxy(obj.Attachment[0].Href), obj.Attachment[0].MediaType))
+	} else if regexp.MustCompile(`video\/`).MatchString(obj.Attachment[0].MediaType) {
+		return template.HTML(fmt.Sprintf(`<video class="media" controls muted preload="metadata"><source src="%s" type="%s">Audio is not supported.</video>`, util.MediaProxy(obj.Attachment[0].Href), obj.Attachment[0].MediaType))
 	}
 
-	if regexp.MustCompile(`audio\/`).MatchString(obj.Attachment[0].MediaType) {
-		media = "<audio "
-		media += "controls=\"controls\" "
-		media += "preload=\"metadta\" "
-		if catalog {
-			media += "style=\"margin-right: 10px; margin-bottom: 10px; max-width: 180px; max-height: 180px;\" "
-		} else {
-			media += "style=\"float: left; margin-right: 10px; margin-bottom: 10px; max-width: 250px; max-height: 250px;\" "
-		}
-		media += ">"
-		media += "<source "
-		media += "src=\"" + util.MediaProxy(obj.Attachment[0].Href) + "\" "
-		media += "type=\"" + obj.Attachment[0].MediaType + "\" "
-		media += ">"
-		media += "Audio is not supported."
-		media += "</audio>"
-
-		return template.HTML(media)
-	}
-
-	if regexp.MustCompile(`video\/`).MatchString(obj.Attachment[0].MediaType) {
-		media = "<video "
-		media += "controls=\"controls\" "
-		media += "preload=\"metadta\" "
-		media += "muted=\"muted\" "
-		if catalog {
-			media += "style=\"margin-right: 10px; margin-bottom: 10px; max-width: 180px; max-height: 180px;\" "
-		} else {
-			media += "style=\"float: left; margin-right: 10px; margin-bottom: 10px; max-width: 250px; max-height: 250px;\" "
-		}
-		media += ">"
-		media += "<source "
-		media += "src=\"" + util.MediaProxy(obj.Attachment[0].Href) + "\" "
-		media += "type=\"" + obj.Attachment[0].MediaType + "\" "
-		media += ">"
-		media += "Video is not supported."
-		media += "</video>"
-
-		return template.HTML(media)
-	}
-
-	return template.HTML(media)
+	return ""
 }
 
 func ParseOptions(ctx *fiber.Ctx, obj activitypub.ObjectBase) activitypub.ObjectBase {

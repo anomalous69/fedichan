@@ -252,3 +252,18 @@ a.reply {
 #boardlinks > li {
   display: inline;
 }
+
+#catalog .media {
+	float: unset;
+	margin: 0;
+	max-width: 180px;
+	max-height: 180px;
+}
+
+.media {
+	float: left;
+	margin-right: 10px;
+	margin-bottom: 10px;
+	max-width: 250px;
+	max-height: 250px;
+}
