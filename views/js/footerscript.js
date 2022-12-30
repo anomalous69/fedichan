@@ -1,4 +1,4 @@
-var imgs = document.querySelectorAll('#img');
+var imgs = document.querySelectorAll('#media');
 var imgArray = [].slice.call(imgs);
 
 imgArray.forEach(function(img, i){
@@ -32,7 +32,6 @@ imgArray.forEach(function(img, i){
     });
 });
 
-
 function viewLink(board, actor) {
     var posts = document.querySelectorAll('#view');
     var postsArray = [].slice.call(posts);
@@ -41,4 +40,26 @@ function viewLink(board, actor) {
         var id = p.getAttribute("post");
         p.href = "/" + board + "/" + shortURL(actor, id);
     });
+}
+
+// Hide all sensitive media
+for (let i of document.getElementsByClassName("mediacont")) {
+	let id = i.id.substr(6);
+	if (i.dataset.sensitive) {
+		let sensitive = document.getElementById("sensitive-" + id);
+		let hide = document.getElementById("hide-" + id);
+
+		sensitive.onclick = () => {
+			i.style="display: block;";
+			sensitive.style="display: none;";
+			hide.style="display: block;"
+		};
+		hide.onclick = () => {
+			i.style="display: none;";
+			sensitive.style="display: block;";
+			hide.style="display: none;";
+		}
+		sensitive.style = "display: block";
+		i.style = "display: none;";
+	}
 }

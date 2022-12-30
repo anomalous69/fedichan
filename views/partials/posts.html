@@ -21,33 +21,26 @@
     [<a href="/sticky?id={{ .Id }}&board={{ $board.Actor.Name }}">Sticky</a>]
     [<a href="/lock?id={{ .Id }}&board={{ $board.Actor.Name }}">Lock</a>]
     {{ end }}
-    <span style="display: block;">File: <a id="{{ .Id }}-img" href="{{ proxy (index .Attachment 0).Href}}">{{ shortImg (index .Attachment 0).Name  }}</a><span id="{{ .Id }}-size"> ({{ convertSize (index .Attachment 0).Size  }})</span></span>
-    <div id="hide-{{ .Id }}" style="display: none;">[Hide]</div>
-    <div id="sensitive-{{ .Id }}" style="display: none;"><div style="position: relative; text-align: center;"><img id="sensitive-img-{{ .Id }}" style="float: left; margin-right: 10px; margin-bottom: 10px; max-width: 250px; max-height: 250px;" src="/static/sensitive.png"><div id="sensitive-text-{{ .Id }}" style="width: 240px; position: absolute; margin-top: 110px; padding: 5px; background-color: black; color: white; cursor: default; ">NSFW Content</div></div></div>
-    <div id="media-{{ .Id }}">{{ parseAttachment . false }}</div>
-    <script>
-      media = document.getElementById("media-{{ .Id }}")
-      if(({{ .Sensitive }} && {{ $board.Actor.Restricted }}) || ({{ isOnion .Id }} && !{{ isOnion $board.Domain }})){
-          sensitive = document.getElementById("sensitive-{{ .Id }}")
-          hide = document.getElementById("hide-{{ .Id }}")
-          sensitive.onclick = function(){document.getElementById("media-{{ .Id }}").style="display: block;"; document.getElementById("sensitive-{{ .Id }}").style="display: none;"; document.getElementById("hide-{{ .Id }}").style="display: block; cursor: pointer;"}
-          hide.onclick = function(){document.getElementById("media-{{ .Id }}").style="display: none;"; document.getElementById("sensitive-{{ .Id }}").style="display: block;"; document.getElementById("hide-{{ .Id }}").style="display: none;"}
-          sensitive.style = "display: block"
-          media.style = "display: none;"
-      }
 
-      if({{ isOnion .Id }} && !{{ isOnion $board.Domain }}) {
-          sensitive = document.getElementById("sensitive-{{ .Id }}")
-          document.getElementById("sensitive-img-{{ .Id }}").src = "/static/onion.png"
-          document.getElementById("sensitive-text-{{ .Id }}").innerText = "Tor Instance"
-          hide = document.getElementById("hide-{{ .Id }}")
-          sensitive.onclick = function(){document.getElementById("media-{{ .Id }}").style="display: block;"; document.getElementById("sensitive-{{ .Id }}").style="display: none;"; document.getElementById("hide-{{ .Id }}").style="display: block; cursor: pointer;"}
-          hide.onclick = function(){document.getElementById("media-{{ .Id }}").style="display: none;"; document.getElementById("sensitive-{{ .Id }}").style="display: block;"; document.getElementById("hide-{{ .Id }}").style="display: none;"}
-          sensitive.style = "display: block"
-          media.style = "display: none;"
-      }
-    </script>
+    <span style="display: block;">File: <a id="{{ .Id }}-img" href="{{ proxy (index .Attachment 0).Href}}">{{ shortImg (index .Attachment 0).Name  }}</a><span id="{{ .Id }}-size"> ({{ convertSize (index .Attachment 0).Size  }})</span></span>
+
+    {{ $sens := and $board.Actor.Restricted .Sensitive }}
+    {{ $onion := and (isOnion .Id) (not (isOnion $board.Domain)) }}
+    {{ $hide := or $sens $onion }}
+    {{ if $hide }}
+    <div id="hide-{{ .Id }}" style="display: none;">[Hide]</div>
+    <div id="sensitive-{{ .Id }}" style="display: none;">
+	    <div style="position: relative; text-align: center;">
+		    <img id="sensitive-img-{{ .Id }}" style="float: left; margin-right: 10px; margin-bottom: 10px; max-width: 250px; max-height: 250px;" src="/static/sensitive.png">
+		    <div id="sensitive-text-{{ .Id }}" style="width: 240px; position: absolute; margin-top: 110px; padding: 5px; background-color: black; color: white; cursor: default; ">{{if $sens}}NSFW Content{{if and $sens $onion}} / {{end}}{{end}}{{if $onion}}Tor{{end}}</div>
+	    </div>
+    </div>
+    {{end}}
+    <div id="media-{{ .Id }}" class="mediacont" {{if $hide}}data-sensitive="{{if $onion}}onion{{else}}nsfw{{end}}"{{end}}>
+	    {{ parseAttachment . false }}
+    </div>
     {{ end }}
+
     <span class="subject"><b>{{ .Name }}</b></span>
     <span class="name"><b>{{ if .AttributedTo }} {{.AttributedTo }} {{ else }} Anonymous {{ end }}</b></span>
     <span class="tripcode"> {{ .TripCode }} </span>
@@ -62,12 +55,13 @@
     {{ end }}
     {{ range $replies.OrderedItems }}
     <div id="{{ shortURL $board.Actor.Outbox .Id }}">
-      <div  style="display: inline-block; overflow: auto;">
+      <div style="display: inline-block; overflow: auto;">
         <div style="float: left; display: block; margin-right: 5px;">&gt;&gt;</div>
         <div class="post" style="overflow: auto; padding: 5px; margin-bottom: 2px;">
           {{ if $acct }}
           [<a href="/delete?id={{ .Id }}&board={{ $board.Actor.Name }}">Delete Post</a>]
           {{ end }}
+
           {{ if and (gt (len .Attachment) 0) (index .Attachment 0).Id }}
           {{ if $acct }}
           [<a href="/banmedia?id={{ .Id }}&board={{ $board.Actor.Name }}">Ban Media</a>]
@@ -76,35 +70,26 @@
           [<a href="/sticky?id={{ .Id }}&board={{ $board.Actor.Name }}">Sticky</a>]
           [<a href="/lock?id={{ .Id }}&board={{ $board.Actor.Name }}">Lock</a>]
           {{ end }}
+
           <span style="display: block;">File <a id="{{ .Id }}-img" href="{{ proxy (index .Attachment 0).Href}}">{{ shortImg (index .Attachment 0).Name  }}</a> <span id="{{ .Id }}-size">({{ convertSize (index .Attachment 0).Size  }})</span></span>
-          <div id="hide-{{ .Id }}" style="display: none;">[Hide]</div>
-          <div id="sensitive-{{ .Id }}" style="display: none;"><div style="position: relative; text-align: center;"><img id="sensitive-img-{{ .Id }}" style="float: left; margin-right: 10px; margin-bottom: 10px; max-width: 250px; max-height: 250px;" src="/static/sensitive.png"><div id="sensitive-text-{{ .Id }}" style="width: 240px; position: absolute; margin-top: 110px; padding: 5px; background-color: black; color: white; cursor: default; ">NSFW Content</div></div></div>
-          <div> </div>
-          <div id="media-{{ .Id }}" sensitive="0">{{ parseAttachment . false }}</div>
-          <script>
-            media = document.getElementById("media-{{ .Id }}")
 
-            if(({{ .Sensitive }} && {{ $board.Actor.Restricted }}) || {{ isOnion .Id }} && !{{ isOnion $board.Domain }}){
-                sensitive = document.getElementById("sensitive-{{ .Id }}")
-                hide = document.getElementById("hide-{{ .Id }}")
-                sensitive.onclick = function(){document.getElementById("media-{{ .Id }}").style="display: block;"; document.getElementById("sensitive-{{ .Id }}").style="display: none;"; document.getElementById("hide-{{ .Id }}").style="display: block; cursor: pointer;"}
-                hide.onclick = function(){document.getElementById("media-{{ .Id }}").style="display: none;"; document.getElementById("sensitive-{{ .Id }}").style="display: block;"; document.getElementById("hide-{{ .Id }}").style="display: none;"}
-                sensitive.style = "display: block"
-                media.style = "display: none;"
-            }
-
-            if({{ isOnion .Id }} && !{{ isOnion $board.Domain }}) {
-                sensitive = document.getElementById("sensitive-{{ .Id }}")
-                document.getElementById("sensitive-img-{{ .Id }}").src = "/static/onion.png"
-                document.getElementById("sensitive-text-{{ .Id }}").innerText = "Tor Instance"
-                hide = document.getElementById("hide-{{ .Id }}")
-                sensitive.onclick = function(){document.getElementById("media-{{ .Id }}").style="display: block;"; document.getElementById("sensitive-{{ .Id }}").style="display: none;"; document.getElementById("hide-{{ .Id }}").style="display: block; cursor: pointer;"}
-                hide.onclick = function(){document.getElementById("media-{{ .Id }}").style="display: none;"; document.getElementById("sensitive-{{ .Id }}").style="display: block;"; document.getElementById("hide-{{ .Id }}").style="display: none;"}
-                sensitive.style = "display: block"
-                media.style = "display: none;"
-            }
-          </script>
+          {{ $sens := and $board.Actor.Restricted .Sensitive }}
+	  {{ $onion := and (isOnion .Id) (not (isOnion $board.Domain)) }}
+	  {{ $hide := or $sens $onion }}
+	  {{ if $hide }}
+	  <div id="hide-{{ .Id }}" style="display: none;">[Hide]</div>
+	  <div id="sensitive-{{ .Id }}" style="display: none;">
+		  <div style="position: relative; text-align: center;">
+			  <img id="sensitive-img-{{ .Id }}" style="float: left; margin-right: 10px; margin-bottom: 10px; max-width: 250px; max-height: 250px;" src="/static/sensitive.png">
+			  <div id="sensitive-text-{{ .Id }}" style="width: 240px; position: absolute; margin-top: 110px; padding: 5px; background-color: black; color: white; cursor: default; ">{{if $sens}}NSFW Content{{if and $sens $onion}} / {{end}}{{end}}{{if $onion}}Tor{{end}}</div>
+		  </div>
+	  </div>
+	  {{end}}
+	  <div id="media-{{ .Id }}" class="mediacont" {{if $hide}}data-sensitive="{{if $onion}}onion{{else}}nsfw{{end}}"{{end}}>
+		  {{ parseAttachment . false }}
+	  </div>
           {{ end }}
+
           <span class="subject"><b>{{ .Name }}</b></span>
           <span class="name"><b>{{ if .AttributedTo }} {{.AttributedTo }} {{ else }} Anonymous {{ end }}</b></span>
           <span class="tripcode"> {{ .TripCode }} </span>
