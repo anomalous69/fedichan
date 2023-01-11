@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"math/rand"
 	"strings"
 	"time"
@@ -41,7 +42,7 @@ func main() {
 	app.Static("/public", "./public")
 
 	if config.Debug == "yes" {
-		config.Log.Printf("pprof enabled!")
+		log.Printf("pprof enabled!")
 		app.Use(pprof.New())
 	}
 
@@ -140,41 +141,41 @@ func Init() {
 	rand.Seed(time.Now().UnixNano())
 
 	if err = util.CreatedNeededDirectories(); err != nil {
-		config.Log.Println(err)
+		log.Println(err)
 	}
 
 	if err = db.Connect(); err != nil {
-		config.Log.Println(err)
+		log.Println(err)
 	}
 
 	if err = db.RunDatabaseSchema(); err != nil {
-		config.Log.Println(err)
+		log.Println(err)
 	}
 
 	if err = db.InitInstance(); err != nil {
-		config.Log.Println(err)
+		log.Println(err)
 	}
 
 	if actor, err = activitypub.GetActorFromDB(config.Domain); err != nil {
-		config.Log.Println(err)
+		log.Println(err)
 	}
 
 	if activitypub.FollowingBoards, err = actor.GetFollowing(); err != nil {
-		config.Log.Println(err)
+		log.Println(err)
 	}
 
 	if activitypub.Boards, err = activitypub.GetBoardCollection(); err != nil {
-		config.Log.Println(err)
+		log.Println(err)
 	}
 
 	if config.Key == "" {
 		if config.Key, err = util.CreateKey(32); err != nil {
-			config.Log.Println(err)
+			log.Println(err)
 		}
 	}
 
 	if err = util.LoadThemes(); err != nil {
-		config.Log.Println(err)
+		log.Println(err)
 	}
 
 	go activitypub.StartupArchive()

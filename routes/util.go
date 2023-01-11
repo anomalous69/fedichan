@@ -7,6 +7,7 @@ import (
 	"html"
 	"html/template"
 	"io"
+	"log"
 	"mime/multipart"
 	"os"
 	"os/exec"
@@ -71,16 +72,16 @@ func NewPost(actor activitypub.Actor, nObj *activitypub.ObjectBase) error {
 	go func(nObj activitypub.ObjectBase) {
 		activity, err := nObj.CreateActivity("Create")
 		if err != nil {
-			config.Log.Printf("ParseOutboxRequest Create Activity: %s", err)
+			log.Printf("ParseOutboxRequest Create Activity: %s", err)
 		}
 
 		activity, err = activity.AddFollowersTo()
 		if err != nil {
-			config.Log.Printf("ParseOutboxRequest Add FollowersTo: %s", err)
+			log.Printf("ParseOutboxRequest Add FollowersTo: %s", err)
 		}
 
 		if err := activity.Send(); err != nil {
-			config.Log.Printf("ParseOutboxRequest MakeRequestInbox: %s", err)
+			log.Printf("ParseOutboxRequest MakeRequestInbox: %s", err)
 		}
 	}(*nObj)
 
@@ -88,7 +89,7 @@ func NewPost(actor activitypub.Actor, nObj *activitypub.ObjectBase) error {
 		err := obj.SendEmailNotify()
 
 		if err != nil {
-			config.Log.Println(err)
+			log.Println(err)
 		}
 	}(*nObj)
 

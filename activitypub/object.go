@@ -3,6 +3,7 @@ package activitypub
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"regexp"
@@ -1335,7 +1336,7 @@ func (obj ObjectBase) WriteReply() error {
 
 func (obj ObjectBase) WriteCache() (ObjectBase, error) {
 	if isBlacklisted, err := util.IsPostBlacklist(obj.Content); err != nil || isBlacklisted {
-		config.Log.Println("Blacklist post blocked")
+		log.Println("Blacklist post blocked")
 		return obj, util.WrapError(err)
 	}
 
@@ -1383,7 +1384,7 @@ func (obj ObjectBase) WriteWithAttachment(attachment ObjectBase) {
 	_, e := config.DB.Exec(query, obj.Id, obj.Type, obj.Name, obj.Content, attachment.Id, obj.Preview.Id, obj.Published, obj.Updated, obj.AttributedTo, obj.Actor, obj.TripCode, obj.Sensitive)
 
 	if e != nil {
-		config.Log.Println("error inserting new activity with attachment")
+		log.Println("error inserting new activity with attachment")
 		panic(e)
 	}
 }

@@ -3,6 +3,7 @@ package routes
 import (
 	"encoding/json"
 	"io"
+	"log"
 	"mime/multipart"
 	"net/http"
 	"regexp"
@@ -135,14 +136,14 @@ func ActorInbox(ctx *fiber.Ctx) error {
 			} else if err != nil {
 				return util.WrapError(err)
 			} else {
-				config.Log.Println("follow request for rejected")
+				log.Println("follow request for rejected")
 				response := activity.Reject()
 				return response.Send()
 			}
 		}
 	case "Reject":
 		if activity.Object.Object.Type == "Follow" {
-			config.Log.Println("follow rejected")
+			log.Println("follow rejected")
 			if err := activity.SetActorFollowing(); err != nil {
 				return util.WrapError(err)
 			}
@@ -175,7 +176,7 @@ func MakeActorPost(ctx *fiber.Ctx) error {
 		valid, err := util.CheckCaptcha(ctx.FormValue("captcha"))
 		if err != nil {
 			// Silently log it
-			config.Log.Printf("CheckCaptcha error: %v", err)
+			log.Printf("CheckCaptcha error: %v", err)
 		}
 
 		if !valid {
@@ -207,7 +208,7 @@ func MakeActorPost(ctx *fiber.Ctx) error {
 				"message": "7MB max file size",
 			})
 		} else if isBanned, err := db.IsMediaBanned(file); err == nil && isBanned {
-			config.Log.Println("media banned")
+			log.Println("media banned")
 			_, err := ctx.Status(403).Write([]byte(""))
 			return util.WrapError(err)
 		}
@@ -244,7 +245,7 @@ func MakeActorPost(ctx *fiber.Ctx) error {
 			"message": "Too many new lines - try again.",
 		})
 	} else if is, _ := util.IsPostBlacklist(ctx.FormValue("comment")); is {
-		config.Log.Println("Blacklist post blocked")
+		log.Println("Blacklist post blocked")
 		return ctx.Redirect("/", 301)
 	}
 

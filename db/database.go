@@ -3,6 +3,7 @@ package db
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"os"
 	"regexp"
 	"strings"
@@ -33,7 +34,7 @@ func Connect() error {
 		return wrapErr(err)
 	}
 
-	config.Log.Println("Successfully connected DB")
+	log.Println("Successfully connected DB")
 
 	config.DB = _db
 
@@ -68,7 +69,7 @@ func CreateNewBoard(actor activitypub.Actor) (activitypub.Actor, error) {
 		return activitypub.Actor{}, wrapErr(err)
 	}
 
-	config.Log.Println("board added")
+	log.Println("board added")
 
 	activitypub.CreatePem(actor)
 
@@ -283,7 +284,7 @@ func IsHashBanned(hash string) (bool, error) {
 }
 
 func PrintAdminAuth() error {
-	config.Log.Println("Mod key: " + config.Key)
+	log.Println("Mod key: " + config.Key)
 
 	if UserExists("admin") {
 		return nil

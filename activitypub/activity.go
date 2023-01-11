@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"regexp"
 	"strings"
@@ -42,7 +43,7 @@ func (activity Activity) AddFollowersTo() (Activity, error) {
 		aFollowers, err := reqActivity.GetCollection()
 		if err != nil {
 			// Safely fail so we can continue to federate
-			config.Log.Printf("failed to get collection from %s: %v", reqActivity.Id, err)
+			log.Printf("failed to get collection from %s: %v", reqActivity.Id, err)
 			continue
 
 			// return activity, util.WrapError(err)
@@ -168,11 +169,11 @@ func (activity Activity) Process() error {
 	if activityType == "Create" {
 		for _, e := range activity.To {
 			if res, err := GetActorFromDB(e); res.Id != "" {
-				config.Log.Println("actor is in the database")
+				log.Println("actor is in the database")
 			} else if err != nil {
 				return util.WrapError(err)
 			} else {
-				config.Log.Println("actor is NOT in the database")
+				log.Println("actor is NOT in the database")
 			}
 		}
 	} else if activityType == "Follow" {
@@ -291,7 +292,7 @@ func (activity Activity) Send() error {
 	// Currently they are async. Good for responsiveness but may cause confusion
 
 	j, _ := json.MarshalIndent(activity, "", "\t")
-	config.Log.Println(string(j))
+	log.Println(string(j))
 
 	for _, e := range activity.To {
 		if e != activity.Actor.Id {

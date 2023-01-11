@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"errors"
+	"log"
 	"os"
 	"regexp"
 	"strings"
@@ -45,7 +46,7 @@ func (actor Actor) ActivitySign(signature string) (string, error) {
 
 	_, err := os.Stat(file)
 	if err != nil {
-		config.Log.Println(`\n Unable to locate private key. Now,
+		log.Println(`\n Unable to locate private key. Now,
 this means that you are now missing the proof that you are the
 owner of the "` + actor.Name + `" board. If you are the developer,
 then your job is just as easy as generating a new keypair, but
@@ -1152,7 +1153,7 @@ func (actor Actor) ProcessInboxCreate(activity Activity) error {
 				err := obj.SendEmailNotify()
 
 				if err != nil {
-					config.Log.Println(err)
+					log.Println(err)
 				}
 			}(activity.Object)
 		}

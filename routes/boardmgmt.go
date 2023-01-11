@@ -2,6 +2,7 @@ package routes
 
 import (
 	"errors"
+	"log"
 	"net/http"
 	"os"
 	"regexp"
@@ -442,7 +443,7 @@ func ReportPost(ctx *fiber.Ctx) error {
 
 		if local, _ := obj.IsLocal(); !local {
 			if err := db.CloseLocalReport(obj.Id, board); err != nil {
-				config.Log.Println(err)
+				log.Println(err)
 				return ctx.Status(404).Render("404", fiber.Map{
 					"message": "Something broke",
 				})
@@ -452,7 +453,7 @@ func ReportPost(ctx *fiber.Ctx) error {
 		}
 
 		if err := obj.DeleteReported(); err != nil {
-			config.Log.Println(err)
+			log.Println(err)
 			return ctx.Status(404).Render("404", fiber.Map{
 				"message": "Something broke",
 			})
@@ -463,7 +464,7 @@ func ReportPost(ctx *fiber.Ctx) error {
 
 	if local, _ := obj.IsLocal(); !local {
 		if err := db.CreateLocalReport(id, board, reason); err != nil {
-			config.Log.Println(err)
+			log.Println(err)
 			return ctx.Status(404).Render("404", fiber.Map{
 				"message": "Something broke",
 			})
@@ -493,7 +494,7 @@ func ReportPost(ctx *fiber.Ctx) error {
 	}
 
 	if err := db.CreateLocalReport(obj.Id, board, reason); err != nil {
-		config.Log.Println(err)
+		log.Println(err)
 		return ctx.Status(404).Render("404", fiber.Map{
 			"message": "Something broke",
 		})

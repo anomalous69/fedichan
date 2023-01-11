@@ -31,7 +31,6 @@ var ActivityStreams = "application/ld+json; profile=\"https://www.w3.org/ns/acti
 var AuthReq = []string{"captcha", "email", "passphrase"}
 var PostCountPerPage = 10
 var SupportedFiles = []string{"image/gif", "image/jpeg", "image/png", "image/webp", "image/apng", "video/mp4", "video/ogg", "video/webm", "audio/mpeg", "audio/ogg", "audio/wav", "audio/wave", "audio/x-wav"}
-var Log = log.New(os.Stdout, "", log.Ltime)
 var MediaHashs = make(map[string]string)
 var Key = GetConfigValue("modkey", "")
 var Debug = GetConfigValue("debug", "")
@@ -44,7 +43,7 @@ func GetConfigValue(value string, ifnone string) string {
 	file, err := os.Open("fchan.cfg")
 
 	if err != nil {
-		Log.Println(err)
+		log.Println(err)
 		return ifnone
 	}
 
