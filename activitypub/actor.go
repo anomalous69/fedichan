@@ -229,7 +229,7 @@ func (actor Actor) GetCatalogCollection() (Collection, error) {
 
 		var attch ObjectBase
 
-		var prev NestedObjectBase
+		var prev ObjectBase
 
 		err = rows.Scan(&post.Id, &post.Name, &post.Content, &post.Type, &post.Published, &post.Updated, &post.AttributedTo, &attch.Id, &prev.Id, &actor.Id, &post.TripCode, &post.Sensitive)
 
@@ -304,7 +304,7 @@ func (actor Actor) GetCollectionPage(page int) (Collection, error) {
 
 		var attch ObjectBase
 
-		var prev NestedObjectBase
+		var prev ObjectBase
 
 		err = rows.Scan(&count, &post.Id, &post.Name, &post.Content, &post.Type, &post.Published, &post.Updated, &post.AttributedTo, &attch.Id, &prev.Id, &actor.Id, &post.TripCode, &post.Sensitive)
 
@@ -369,7 +369,7 @@ func (actor Actor) GetCollection() (Collection, error) {
 
 		var attch ObjectBase
 
-		var prev NestedObjectBase
+		var prev ObjectBase
 
 		if err := rows.Scan(&post.Id, &post.Name, &post.Content, &post.Type, &post.Published, &post.Updated, &post.AttributedTo, &attch.Id, &prev.Id, &actor.Id, &post.TripCode, &post.Sensitive); err != nil {
 			return nColl, util.WrapError(err)
@@ -427,7 +427,7 @@ func (actor Actor) GetCollectionType(nType string) (Collection, error) {
 
 		var attch ObjectBase
 
-		var prev NestedObjectBase
+		var prev ObjectBase
 
 		if err := rows.Scan(&post.Id, &post.Name, &post.Content, &post.Type, &post.Published, &post.Updated, &post.AttributedTo, &attch.Id, &prev.Id, &actor.Id, &post.TripCode, &post.Sensitive); err != nil {
 			return nColl, util.WrapError(err)
@@ -482,7 +482,7 @@ func (actor Actor) GetCollectionTypeLimit(nType string, limit int) (Collection, 
 
 		var attch ObjectBase
 
-		var prev NestedObjectBase
+		var prev ObjectBase
 
 		if err := rows.Scan(&post.Id, &post.Name, &post.Content, &post.Type, &post.Published, &post.Updated, &post.AttributedTo, &attch.Id, &prev.Id, &actor.Id, &post.TripCode, &post.Sensitive); err != nil {
 			return nColl, util.WrapError(err)
@@ -1194,7 +1194,7 @@ select count
 
 		var attch ObjectBase
 
-		var prev NestedObjectBase
+		var prev ObjectBase
 
 		err = rows.Scan(&count, &post.Id, &post.Name, &post.Content, &post.Type, &post.Published, &post.Updated, &post.AttributedTo, &attch.Id, &prev.Id, &actor.Id, &post.TripCode, &post.Sensitive)
 

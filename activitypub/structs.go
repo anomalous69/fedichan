@@ -124,10 +124,10 @@ type ObjectBase struct {
 	Image        string            `json:"image,omitempty"`
 	InReplyTo    []ObjectBase      `json:"inReplyTo,omitempty"`
 	Location     string            `json:"location,omitempty"`
-	Preview      *NestedObjectBase `json:"preview,omitempty"`
+	Preview      *ObjectBase `json:"preview,omitempty"`
 	Published    time.Time         `json:"published,omitempty"`
 	Updated      *time.Time        `json:"updated,omitempty"`
-	Object       *NestedObjectBase `json:"object,omitempty"`
+	Object       *ObjectBase `json:"object,omitempty"`
 	Attachment   []ObjectBase      `json:"attachment,omitempty"`
 	Replies      *CollectionBase   `json:"replies,omitempty"`
 	StartTime    string            `json:"startTime,omitempty"`
@@ -146,44 +146,6 @@ type ObjectBase struct {
 	Sensitive    bool              `json:"sensitive,omitempty"`
 	Sticky       bool              `json:"sticky,omitempty"`
 	Locked       bool              `json:"locked,omitempty"`
-}
-
-type NestedObjectBase struct {
-	AtContext
-	Type         string          `json:"type,omitempty"`
-	Id           string          `json:"id,omitempty"`
-	Name         string          `json:"name,omitempty"`
-	Alias        string          `json:"alias,omitempty"`
-	AttributedTo string          `json:"attributedTo,omitempty"`
-	TripCode     string          `json:"tripcode,omitempty"`
-	Actor        string          `json:"actor,omitempty"`
-	Audience     string          `json:"audience,omitempty"`
-	ContentHTML  template.HTML   `json:"contenthtml,omitempty"`
-	Content      string          `json:"content,omitempty"`
-	EndTime      string          `json:"endTime,omitempty"`
-	Generator    string          `json:"generator,omitempty"`
-	Icon         string          `json:"icon,omitempty"`
-	Image        string          `json:"image,omitempty"`
-	InReplyTo    []ObjectBase    `json:"inReplyTo,omitempty"`
-	Location     string          `json:"location,omitempty"`
-	Preview      *ObjectBase     `json:"preview,omitempty"`
-	Published    time.Time       `json:"published,omitempty"`
-	Attachment   []ObjectBase    `json:"attachment,omitempty"`
-	Replies      *CollectionBase `json:"replies,omitempty"`
-	StartTime    string          `json:"startTime,omitempty"`
-	Summary      string          `json:"summary,omitempty"`
-	Tag          []ObjectBase    `json:"tag,omitempty"`
-	Updated      *time.Time      `json:"updated,omitempty"`
-	Deleted      string          `json:"deleted,omitempty"`
-	Url          []ObjectBase    `json:"url,omitempty"`
-	Href         string          `json:"href,omitempty"`
-	To           []string        `json:"to,omitempty"`
-	Bto          []string        `json:"bto,omitempty"`
-	Cc           []string        `json:"cc,omitempty"`
-	Bcc          string          `json:"Bcc,omitempty"`
-	MediaType    string          `json:"mediatype,omitempty"`
-	Duration     string          `json:"duration,omitempty"`
-	Size         int64           `json:"size,omitempty"`
 }
 
 type CollectionBase struct {

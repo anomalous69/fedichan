@@ -29,11 +29,6 @@ Before you make a pull request, ensure everything you changed works as expected,
 and to fix errors reported by `go vet` and make your code better with
 `staticcheck`.
 
-### Nix
-
-Most of the development on this was done using NixOS and as such a ready-to-go
-`shell.nix` is available for those who use direnv and Lorri.
-
 ## Server Installation and Configuration
 
 ### Minimum Server Requirements

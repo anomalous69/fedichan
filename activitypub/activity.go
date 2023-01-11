@@ -3,7 +3,6 @@ package activitypub
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -22,14 +21,13 @@ func (activity Activity) AcceptFollow(a Actor) Activity {
 	accept.Type = "Accept"
 	accept.Actor = &a
 
-	var nObj ObjectBase
-	accept.Object = nObj
 	accept.Object.Actor = activity.Actor.Id
 
-	var nNested NestedObjectBase
-	accept.Object.Object = &nNested
-	accept.Object.Object.Actor = activity.Object.Actor
-	accept.Object.Object.Type = "Follow"
+	accept.Object.Object = &ObjectBase{
+		Actor: activity.Object.Actor,
+		Type: "Follow",
+	}
+
 	accept.To = append(accept.To, activity.Actor.Id)
 
 	return accept
@@ -163,43 +161,20 @@ func (activity Activity) IsLocal() (bool, error) {
 	return false, nil
 }
 
-func (activity Activity) Process() error {
-	activityType := activity.Type
-
-	if activityType == "Create" {
-		for _, e := range activity.To {
-			if res, err := GetActorFromDB(e); res.Id != "" {
-				log.Println("actor is in the database")
-			} else if err != nil {
-				return util.WrapError(err)
-			} else {
-				log.Println("actor is NOT in the database")
-			}
-		}
-	} else if activityType == "Follow" {
-		// TODO: okay?
-		return errors.New("not implemented")
-	} else if activityType == "Delete" {
-		return errors.New("not implemented")
-	}
-
-	return nil
-}
-
 func (activity Activity) Reject() Activity {
 	var accept Activity
 	accept.AtContext.Context = activity.AtContext.Context
 	accept.Type = "Reject"
-	var nObj ObjectBase
-	accept.Object = nObj
-	var nActor Actor
-	accept.Actor = &nActor
-	accept.Actor.Id = activity.Object.Actor
+
 	accept.Object.Actor = activity.Actor.Id
-	var nNested NestedObjectBase
-	accept.Object.Object = &nNested
-	accept.Object.Object.Actor = activity.Object.Actor
-	accept.Object.Object.Type = "Follow"
+	accept.Actor = &Actor{
+		Id: activity.Object.Actor,
+	}
+
+	accept.Object.Object = &ObjectBase{
+		Actor: activity.Object.Actor,
+		Type: "Follow",
+	}
 	accept.To = append(accept.To, activity.Actor.Id)
 
 	return accept
@@ -226,21 +201,18 @@ func (activity Activity) Report(reason string) (bool, error) {
 }
 
 func (activity Activity) SetActorFollower() (Activity, error) {
-	var query string
+	if activity.Actor.Id == activity.Object.Actor {
+		// TODO: Non-sensical activity?
+		return activity, nil
+	}
 
 	alreadyFollower, err := activity.Actor.IsAlreadyFollower(activity.Object.Actor)
-
 	if err != nil {
 		return activity, util.WrapError(err)
 	}
 
-	if activity.Actor.Id == activity.Object.Actor {
-		activity.Type = "Reject"
-		return activity, nil
-	}
-
 	if alreadyFollower {
-		query = `delete from follower where id=$1 and follower=$2`
+		query := `delete from follower where id=$1 and follower=$2`
 		if _, err := config.DB.Exec(query, activity.Actor.Id, activity.Object.Actor); err != nil {
 			return activity, util.WrapError(err)
 		}
@@ -250,7 +222,7 @@ func (activity Activity) SetActorFollower() (Activity, error) {
 		return activity, util.WrapError(err)
 	}
 
-	query = `insert into follower (id, follower) values ($1, $2)`
+	query := `insert into follower (id, follower) values ($1, $2)`
 	if _, err := config.DB.Exec(query, activity.Actor.Id, activity.Object.Actor); err != nil {
 		return activity, util.WrapError(err)
 	}
@@ -263,7 +235,7 @@ func (activity Activity) SetActorFollower() (Activity, error) {
 
 func (activity Activity) SetActorFollowing() error {
 	if activity.Actor.Id == activity.Object.Actor {
-		// TODO: Return an error
+		// TODO: Non-sensical activity?
 		return nil
 	}
 

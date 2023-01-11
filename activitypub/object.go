@@ -98,8 +98,8 @@ func (obj ObjectBase) GetOP() (string, error) {
 	return id, nil
 }
 
-func (obj ObjectBase) CreatePreview() *NestedObjectBase {
-	var nPreview NestedObjectBase
+func (obj ObjectBase) CreatePreview() *ObjectBase {
+	var nPreview ObjectBase
 
 	re := regexp.MustCompile(`/.+$`)
 	mimetype := re.ReplaceAllString(obj.MediaType, "")
@@ -126,7 +126,7 @@ func (obj ObjectBase) CreatePreview() *NestedObjectBase {
 
 	if err := cmd.Run(); err != nil {
 		// TODO: previously we would call CheckError here
-		var preview NestedObjectBase
+		var preview ObjectBase
 		return &preview
 	}
 
@@ -362,7 +362,7 @@ func (obj ObjectBase) GetCollectionLocal() (Collection, error) {
 
 		var attch ObjectBase
 
-		var prev NestedObjectBase
+		var prev ObjectBase
 
 		err = rows.Scan(&post.Id, &post.Name, &post.Content, &post.Type, &post.Published, &post.Updated, &post.AttributedTo, &attch.Id, &prev.Id, &actor.Id, &post.TripCode, &post.Sensitive)
 
@@ -464,7 +464,7 @@ func (obj ObjectBase) GetCollectionFromPath() (Collection, error) {
 
 	var attch ObjectBase
 
-	var prev NestedObjectBase
+	var prev ObjectBase
 
 	var err error
 
@@ -515,7 +515,7 @@ func (obj ObjectBase) GetFromPath() (ObjectBase, error) {
 
 	var attch ObjectBase
 
-	var prev NestedObjectBase
+	var prev ObjectBase
 
 	query := `select id, name, content, type, published, attributedto, attachment, preview, actor from activitystream where id=$1 order by published desc`
 	err := config.DB.QueryRow(query, obj.Id).Scan(&post.Id, &post.Name, &post.Content, &post.Type, &post.Published, &post.AttributedTo, &attch.Id, &prev.Id, &post.Actor)
@@ -559,8 +559,8 @@ func (obj ObjectBase) GetFromPath() (ObjectBase, error) {
 	return post, util.WrapError(err)
 }
 
-func (obj NestedObjectBase) GetPreview() (*NestedObjectBase, error) {
-	var preview NestedObjectBase
+func (obj ObjectBase) GetPreview() (*ObjectBase, error) {
+	var preview ObjectBase
 
 	query := `select x.id, x.type, x.name, x.href, x.mediatype, x.size, x.published from (select id, type, name, href, mediatype, size, published from activitystream where id=$1 union select id, type, name, href, mediatype, size, published from cacheactivitystream where id=$1) as x`
 	if err := config.DB.QueryRow(query, obj.Id).Scan(&preview.Id, &preview.Type, &preview.Name, &preview.Href, &preview.MediaType, &preview.Size, &preview.Published); err != nil {
@@ -606,7 +606,7 @@ func (obj ObjectBase) GetReplies() (*CollectionBase, error) {
 
 		var attch ObjectBase
 
-		var prev NestedObjectBase
+		var prev ObjectBase
 
 		err = rows.Scan(&post.Id, &post.Name, &post.Content, &post.Type, &post.Published, &post.AttributedTo, &attch.Id, &prev.Id, &actor.Id, &post.TripCode, &post.Sensitive)
 		if err != nil {
@@ -674,7 +674,7 @@ func (obj ObjectBase) GetRepliesLimit(limit int) (*CollectionBase, error) {
 
 		var attch ObjectBase
 
-		var prev NestedObjectBase
+		var prev ObjectBase
 
 		err = rows.Scan(&postCount, &attachCount, &post.Id, &post.Name, &post.Content, &post.Type, &post.Published, &post.AttributedTo, &attch.Id, &prev.Id, &actor.Id, &post.TripCode, &post.Sensitive)
 
@@ -744,7 +744,7 @@ func (obj ObjectBase) GetRepliesReplies() (*CollectionBase, error) {
 
 		var attch ObjectBase
 
-		var prev NestedObjectBase
+		var prev ObjectBase
 
 		err = rows.Scan(&postCount, &attachCount, &post.Id, &post.Name, &post.Content, &post.Type, &post.Published, &post.AttributedTo, &attch.Id, &prev.Id, &actor.Id, &post.TripCode, &post.Sensitive)
 		if err != nil {
@@ -1250,13 +1250,13 @@ func (obj ObjectBase) WriteCacheWithAttachment(attachment ObjectBase) error {
 	return nil
 }
 
-func (obj NestedObjectBase) WritePreview() error {
+func (obj ObjectBase) WritePreview() error {
 	query := `insert into activitystream (id, type, name, href, published, updated, attributedTo, mediatype, size) values ($1, $2, $3, $4, $5, $6, $7, $8, $9)`
 	_, err := config.DB.Exec(query, obj.Id, obj.Type, obj.Name, obj.Href, obj.Published, obj.Updated, obj.AttributedTo, obj.MediaType, obj.Size)
 	return util.WrapError(err)
 }
 
-func (obj NestedObjectBase) WritePreviewCache() error {
+func (obj ObjectBase) WritePreviewCache() error {
 	var id string
 
 	query := `select id from cacheactivitystream where id=$1`
