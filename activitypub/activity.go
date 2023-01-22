@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
 	"regexp"
@@ -124,22 +123,17 @@ func (activity Activity) GetCollection() (Collection, error) {
 	if err != nil {
 		return nColl, util.WrapError(err)
 	}
+	defer resp.Body.Close()
 
-	if resp.StatusCode == 200 {
-		defer resp.Body.Close()
-		body, _ := io.ReadAll(resp.Body)
-		if len(body) > 0 {
-			if err := json.Unmarshal(body, &nColl); err != nil {
-				return nColl, util.WrapError(err)
-			}
-		}
+	if resp.StatusCode != 200 {
+		return nColl, fmt.Errorf("non 200 response code (%d)", resp.StatusCode)
 	}
 
-	return nColl, nil
+	err = json.NewDecoder(resp.Body).Decode(&nColl)
+	return nColl, util.WrapError(err) // no-op if nil
 }
 
 func (activity Activity) IsLocal() (bool, error) {
-
 	for _, e := range activity.To {
 		if res, _ := GetActorFromDB(e); res.Id != "" {
 			return true, nil

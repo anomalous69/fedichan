@@ -256,15 +256,14 @@ func ObjectFromForm(ctx *fiber.Ctx, obj activitypub.ObjectBase) (activitypub.Obj
 		var tempFile = new(os.File)
 
 		obj.Attachment, tempFile, err = activitypub.CreateAttachmentObject(file, header)
-
 		if err != nil {
 			return obj, util.WrapError(err)
 		}
-
 		defer tempFile.Close()
 
-		fileBytes, _ := io.ReadAll(file)
-		tempFile.Write(fileBytes)
+		if _, err := io.Copy(tempFile, file); err != nil {
+			return obj, util.WrapError(err)
+		}
 
 		re := regexp.MustCompile(`image/(jpe?g|png|webp)`)
 		if re.MatchString(obj.Attachment[0].MediaType) {

@@ -3,7 +3,6 @@ package activitypub
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"regexp"
 	"sort"
@@ -72,15 +71,16 @@ func GetActor(id string) (Actor, error) {
 	req.Header.Set("Accept", config.ActivityStreams)
 
 	resp, err := util.RouteProxy(req)
-
 	if err != nil {
 		return respActor, util.WrapError(err)
 	}
-
 	defer resp.Body.Close()
-	body, _ := io.ReadAll(resp.Body)
 
-	if err := json.Unmarshal(body, &respActor); err != nil {
+	if resp.StatusCode != 200 {
+		return respActor, fmt.Errorf("non 200 status code (%d)", resp.StatusCode)
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&respActor); err != nil {
 		return respActor, util.WrapError(err)
 	}
 
@@ -106,21 +106,17 @@ func FingerActor(path string) (Actor, error) {
 		if err != nil {
 			return nActor, util.WrapError(err)
 		}
+		defer resp.Body.Close()
 
-		if resp != nil && resp.StatusCode == 200 {
-			defer resp.Body.Close()
-
-			body, err := io.ReadAll(resp.Body)
-			if err != nil {
-				return nActor, util.WrapError(err)
-			}
-
-			if err := json.Unmarshal(body, &nActor); err != nil {
-				return nActor, util.WrapError(err)
-			}
-
-			ActorCache[actor+"@"+instance] = nActor
+		if resp.StatusCode != 200 {
+			return nActor, fmt.Errorf("non 200 status code (%d)", resp.StatusCode)
 		}
+
+		if err := json.NewDecoder(resp.Body).Decode(&nActor); err != nil {
+			return nActor, util.WrapError(err)
+		}
+
+		ActorCache[actor+"@"+instance] = nActor
 	}
 
 	return nActor, nil
@@ -140,18 +136,16 @@ func FingerRequest(actor string, instance string) (*http.Response, error) {
 	if err != nil {
 		return resp, err
 	}
+	defer resp.Body.Close()
 
 	var finger Webfinger
 
-	if resp.StatusCode == 200 {
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			return resp, err
-		}
+	if resp.StatusCode != 200 {
+		return nil, fmt.Errorf("non 200 status code (%d)", resp.StatusCode)
+	}
 
-		if err := json.Unmarshal(body, &finger); err != nil {
-			return resp, util.WrapError(err)
-		}
+	if err := json.NewDecoder(resp.Body).Decode(&finger); err != nil {
+		return resp, util.WrapError(err)
 	}
 
 	if len(finger.Links) > 0 {
@@ -169,11 +163,7 @@ func FingerRequest(actor string, instance string) (*http.Response, error) {
 	}
 
 	req.Header.Set("Accept", config.ActivityStreams)
-	if resp, err = util.RouteProxy(req); err != nil {
-		return resp, util.WrapError(err)
-	}
-
-	return resp, nil
+	return util.RouteProxy(req)
 }
 
 func GetActorByNameFromBoardCollection(name string) Actor {
