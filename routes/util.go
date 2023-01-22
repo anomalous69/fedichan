@@ -364,7 +364,7 @@ func ParseAttachment(obj activitypub.ObjectBase, catalog bool) template.HTML {
 		}
 		src = util.MediaProxy(src)
 
-		return template.HTML(fmt.Sprintf(`<img class="media" main="1" enlarge="0" attachment="%s" src="%s" preview="%s">`, obj.Attachment[0].Href, src, src))
+		return template.HTML(fmt.Sprintf(`<img class="media" enlarge="0" attachment="%s" src="%s" preview="%s">`, obj.Attachment[0].Href, src, src))
 	} else if regexp.MustCompile(`audio\/`).MatchString(obj.Attachment[0].MediaType) {
 		return template.HTML(fmt.Sprintf(`<audio class="media" controls preload="metadata"><source src="%s" type="%s">Audio is not supported.</audio>`, util.MediaProxy(obj.Attachment[0].Href), obj.Attachment[0].MediaType))
 	} else if regexp.MustCompile(`video\/`).MatchString(obj.Attachment[0].MediaType) {
