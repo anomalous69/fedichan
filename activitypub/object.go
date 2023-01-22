@@ -10,6 +10,7 @@ import (
 	"sort"
 	"strings"
 	"time"
+	"errors"
 
 	"github.com/KushBlazingJudah/fedichan/config"
 	"github.com/KushBlazingJudah/fedichan/util"
@@ -445,14 +446,18 @@ func (obj ObjectBase) GetInReplyTo() ([]ObjectBase, error) {
 
 // TODO does attachemnts need to be an array in the activitypub structs?
 func (obj ObjectBase) GetAttachment() ([]ObjectBase, error) {
-	var attachments []ObjectBase
 	var attachment ObjectBase
 
 	query := `select x.id, x.type, x.name, x.href, x.mediatype, x.size, x.published from (select id, type, name, href, mediatype, size, published from activitystream where id=$1 union select id, type, name, href, mediatype, size, published from cacheactivitystream where id=$1) as x`
-	_ = config.DB.QueryRow(query, obj.Id).Scan(&attachment.Id, &attachment.Type, &attachment.Name, &attachment.Href, &attachment.MediaType, &attachment.Size, &attachment.Published)
+	err := config.DB.QueryRow(query, obj.Id).Scan(&attachment.Id, &attachment.Type, &attachment.Name, &attachment.Href, &attachment.MediaType, &attachment.Size, &attachment.Published)
 
-	attachments = append(attachments, attachment)
-	return attachments, nil
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, nil
+	} else if err != nil {
+		return nil, err
+	}
+
+	return []ObjectBase{attachment}, nil
 }
 
 func (obj ObjectBase) GetCollectionFromPath() (Collection, error) {
