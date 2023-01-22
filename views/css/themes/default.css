@@ -267,3 +267,27 @@ a.reply {
 	max-width: 250px;
 	max-height: 250px;
 }
+
+#catalog .mediacont {
+	width: 180px;
+}
+
+#catalog .mediacont .status {
+	position: absolute;
+}
+
+#catalog .item {
+	overflow: hidden; 
+	vertical-align: top; 
+	padding-right: 24px; 
+	padding-bottom: 24px; 
+	display: inline-block; 
+	width: 180px; 
+	max-height: 320px; 
+	margin-bottom: 10px;
+}
+
+#catalog {
+	padding: 10px;
+	text-align: center;
+}
