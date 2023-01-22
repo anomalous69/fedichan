@@ -25,7 +25,7 @@ func (activity Activity) AcceptFollow(a Actor) Activity {
 
 	accept.Object.Object = &ObjectBase{
 		Actor: activity.Object.Actor,
-		Type: "Follow",
+		Type:  "Follow",
 	}
 
 	accept.To = append(accept.To, activity.Actor.Id)
@@ -173,7 +173,7 @@ func (activity Activity) Reject() Activity {
 
 	accept.Object.Object = &ObjectBase{
 		Actor: activity.Object.Actor,
-		Type: "Follow",
+		Type:  "Follow",
 	}
 	accept.To = append(accept.To, activity.Actor.Id)
 

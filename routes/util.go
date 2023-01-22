@@ -96,7 +96,36 @@ func NewPost(actor activitypub.Actor, nObj *activitypub.ObjectBase) error {
 	return nil
 }
 
+func parseReplyLink(actorId string, op string, id string, content string) template.HTML {
+	actor, _ := activitypub.FingerActor(actorId)
+	title := html.EscapeString(db.ParseLinkTitle(actor.Id+"/", op, content))
+	return template.HTML(fmt.Sprintf(`<a href="/%s/%s#%s" title="%s" class="replyLink">&gt;&gt;%s</a>`, actor.Name, util.ShortURL(actor.Outbox, op), util.ShortURL(actor.Outbox, id), title, util.ShortURL(actor.Outbox, id)))
+}
+
+func timeToReadableLong(t time.Time) string {
+	// TODO: Not necessary.
+	return t.Format("01/02/06(Mon)15:04:05")
+}
+
+func timeToUnix(t time.Time) string {
+	// TODO: Not necessary.
+	return fmt.Sprint(t.Unix())
+}
+
 func TemplateFunctions(engine *fhtml.Engine) {
+	postTmpl := template.Must(template.New("").Funcs(template.FuncMap{
+		"convertSize":        util.ConvertSize,
+		"isOnion":            util.IsOnion,
+		"parseAttachment":    ParseAttachment,
+		"parseContent":       db.ParseContent,
+		"parseReplyLink":     parseReplyLink,
+		"proxy":              util.MediaProxy,
+		"shortImg":           util.ShortImg,
+		"timeToReadableLong": timeToReadableLong,
+		"timeToUnix":         timeToUnix,
+		"shortURL":           util.ShortURL,
+	}).ParseFiles("./views/partials/post.html"))
+
 	engine.AddFunc("mod", func(i, j int) bool {
 		return i%j == 0
 	})
@@ -113,13 +142,9 @@ func TemplateFunctions(engine *fhtml.Engine) {
 		return time.Unix(int64(u), 0).Format("Jan 02, 2006")
 	})
 
-	engine.AddFunc("timeToReadableLong", func(t time.Time) string {
-		return t.Format("01/02/06(Mon)15:04:05")
-	})
+	engine.AddFunc("timeToReadableLong", timeToReadableLong)
 
-	engine.AddFunc("timeToUnix", func(t time.Time) string {
-		return fmt.Sprint(t.Unix())
-	})
+	engine.AddFunc("timeToUnix", timeToUnix)
 
 	engine.AddFunc("isAdmin", func(d *db.Acct) bool {
 		return d != nil && d.Type == db.Admin
@@ -133,11 +158,7 @@ func TemplateFunctions(engine *fhtml.Engine) {
 	engine.AddFunc("convertSize", util.ConvertSize)
 	engine.AddFunc("isOnion", util.IsOnion)
 
-	engine.AddFunc("parseReplyLink", func(actorId string, op string, id string, content string) string {
-		actor, _ := activitypub.FingerActor(actorId)
-		title := html.EscapeString(db.ParseLinkTitle(actor.Id+"/", op, content))
-		return fmt.Sprintf(`<a href="/%s/%s#%s" title="%s" class="replyLink">&gt;&gt;%s</a>`, actor.Name, util.ShortURL(actor.Outbox, op), util.ShortURL(actor.Outbox, id), title, util.ShortURL(actor.Outbox, id))
-	})
+	engine.AddFunc("parseReplyLink", parseReplyLink)
 
 	engine.AddFunc("shortExcerpt", func(post activitypub.ObjectBase) template.HTML {
 		var returnString string
@@ -199,6 +220,22 @@ func TemplateFunctions(engine *fhtml.Engine) {
 		}
 
 		return true
+	})
+
+	engine.AddFunc("renderPost", func(p activitypub.ObjectBase, b activitypub.Board, t activitypub.ObjectBase, a db.Acct, trunc bool) template.HTML {
+		buf := &strings.Builder{}
+		if err := postTmpl.ExecuteTemplate(buf, "post", struct {
+			Board  activitypub.Board
+			Acct   db.Acct
+			Thread activitypub.ObjectBase
+			Post   activitypub.ObjectBase
+			Trunc  bool
+		}{b, a, t, p, trunc}); err != nil {
+			// A panic is fine in this context
+			panic(err)
+		}
+
+		return template.HTML(buf.String())
 	})
 }
 

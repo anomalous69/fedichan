@@ -114,11 +114,11 @@ func IsMediaBanned(f multipart.File) (bool, error) {
 	return false, nil
 }
 
-func ParseContent(board activitypub.Actor, op string, content string, thread activitypub.ObjectBase, id string, _type string) (template.HTML, error) {
+func ParseContent(board activitypub.Actor, op string, content string, thread activitypub.ObjectBase, id string, trunc bool) (template.HTML, error) {
 	// TODO: should escape more than just < and >, should also escape &, ", and '
 	nContent := strings.ReplaceAll(content, `<`, "&lt;")
 
-	if _type == "new" {
+	if trunc {
 		nContent = ParseTruncate(nContent, board, op, id)
 	}
 
