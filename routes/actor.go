@@ -249,12 +249,12 @@ func MakeActorPost(ctx *fiber.Ctx) error {
 		return ctx.Redirect("/", 301)
 	}
 
-	nObj, err := ObjectFromForm(ctx, activitypub.CreateObject("Note"))
+	nObj, err := objectFromForm(ctx, activitypub.CreateObject("Note"))
 	if err != nil {
 		return util.WrapError(err)
 	}
 
-	if err := NewPost(actor, &nObj); err != nil {
+	if err := newPost(actor, &nObj); err != nil {
 		return err
 	}
 
@@ -270,8 +270,7 @@ func MakeActorPost(ctx *fiber.Ctx) error {
 
 	var obj activitypub.ObjectBase
 
-	// TODO: We really don't need this
-	obj = ParseOptions(ctx, obj)
+	obj.Option = parseOptions(ctx)
 
 	for _, e := range obj.Option {
 		if e == "noko" || e == "nokosage" {
@@ -298,8 +297,7 @@ func ActorPost(ctx *fiber.Ctx) error {
 
 	// this is a activitpub json request return json instead of html page
 	if activitypub.AcceptActivity(ctx.Get("Accept")) {
-		GetActorPost(ctx, ctx.Path())
-		return nil
+		return getActorPost(ctx)
 	}
 
 	re := regexp.MustCompile(`\w+$`)

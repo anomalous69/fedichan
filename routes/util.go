@@ -27,7 +27,8 @@ func themeCookie(c *fiber.Ctx) string {
 	return c.Cookies("theme")
 }
 
-func GetActorPost(ctx *fiber.Ctx, path string) error {
+func getActorPost(ctx *fiber.Ctx) error {
+	path := ctx.Path()
 	obj := activitypub.ObjectBase{Id: config.Domain + path}
 	collection, err := obj.GetCollectionFromPath()
 
@@ -50,7 +51,7 @@ func GetActorPost(ctx *fiber.Ctx, path string) error {
 	return nil
 }
 
-func NewPost(actor activitypub.Actor, nObj *activitypub.ObjectBase) error {
+func newPost(actor activitypub.Actor, nObj *activitypub.ObjectBase) error {
 	nObj.Actor = config.Domain + "/" + actor.Name
 
 	if locked, _ := nObj.InReplyTo[0].IsLocked(); locked {
@@ -116,7 +117,7 @@ func TemplateFunctions(engine *fhtml.Engine) {
 	postTmpl := template.Must(template.New("").Funcs(template.FuncMap{
 		"convertSize":        util.ConvertSize,
 		"isOnion":            util.IsOnion,
-		"parseAttachment":    ParseAttachment,
+		"parseAttachment":    parseAttachment,
 		"parseContent":       db.ParseContent,
 		"parseReplyLink":     parseReplyLink,
 		"proxy":              util.MediaProxy,
@@ -152,7 +153,7 @@ func TemplateFunctions(engine *fhtml.Engine) {
 
 	engine.AddFunc("proxy", util.MediaProxy)
 	engine.AddFunc("shortURL", util.ShortURL)
-	engine.AddFunc("parseAttachment", ParseAttachment)
+	engine.AddFunc("parseAttachment", parseAttachment)
 	engine.AddFunc("parseContent", db.ParseContent)
 	engine.AddFunc("shortImg", util.ShortImg)
 	engine.AddFunc("convertSize", util.ConvertSize)
@@ -239,7 +240,7 @@ func TemplateFunctions(engine *fhtml.Engine) {
 	})
 }
 
-func ObjectFromForm(ctx *fiber.Ctx, obj activitypub.ObjectBase) (activitypub.ObjectBase, error) {
+func objectFromForm(ctx *fiber.Ctx, obj activitypub.ObjectBase) (activitypub.ObjectBase, error) {
 	acct, _ := ctx.Locals("acct").(*db.Acct)
 
 	var err error
@@ -286,7 +287,7 @@ func ObjectFromForm(ctx *fiber.Ctx, obj activitypub.ObjectBase) (activitypub.Obj
 	obj.Name = util.EscapeString(ctx.FormValue("subject"))
 	obj.Content = util.EscapeString(ctx.FormValue("comment"))
 	obj.Sensitive = (ctx.FormValue("sensitive") != "")
-	obj = ParseOptions(ctx, obj)
+	obj.Option = parseOptions(ctx)
 
 	var originalPost activitypub.ObjectBase
 
@@ -351,7 +352,7 @@ func ObjectFromForm(ctx *fiber.Ctx, obj activitypub.ObjectBase) (activitypub.Obj
 	return obj, nil
 }
 
-func ParseAttachment(obj activitypub.ObjectBase, catalog bool) template.HTML {
+func parseAttachment(obj activitypub.ObjectBase, catalog bool) template.HTML {
 	if len(obj.Attachment) < 1 {
 		return ""
 	}
@@ -373,28 +374,25 @@ func ParseAttachment(obj activitypub.ObjectBase, catalog bool) template.HTML {
 	return ""
 }
 
-func ParseOptions(ctx *fiber.Ctx, obj activitypub.ObjectBase) activitypub.ObjectBase {
+func parseOptions(ctx *fiber.Ctx) []string {
 	options := util.EscapeString(ctx.FormValue("options"))
+	var opts []string
 
 	if options != "" {
 		option := strings.Split(options, ";")
 		email := regexp.MustCompile(`.+@.+\..+`)
-		delete := regexp.MustCompile("delete:.+")
 
 		for _, e := range option {
-			if e == "noko" {
-				obj.Option = append(obj.Option, "noko")
-			} else if e == "sage" {
-				obj.Option = append(obj.Option, "sage")
-			} else if e == "nokosage" {
-				obj.Option = append(obj.Option, "nokosage")
-			} else if email.MatchString(e) {
-				obj.Option = append(obj.Option, "email:"+e)
-			} else if delete.MatchString(e) {
-				obj.Option = append(obj.Option, e)
+			switch e {
+			case "noko", "sage", "nokosage":
+				opts = append(opts, e)
+			default:
+				if email.MatchString(e) {
+					opts = append(opts, "email:"+e)
+				}
 			}
 		}
 	}
 
-	return obj
+	return opts
 }
