@@ -168,12 +168,6 @@ func HashBytes(media []byte) string {
 	return hex.EncodeToString(h.Sum(nil))
 }
 
-func EscapeString(text string) string {
-	// TODO: not enough
-	text = strings.Replace(text, "<", "&lt;", -1)
-	return text
-}
-
 func CreateUniqueID(actor string) (string, error) {
 	var newID string
 

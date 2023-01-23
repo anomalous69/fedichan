@@ -282,16 +282,16 @@ func objectFromForm(ctx *fiber.Ctx, obj activitypub.ObjectBase) (activitypub.Obj
 
 	name, tripcode, _ := db.CreateNameTripCode(ctx.FormValue("name"), acct)
 
-	obj.AttributedTo = util.EscapeString(name)
-	obj.TripCode = util.EscapeString(tripcode)
-	obj.Name = util.EscapeString(ctx.FormValue("subject"))
-	obj.Content = util.EscapeString(ctx.FormValue("comment"))
+	obj.AttributedTo = name
+	obj.TripCode = tripcode
+	obj.Name = ctx.FormValue("subject")
+	obj.Content = ctx.FormValue("comment")
 	obj.Sensitive = (ctx.FormValue("sensitive") != "")
 	obj.Option = parseOptions(ctx)
 
 	var originalPost activitypub.ObjectBase
 
-	originalPost.Id = util.EscapeString(ctx.FormValue("inReplyTo"))
+	originalPost.Id = html.EscapeString(ctx.FormValue("inReplyTo"))
 	obj.InReplyTo = append(obj.InReplyTo, originalPost)
 
 	var activity activitypub.Activity
@@ -313,7 +313,7 @@ func objectFromForm(ctx *fiber.Ctx, obj activitypub.ObjectBase) (activitypub.Obj
 		}
 	}
 
-	replyingTo, err := db.ParseCommentForReplies(ctx.FormValue("comment"), originalPost.Id)
+	replyingTo, err := db.ParseCommentForReplies(obj.Content, originalPost.Id)
 
 	if err != nil {
 		return obj, util.WrapError(err)
@@ -375,7 +375,7 @@ func parseAttachment(obj activitypub.ObjectBase, catalog bool) template.HTML {
 }
 
 func parseOptions(ctx *fiber.Ctx) []string {
-	options := util.EscapeString(ctx.FormValue("options"))
+	options := ctx.FormValue("options")
 	var opts []string
 
 	if options != "" {

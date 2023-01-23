@@ -1179,9 +1179,6 @@ func (obj ObjectBase) Write() (ObjectBase, error) {
 }
 
 func (obj ObjectBase) _Write() error {
-	obj.Name = util.EscapeString(obj.Name)
-	obj.Content = util.EscapeString(obj.Content)
-	obj.AttributedTo = util.EscapeString(obj.AttributedTo)
 
 	query := `insert into activitystream (id, type, name, content, published, updated, attributedto, actor, tripcode, sensitive) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`
 	_, err := config.DB.Exec(query, obj.Id, obj.Type, obj.Name, obj.Content, obj.Published, obj.Updated, obj.AttributedTo, obj.Actor, obj.TripCode, obj.Sensitive)
@@ -1216,10 +1213,6 @@ func (obj ObjectBase) WriteAttachmentCache() error {
 func (obj ObjectBase) _WriteCache() error {
 	var id string
 
-	obj.Name = util.EscapeString(obj.Name)
-	obj.Content = util.EscapeString(obj.Content)
-	obj.AttributedTo = util.EscapeString(obj.AttributedTo)
-
 	query := `select id from cacheactivitystream where id=$1`
 	if err := config.DB.QueryRow(query, obj.Id).Scan(&id); err != nil {
 		if obj.Updated == nil {
@@ -1236,10 +1229,6 @@ func (obj ObjectBase) _WriteCache() error {
 
 func (obj ObjectBase) WriteCacheWithAttachment(attachment ObjectBase) error {
 	var id string
-
-	obj.Name = util.EscapeString(obj.Name)
-	obj.Content = util.EscapeString(obj.Content)
-	obj.AttributedTo = util.EscapeString(obj.AttributedTo)
 
 	query := `select id from cacheactivitystream where id=$1`
 	if err := config.DB.QueryRow(query, obj.Id).Scan(&id); err != nil {
@@ -1381,9 +1370,6 @@ func (obj ObjectBase) WriteUpdate(updated time.Time) error {
 }
 
 func (obj ObjectBase) WriteWithAttachment(attachment ObjectBase) {
-	obj.Name = util.EscapeString(obj.Name)
-	obj.Content = util.EscapeString(obj.Content)
-	obj.AttributedTo = util.EscapeString(obj.AttributedTo)
 
 	query := `insert into activitystream (id, type, name, content, attachment, preview, published, updated, attributedto, actor, tripcode, sensitive) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`
 	_, e := config.DB.Exec(query, obj.Id, obj.Type, obj.Name, obj.Content, attachment.Id, obj.Preview.Id, obj.Published, obj.Updated, obj.AttributedTo, obj.Actor, obj.TripCode, obj.Sensitive)

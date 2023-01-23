@@ -12,6 +12,10 @@ import (
 	"github.com/KushBlazingJudah/fedichan/config"
 )
 
+var citeRegexp = regexp.MustCompile(`(>>(https?://[A-Za-z0-9_.:\-~]+\/[A-Za-z0-9_.\-~]+\/)(f[A-Za-z0-9_.\-~]+-)?([A-Za-z0-9_.\-~]+)?#?([A-Za-z0-9_.\-~]+)?)`)
+var linkTitleRegexp = regexp.MustCompile(`(&gt;&gt;(https?://[A-Za-z0-9_.:\-~]+\/[A-Za-z0-9_.\-~]+\/)\w+(#.+)?)`)
+var quoteRegexp = regexp.MustCompile(`(?m)^\s*&gt;(.+?)$`)
+
 func ConvertHashLink(domain string, link string) string {
 	re := regexp.MustCompile(`(#.+)`)
 	parsedLink := re.FindString(link)
@@ -27,8 +31,7 @@ func ConvertHashLink(domain string, link string) string {
 }
 
 func ParseCommentForReplies(comment string, op string) ([]activitypub.ObjectBase, error) {
-	re := regexp.MustCompile(`(>>(https?://[A-Za-z0-9_.:\-~]+\/[A-Za-z0-9_.\-~]+\/)(f[A-Za-z0-9_.\-~]+-)?([A-Za-z0-9_.\-~]+)?#?([A-Za-z0-9_.\-~]+)?)`)
-	match := re.FindAllStringSubmatch(comment, -1)
+	match := citeRegexp.FindAllStringSubmatch(comment, -1)
 
 	var links []string
 
@@ -71,8 +74,8 @@ func ParseCommentForReplies(comment string, op string) ([]activitypub.ObjectBase
 }
 
 func ParseLinkTitle(actorName string, op string, content string) string {
-	re := regexp.MustCompile(`(>>(https?://[A-Za-z0-9_.:\-~]+\/[A-Za-z0-9_.\-~]+\/)\w+(#.+)?)`)
-	match := re.FindAllStringSubmatch(content, -1)
+	// TODO: Rewrite using ReplaceFunc
+	match := linkTitleRegexp.FindAllStringSubmatch(content, -1)
 
 	for i := range match {
 		link := strings.Replace(match[i][0], ">>", "", 1)
@@ -87,10 +90,6 @@ func ParseLinkTitle(actorName string, op string, content string) string {
 		link = ConvertHashLink(domain, link)
 		content = strings.Replace(content, match[i][0], ">>"+shortURL(actorName, link)+isOP, 1)
 	}
-
-	content = strings.ReplaceAll(content, "'", "&#39;")
-	content = strings.ReplaceAll(content, "\"", "&quot;")
-	content = strings.ReplaceAll(content, ">", `/\&lt;`)
 
 	return content
 }
@@ -115,23 +114,18 @@ func IsMediaBanned(f multipart.File) (bool, error) {
 }
 
 func ParseContent(board activitypub.Actor, op string, content string, thread activitypub.ObjectBase, id string, trunc bool) (template.HTML, error) {
-	// TODO: should escape more than just < and >, should also escape &, ", and '
-	nContent := strings.ReplaceAll(content, `<`, "&lt;")
-
+	content = template.HTMLEscapeString(content)
 	if trunc {
-		nContent = ParseTruncate(nContent, board, op, id)
+		content = ParseTruncate(content, board, op, id)
 	}
 
-	nContent, err := ParseLinkComments(board, op, nContent, thread)
+	content = ParseLinkComments(board, op, content, thread)
+	content = ParseCommentQuotes(content)
 
-	if err != nil {
-		return "", wrapErr(err)
-	}
+	content = strings.ReplaceAll(content, "\r", "")
+	content = strings.ReplaceAll(content, "\n", "<br/>")
 
-	nContent = ParseCommentQuotes(nContent)
-	nContent = strings.ReplaceAll(nContent, `/\&lt;`, ">")
-
-	return template.HTML(nContent), nil
+	return template.HTML(content), nil
 }
 
 func ParseTruncate(content string, board activitypub.Actor, op string, id string) string {
@@ -150,15 +144,14 @@ func ParseTruncate(content string, board activitypub.Actor, op string, id string
 	return content
 }
 
-func ParseLinkComments(board activitypub.Actor, op string, content string, thread activitypub.ObjectBase) (string, error) {
-	re := regexp.MustCompile(`(>>(https?://[A-Za-z0-9_.:\-~]+\/[A-Za-z0-9_.\-~]+\/)(f[A-Za-z0-9_.\-~]+-)?([A-Za-z0-9_.\-~]+)?#?([A-Za-z0-9_.\-~]+)?)`)
-	match := re.FindAllStringSubmatch(content, -1)
+func ParseLinkComments(board activitypub.Actor, op string, content string, thread activitypub.ObjectBase) string {
+	re := regexp.MustCompile(`(&gt;&gt;(https?://[A-Za-z0-9_.:\-~]+\/[A-Za-z0-9_.\-~]+\/)(f[A-Za-z0-9_.\-~]+-)?([A-Za-z0-9_.\-~]+)?#?([A-Za-z0-9_.\-~]+)?)`)
+	return re.ReplaceAllStringFunc(content, func(match string) string {
+		v := re.FindStringSubmatch(match)
 
-	//add url to each matched reply
-	for i := range match {
 		isOP := ""
-		domain := match[i][2]
-		link := strings.Replace(match[i][0], ">>", "", 1)
+		domain := v[2]
+		link := strings.Replace(v[0], "&gt;&gt;", "", 1)
 
 		if link == op {
 			isOP = " (OP)"
@@ -166,7 +159,8 @@ func ParseLinkComments(board activitypub.Actor, op string, content string, threa
 
 		parsedLink := ConvertHashLink(domain, link)
 
-		//formate the hover title text
+		/* TODO: Broken until I fix it again.
+		//format the hover title text
 		var quoteTitle string
 
 		// if the quoted content is local get it
@@ -193,42 +187,29 @@ func ParseLinkComments(board activitypub.Actor, op string, content string, threa
 				}
 			}
 		}
+		*/
 
 		if replyID, isReply, err := IsReplyToOP(op, parsedLink); err == nil || !isReply {
 			id := shortURL(board.Outbox, replyID)
 
-			content = strings.Replace(content, match[i][0], "<a class=\"reply\" title=\""+quoteTitle+"\" href=\"/"+board.Name+"/"+shortURL(board.Outbox, op)+"#"+id+"\">&gt;&gt;"+id+""+isOP+"</a>", -1)
-		} else {
-			//this is a cross post
-
-			parsedOP, err := GetReplyOP(parsedLink)
-			if err == nil {
-				link = parsedOP + "#" + shortURL(parsedOP, parsedLink)
-			}
-
-			actor, err := activitypub.FingerActor(parsedLink)
-			if err == nil && actor.Id != "" {
-				content = strings.Replace(content, match[i][0], "<a class=\"reply\" title=\""+quoteTitle+"\" href=\""+link+"\">&gt;&gt;"+shortURL(board.Outbox, parsedLink)+isOP+" →</a>", -1)
-			}
+			return fmt.Sprintf(`<a class="reply" ` /*title="%s" */ +`href="/%s/%s#%s">&gt;&gt;%s%s</a>` /*, quoteTitle*/, board.Name, shortURL(board.Outbox, op), id, id, isOP)
 		}
-	}
 
-	return content, nil
+		//this is a cross post
+		parsedOP, err := GetReplyOP(parsedLink)
+		if err == nil {
+			link = parsedOP + "#" + shortURL(parsedOP, parsedLink)
+		}
+
+		actor, err := activitypub.FingerActor(parsedLink)
+		if err == nil && actor.Id != "" {
+			return fmt.Sprintf(`<a class="reply" ` /*title="%s" */ +`href="%s">&gt;&gt;%s%s →</a>` /*, quoteTitle*/, link, shortURL(board.Outbox, parsedLink), isOP)
+		}
+
+		return fmt.Sprintf(`<a class="reply dead">&gt;&gt;%s</a>`, link)
+	})
 }
 
 func ParseCommentQuotes(content string) string {
-	// replace quotes
-	re := regexp.MustCompile(`((\r\n|\r|\n|^)>(.+)?[^\r\n])`)
-	match := re.FindAllStringSubmatch(content, -1)
-
-	for i := range match {
-		quote := strings.Replace(match[i][0], ">", "&gt;", 1)
-		line := re.ReplaceAllString(match[i][0], "<span class=\"quote\">"+quote+"</span>")
-		content = strings.Replace(content, match[i][0], line, 1)
-	}
-
-	//replace isolated greater than symboles
-	re = regexp.MustCompile(`(\r\n|\n|\r)>`)
-
-	return re.ReplaceAllString(content, "\r\n<span class=\"quote\">&gt;</span>")
+	return quoteRegexp.ReplaceAllString(content, `<span class="quote">&gt;$1</span>`)
 }
