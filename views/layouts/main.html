@@ -37,26 +37,25 @@
     {{ end }}
   </head>
   <body {{ if not .Board.Restricted }}class="nsfw"{{ end }} onload="applyTheme()">
-    <div style="padding-bottom:5px;">
-      <ul id="boardlinks">
-        {{ $l := len .Boards }}
-        <li>[<a href="/">Home</a>]</li>
-        {{range $i, $e := .Boards}}
-        {{ if eq (sub $l 1) 0 }}
-        <li>[ <a href="{{.Location}}">{{$e.Name}} </a>]</li>
-        {{ else if eq $i 0 }}
-        <li>[<a href="{{.Location}}">{{$e.Name}} </a>/</li>
-        {{ else if eq $i (sub $l 1) }}
-        <li><a href="{{.Location}}">{{$e.Name}}</a>]</li>
-        {{ else }}
-        <li><a href="{{.Location}}">{{$e.Name}} </a>/</li>
-        {{ end }}
-        {{ end }}
-      </ul>
-      {{ if .Acct }}
-      <span id="manageboard">[<a href="/{{ .Key }}/{{ .Board.Name }}">Manage Board</a>]</span>
+    <ul id="boardlinks">
+      {{ $l := len .Boards }}
+      <li>[<a href="/">Home</a>]</li>
+      {{range $i, $e := .Boards}}
+      {{ if eq (sub $l 1) 0 }}
+      <li>[ <a href="{{.Location}}">{{$e.Name}} </a>]</li>
+      {{ else if eq $i 0 }}
+      <li>[<a href="{{.Location}}">{{$e.Name}} </a>/</li>
+      {{ else if eq $i (sub $l 1) }}
+      <li><a href="{{.Location}}">{{$e.Name}}</a>]</li>
+      {{ else }}
+      <li><a href="{{.Location}}">{{$e.Name}} </a>/</li>
       {{ end }}
-    </div>
+      {{ end }}
+      {{ if .Acct }}
+      <li id="manageboard">[<a href="/{{ .Key }}/{{ .Board.Name }}">Manage Board</a>]</li>
+      {{ end }}
+    </ul>
+
     {{ embed }}
   </body>
 </html>

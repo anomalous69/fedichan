@@ -21,22 +21,22 @@
 <hr>
 {{ if gt .TotalPage 0 }}
 {{ $totalPage := .TotalPage }}
-<ul style="float: right; margin: 0; padding: 0; display: inline">
+<div id="pages">
   {{ $page := .CurrentPage }}
   {{ if gt $page 0 }}
-  <li style="display: inline">[<a href="/{{ $board.Name }}?page={{ sub $page 1 }}">&lt;</a>]</li>
+  [<a href="/{{ $board.Name }}?page={{ sub $page 1 }}">&lt;</a>]
   {{ end }}
   {{ range $i, $e := .Pages }}
   {{ if eq $i $page}}
-  <li style="display: inline">[<a href="/{{ $board.Name }}?page={{ $i }}"><b>{{ $i }}</b></a>]</li>
+  [<a href="/{{ $board.Name }}?page={{ $i }}"><b>{{ $i }}</b></a>]
   {{ else }}
-  <li style="display: inline">[<a href="/{{ $board.Name }}?page={{ $i }}">{{ $i }}</a>]</li>
+  [<a href="/{{ $board.Name }}?page={{ $i }}">{{ $i }}</a>]
   {{ end }}
   {{ end }}
   {{ if lt .CurrentPage .TotalPage }}
-  <li style="display: inline">[<a href="/{{ $board.Name }}?page={{ add $page 1 }}">&gt;</a>]</li>
+  [<a href="/{{ $board.Name }}?page={{ add $page 1 }}">&gt;</a>]
   {{ end }}
-</ul>
+</div>
 {{ end }}
 
 {{ template "partials/bottom" . }}

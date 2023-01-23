@@ -2,7 +2,7 @@ function startNewPost(){
     var el = document.getElementById("newpostbtn");
     el.style="display:none;";
     el.setAttribute("state", "1");
-    document.getElementById("newpost").style = "";
+    document.getElementById("newpost").style.display = "block";
     document.getElementById("stopTablePost").style = "cursor: pointer; display:unset;";
     sessionStorage.setItem("newpostState", true);
 }
@@ -11,7 +11,7 @@ function stopNewPost(){
     var el = document.getElementById("newpostbtn");
     el.style="display:block;margin-bottom:100px;";
     el.setAttribute("state", "0");
-    document.getElementById("newpost").style = "display: none;";
+    document.getElementById("newpost").style.display = "none";
     sessionStorage.setItem("newpostState", false);
 }
 
@@ -193,7 +193,7 @@ function report(actorName, id)
 {
     sessionStorage.setItem("element-closed-report", false);
     var box = document.getElementById("report-box");
-    var header = document.getElementById("report-header");
+    var header = document.getElementById("report-header-text");
     var comment = document.getElementById("report-comment");
     var inReplyTo = document.getElementById("report-inReplyTo-box");
 
@@ -280,7 +280,7 @@ const stateLoadHandler = function(event){
 
     if(sessionStorage.getItem("element-closed-report") === "false"){
         var box = document.getElementById("report-box");
-        var header = document.getElementById("report-header");
+        var header = document.getElementById("report-header-text");
         var comment = document.getElementById("report-comment");
         var inReplyTo = document.getElementById("report-inReplyTo-box");
 

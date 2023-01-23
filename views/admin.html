@@ -1,4 +1,4 @@
-<div style="margin: 0 auto; width: 400px;">
+<header>
   <h3>Add Board</h3>
   <form id="new-post" action="/{{ .Key }}/addboard" method="post" enctype="application/x-www-form-urlencoded">
     <label>Name:</label><br>
@@ -13,21 +13,20 @@
       <option value="False">False</option>
     </select>
   </form>
-  <ul style="display: inline-block; padding: 0;">
-    <li style="display: inline-block;">[<a href="#reported">Reported</a>]</li>
-    <li style="display: inline-block;">[<a href="#news">Create News</a>]</li>
-    <li style="display: inline-block;">[<a href="#regex">Post Blacklist</a>]</li>
-    <!-- <li style="display: inline-block;"><a href="javascript:show('followers')">Followers</a></li> -->
-  </ul>
-</div>
+  <div>
+    [<a href="#reported">Reported</a>]
+    [<a href="#news">Create News</a>]
+    [<a href="#regex">Post Blacklist</a>]
+  </div>
+</header>
 
-<div id="following" class="box2" style="margin-bottom: 25px; padding: 12px;">
-  <h4 style="margin: 0; margin-bottom: 5px;">Subscribed</h4>
+<div id="following" class="box2">
+  <h4>Subscribed</h4>
   <form id="follow-form" action="/{{ .Key }}/follow" method="post" enctype="application/x-www-form-urlencoded">
-    <input id="follow" name="follow" style="margin-bottom: 12px;" placeholder="http://localhost:3000/g"></input><input type="submit" value="Subscribe"><br>
+    <input id="follow" name="follow" placeholder="http://localhost:3000/g"></input><input type="submit" value="Subscribe"><br>
     <input type="hidden" name="actor" value="{{ .Actor }}">
   </form>
-  <ul style="display: inline-block; padding: 0; margin: 0; list-style-type: none;">
+  <ul class="nobullist">
     {{ $actor := .Actor }}
     {{ $key := .Key }}
     {{ range .Following }}
@@ -36,18 +35,18 @@
   </ul>
 </div>
 
-<div id="followers" class="box2" style="margin-bottom: 25px; padding: 12px; display:none;">
-  <h4 style="margin: 0; margin-bottom: 5px;">Followers</h4>
-  <ul style="display: inline-block; padding: 0; margin: 0; list-style-type: none;">
+<div id="followers" class="box2">
+  <h4>Followers</h4>
+  <ul class="nobullist">
     {{ range .Followers }}
     <li><a href="http://localhost:3000/g">{{ . }}</a></li>
     {{ end }}
   </ul>
 </div>
 
-<div id="reported" class="box2" style="margin-bottom: 25px; padding: 12px;">
-  <h4 style="margin: 0; margin-bottom: 5px;">Reported</h4>
-  <ul style="display: inline-block; padding: 0; margin: 0; list-style-type: none;">
+<div id="reported" class="box2">
+  <h4>Reported</h4>
+  <ul class="nobullist">
     {{ $domain := .Domain }}
     {{ range .Reports }}
     <h4 style="margin: 0;"><a href="{{ print $domain "/" (index . 0).Actor.Name }}">/{{ (index . 0).Actor.Name }}/</a></h4>
@@ -68,7 +67,7 @@
   </ul>
 </div>
 
-<div class="box2" style="margin-bottom: 25px; padding: 12px;">
+<div class="box2">
   <h3>Create News</h3>
   <form id="news" action="/{{ .Key }}/newspost" method="post" enctype="application/x-www-form-urlencoded">
     <label>Title:</label><br>
@@ -78,7 +77,7 @@
   </form>
 </div>
 
-<div id="regex" class="box2" style="margin-bottom: 25px; padding: 12px;">
+<div class="box2" id="regex">
   <h3>Regex Post Blacklist</h3>
   <form id="blacklist" action="/blacklist" method="post" enctype="application/x-www-form-urlencoded">
     <label>Regex:</label><br>
@@ -87,7 +86,7 @@
     <textarea name="testCase" rows="8" cols="50" placeholder="enter a test case to block, if it passes the regex will be added to the blacklist.&#10;&#10;(?i) for case insesitive &#10;(?s) to span multiple lines"></textarea><br>
   </form>
   {{ if .PostBlacklist }}
-  <ul style="display: inline-block; padding: 0; margin: 0; margin-top: 25px; list-style-type: none;">
+  <ul class="nobullist">
     {{ range .PostBlacklist }}
     <li>{{ .Regex }} [<a href="/blacklist?remove={{ .Id }}">remove</a>]</li>
     {{ end }}

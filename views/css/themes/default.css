@@ -22,14 +22,21 @@ body.nsfw {
 
 h1, h2, h3, h4, h5, h6 {
   color: #af0a0f;
+  margin-bottom: 0;
 }
 
-.popup-box, #report-box {
+.popup-box {
   border: 4px solid #d3caf0;
   background-color: #eff5ff;
 }
 
-.nsfw .popup-box, .nsfw #report-box {
+.popup-close {
+	display: inline-block;
+	float: right;
+	text-decoration: none;
+}
+
+.nsfw .popup-box {
   border: 4px solid #f0e2d9;
   background-color: #f9f9e0;
 }
@@ -49,7 +56,6 @@ h1, h2, h3, h4, h5, h6 {
 .nsfw .box-alt {
   background-color: #f0e2d9;
 }
-
 
 .quote {
   color: #789922;
@@ -141,7 +147,7 @@ a.reply {
   float: right;
 }
 
-#reply-header {
+.popup-header {
   display: inline-block;
   width: 100%;
   cursor: move;
@@ -171,6 +177,12 @@ a.reply {
 .box2 {
   border: 4px solid #f0e2d9;
   background-color: #f9f9e0;
+  margin: 4px;
+  padding: 4px;
+}
+
+.box2 > h1, .box2 > h2, .box2 > h3 {
+	margin-top: 0;
 }
 
 .newsbox {
@@ -296,4 +308,25 @@ a.reply {
 #catalog {
 	padding: 10px;
 	text-align: center;
+}
+
+#pages, #themes {
+	float: right;
+}
+
+.nobullist {
+	display: inline-block;
+	padding: 0;
+	margin: 0;
+	list-style-type: none;
+}
+
+header {
+	text-align: center;
+	margin: 0 auto;
+	width: 400px;
+}
+
+#newpostbtn {
+	margin-top: 80px; display: none; margin-bottom:100px;
 }

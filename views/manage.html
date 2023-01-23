@@ -1,46 +1,48 @@
-<div style="text-align: center; margin: 0 auto; width: 400px;">
+<header>
   <h1>Manage /{{ .Board.Name }}/</h1>
   <form id="summary-form" action="/{{ .Key }}/{{ .Board.Name }}/editsummary" method="post" enctype="application/x-www-form-urlencoded" style="margin-top: 5px;">
-    <input id="summary" name="summary" style="margin-bottom: 5px;" size="35" placeholder="{{ .Board.Actor.Summary }}"></input>
+    <input id="summary" name="summary" size="35" placeholder="{{ .Board.Actor.Summary }}"></input>
     <input type="submit" value="Update Summary"><br>
     <input type="hidden" name="actor" value="{{ .Board.Actor.Id }}">
   </form>
   <!-- <div><a href="/{{ .Key }}/deleteboard?name={{ .Board.Name }}">[Delete Board]</a></div> -->
-  <ul style="display: inline-block; padding: 0;">
+  <div>
     {{ if .IsLocal }}
-    <li style="display: inline-block;">[<a href="#following"> Subscribed </a>]</li>
-    <li style="display: inline-block;">[<a href="#followers"> Subscribers </a>]</li>
+    [<a href="#following"> Subscribed </a>]
+    [<a href="#followers"> Subscribers </a>]
     {{ end }}
-    <li style="display: inline-block;">[<a href="#reported"> Reported </a>]</li>
+    [<a href="#reported"> Reported </a>]
     {{ if (isAdmin .Acct) }}
-    <li style="display: inline-block;">[<a href="#jannies"> Janitor Managment </a>]</li>
+    [<a href="#jannies"> Janitor Managment </a>]
     {{ end }}
-  </ul>
-</div>
+  </div>
+</header>
+
 [<a href="/{{ .Board.Name }}">Return</a>]
+
 {{ $actor := .Board.Actor.Id }}
 {{ $board := .Board }}
 {{ $key := .Key }}
 {{ if .IsLocal }}
-<div id="following" class="box2" style="margin-bottom: 25px; margin-top: 5px; padding: 12px;">
-  <h4 style="margin: 0; margin-bottom: 5px;">Following</h4>
+<div id="following" class="box2">
+  <h4>Following</h4>
   [{{ if .AutoSubscribe }}<a title="Auto Follow is On" href="/autosubscribe?board={{ .Board.Name }}">Toggle Auto Follow Off{{ else }}<a title="Auto Follow is Off" href="/autosubscribe?board={{ .Board.Name }}">Toggle Auto Follow On{{ end }}</a>]
   <form id="follow-form" action="/{{ .Key }}/{{ .Board.Name }}/follow" method="post" enctype="application/x-www-form-urlencoded" style="margin-top: 5px;">
-    <input id="follow" name="follow" style="margin-bottom: 5px;" size="35" placeholder="https://fchan.xyz/g"></input>
+    <input id="follow" name="follow" size="35" placeholder="https://fchan.xyz/g"></input>
     <input type="submit" value="Follow"><br>
     <input type="hidden" name="actor" value="{{ $board.Actor.Id }}">
   </form>
   <div style="margin-bottom: 12px; color: grey;">also https://fchan.xyz/g/following or https://fchan.xyz/g/followers</div>
-  <ul style="display: inline-block; padding: 0; margin: 0; list-style-type: none;">
+  <ul class="nobullist">
     {{ range .Following }}
     <li>[<a href="/{{ $key }}/{{ $board.Name }}/follow?follow={{ . }}&actor={{ $actor }}">Unsubscribe</a>]<a href="{{ . }}">{{ . }}</a></li>
     {{ end }}
   </ul>
 </div>
 
-<div id="followers" class="box2" style="margin-bottom: 25px; padding: 12px;">
-  <h4 style="margin: 0; margin-bottom: 5px;">Followers</h4>
-  <ul style="display: inline-block; padding: 0; margin: 0; list-style-type: none;">
+<div id="followers" class="box2">
+  <h4>Followers</h4>
+  <ul class="nobullist">
     {{ range .Followers }}
     <li><a href="{{ . }}">{{ . }}</a></li>
     {{ end }}
@@ -48,9 +50,9 @@
 </div>
 {{ end }}
 
-<div id="reported" class="box2" style="margin-bottom: 25px; padding: 12px;">
-  <h4 style="margin: 0; margin-bottom: 5px;">Reported</h4>
-  <ul style="display: inline-block; padding: 0; margin: 0; list-style-type: none;">
+<div id="reported" class="box2">
+  <h4>Reported</h4>
+  <ul class="nobullist">
     {{ $domain := .Domain }}
     {{ range .Reports }}
     {{ range . }}
@@ -71,14 +73,14 @@
 </div>
 
 {{ if (isAdmin .Acct) }}
-<div id="jannies" class="box2" style="margin-bottom: 25px; padding: 12px;">
-  <h4 style="margin: 0; margin-bottom: 5px;">Janitor Managment</h4>
+<div id="jannies" class="box2">
+  <h4>Janitor Managment</h4>
   <form id="janny-form" action="/{{ .Key }}/{{ .Board.Name }}/addjanny" method="post" enctype="application/x-www-form-urlencoded" style="margin-top: 5px;">
     <input id="label" name="label" style="margin-bottom: 5px;" size="35" placeholder="Label i.e Janny Alias"></input>
     <input type="submit" value="Add Janitor"><br>
     <input type="hidden" name="actor" value="{{ $board.Actor.Id }}">
   </form>
-  <ul style="display: inline-block; padding: 0; margin: 0; list-style-type: none;">
+  <ul class="nobullist">
     {{ range .Jannies }}
     <li>{{ .Label }} - <b>Login:</b> {{ .Identifier }} <b>Code:</b> {{ .Code }} <a href="/{{ $key }}/{{ $board.Name }}/deletejanny?code={{ .Code }}">[Revoke]</a></li>
     {{ end }}
