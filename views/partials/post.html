@@ -19,18 +19,20 @@
 [<a href="/lock?id={{ .Id }}&board={{ $board.Actor.Name }}">Lock</a>]
 {{ end }}
 
-<span style="display: block;">File: <a id="{{ .Id }}-img" href="{{ proxy (index .Attachment 0).Href}}">{{ shortImg (index .Attachment 0).Name  }}</a><span id="{{ .Id }}-size"> ({{ convertSize (index .Attachment 0).Size  }})</span></span>
+<span class="fileinfo">
+	File:
+	<a id="{{ .Id }}-img" href="{{ proxy (index .Attachment 0).Href}}">{{ shortImg (index .Attachment 0).Name  }}</a>
+	<span id="{{ .Id }}-size">({{ convertSize (index .Attachment 0).Size  }})</span>
+</span>
 
 {{ $sens := and $board.Actor.Restricted .Sensitive }}
 {{ $onion := and (isOnion .Id) (not (isOnion $board.Domain)) }}
 {{ $hide := or $sens $onion }}
 {{ if $hide }}
 <div id="hide-{{ .Id }}" style="display: none;">[Hide]</div>
-<div id="sensitive-{{ .Id }}">
-    <div style="position: relative; text-align: center;">
-	    <img id="sensitive-img-{{ .Id }}" style="float: left; margin-right: 10px; margin-bottom: 10px; max-width: 250px; max-height: 250px;" src="/static/sensitive.png">
-	    <div id="sensitive-text-{{ .Id }}" style="width: 240px; position: absolute; margin-top: 110px; padding: 5px; background-color: black; color: white; cursor: default; ">{{if $sens}}NSFW Content{{if and $sens $onion}} / {{end}}{{end}}{{if $onion}}Tor{{end}}</div>
-    </div>
+<div id="sensitive-{{ .Id }}" class="sensitive">
+    <img id="sensitive-img-{{ .Id }}" src="/static/sensitive.png">
+    <div id="sensitive-text-{{ .Id }}">{{if $sens}}NSFW Content{{if and $sens $onion}} / {{end}}{{end}}{{if $onion}}Tor{{end}}</div>
 </div>
 {{end}}
 <div id="media-{{ .Id }}" class="mediacont" {{if $hide}}style="display: none;" data-sensitive="{{if $onion}}onion{{else}}nsfw{{end}}"{{end}}>

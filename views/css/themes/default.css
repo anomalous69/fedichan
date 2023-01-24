@@ -330,3 +330,29 @@ header {
 #newpostbtn {
 	margin-top: 80px; display: none; margin-bottom:100px;
 }
+
+.sensitive {
+	text-align: center;
+}
+
+.sensitive img {
+	float: left;
+	margin-right: 10px;
+	margin-bottom: 10px;
+	max-width: 250px;
+	max-height: 250px;
+}
+
+.sensitive div {
+	width: 240px;
+	position: absolute;
+	margin-top: 110px;
+	padding: 5px;
+	background-color: black;
+	color: white;
+	cursor: default;
+}
+
+.fileinfo {
+	display: block;
+}
