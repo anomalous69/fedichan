@@ -11,7 +11,7 @@ import (
 
 	"github.com/KushBlazingJudah/fedichan/activitypub"
 	"github.com/KushBlazingJudah/fedichan/config"
-	_ "github.com/lib/pq"
+	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
 func Connect() error {
@@ -24,8 +24,7 @@ func Connect() error {
 	psqlInfo := fmt.Sprintf("host=%s port=%d user=%s password=%s "+
 		"dbname=%s sslmode=disable", host, port, user, password, dbname)
 
-	_db, err := sql.Open("postgres", psqlInfo)
-
+	_db, err := sql.Open("pgx", psqlInfo)
 	if err != nil {
 		return wrapErr(err)
 	}
