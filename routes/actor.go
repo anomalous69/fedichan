@@ -12,8 +12,8 @@ import (
 	"github.com/KushBlazingJudah/fedichan/activitypub"
 	"github.com/KushBlazingJudah/fedichan/config"
 	"github.com/KushBlazingJudah/fedichan/db"
-	"github.com/KushBlazingJudah/fedichan/util"
 	"github.com/KushBlazingJudah/fedichan/internal/rx"
+	"github.com/KushBlazingJudah/fedichan/util"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -499,43 +499,43 @@ func ActorArchive(ctx *fiber.Ctx) error {
 		return util.WrapError(err)
 	}
 
-	var returnData pageData
-	returnData.Board.Name = actor.Name
-	returnData.Board.PrefName = actor.PreferredUsername
-	returnData.Board.InReplyTo = ""
-	returnData.Board.To = actor.Outbox
-	returnData.Board.Actor = actor
-	returnData.Board.Summary = actor.Summary
-	returnData.Board.Domain = config.Domain
-	returnData.Board.Restricted = actor.Restricted
-	returnData.Acct = acct
-	returnData.Key = config.Key
-	returnData.ReturnTo = "archive"
+	var data pageData
+	data.Board.Name = actor.Name
+	data.Board.PrefName = actor.PreferredUsername
+	data.Board.InReplyTo = ""
+	data.Board.To = actor.Outbox
+	data.Board.Actor = actor
+	data.Board.Summary = actor.Summary
+	data.Board.Domain = config.Domain
+	data.Board.Restricted = actor.Restricted
+	data.Acct = acct
+	data.Key = config.Key
+	data.ReturnTo = "archive"
 
-	returnData.Board.Post.Actor = actor.Id
+	data.Board.Post.Actor = actor.Id
 
-	returnData.Instance, err = activitypub.GetActorFromDB(config.Domain)
+	data.Instance, err = activitypub.GetActorFromDB(config.Domain)
 
 	/*
-		if err := populateCaptcha(hasAuth, &returnData.Board); err != nil {
+		if err := populateCaptcha(hasAuth, &data.Board); err != nil {
 			return util.WrapError(err)
 		}
 	*/
 
-	returnData.Title = "/" + actor.Name + "/ - " + actor.PreferredUsername
+	data.Title = "/" + actor.Name + "/ - " + actor.PreferredUsername
 
-	returnData.Boards = activitypub.Boards
+	data.Boards = activitypub.Boards
 
-	returnData.Posts = collection.OrderedItems
+	data.Posts = collection.OrderedItems
 
-	returnData.Meta.Description = returnData.Board.Summary
-	returnData.Meta.Url = returnData.Board.Actor.Id
-	returnData.Meta.Title = returnData.Title
+	data.Meta.Description = data.Board.Summary
+	data.Meta.Url = data.Board.Actor.Id
+	data.Meta.Title = data.Title
 
-	returnData.Themes = config.Themes
-	returnData.ThemeCookie = themeCookie(ctx)
+	data.Themes = config.Themes
+	data.ThemeCookie = themeCookie(ctx)
 
-	return ctx.Render("archive", returnData, "layouts/main")
+	return ctx.Render("archive", data, "layouts/main")
 }
 
 func GetActorOutbox(ctx *fiber.Ctx) error {
