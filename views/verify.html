@@ -1,17 +1,9 @@
-<!DOCTYPE html>
-<html>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <head>
-  </head>
-  <body>
-    <div style="width: 200px; margin: 0 auto;">
-      <form action="/{{ .key }}/verify" method="post">
-        <label>Username</label>
-        <input type="text" id="username" name="username" required><br>
-        <label>Password</label>
-        <input type="password" id="password" name="password" required><br>
-        <input type="submit" value="Verify">
-      </form>
-    </div>
-  </body>
-</html>
+<div class="box2">
+	<form action="/{{ .Key }}/verify" method="post">
+		<label>Username</label>
+		<input type="text" id="username" name="username" required><br>
+		<label>Password</label>
+		<input type="password" id="password" name="password" required><br>
+		<input type="submit" value="Verify">
+	</form>
+</div>

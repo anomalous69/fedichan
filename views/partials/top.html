@@ -2,7 +2,7 @@
   <h1>/{{ .Board.Name }}/ - {{ .Board.PrefName }}</h1>
   <p>{{ .Board.Summary }}</p>
 
-  {{ if eq (index .Posts 0).Type "Note" }}
+  {{ if or (eq (len .Posts) 0) (eq (index .Posts 0).Type "Note") }}
 
   {{ if and .Board.InReplyTo (not (index .Posts 0).Locked) }}
   <h3 id="newpostbtn" state="0">[<a href="javascript:startNewPost()">Post a Reply</a>]</h3>

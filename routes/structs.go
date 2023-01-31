@@ -11,14 +11,16 @@ type common struct {
 	Board    activitypub.Board
 	Boards   []activitypub.Board
 	Instance activitypub.Actor
-	Meta     Meta
+	Meta     meta
 	Acct     *db.Acct
 
 	Themes      []string
 	ThemeCookie string
+
+	Key string
 }
 
-type PageData struct {
+type pageData struct {
 	common
 
 	PreferredUsername string
@@ -26,7 +28,6 @@ type PageData struct {
 	CurrentPage       int
 	TotalPage         int
 	Posts             []activitypub.ObjectBase
-	Key               string
 	PostId            string
 	ReturnTo          string
 	NewsItems         []db.NewsItem
@@ -34,10 +35,15 @@ type PageData struct {
 	PostType          string
 }
 
-type AdminPage struct {
+type errorData struct {
+	common
+	Message string
+	Error   error
+}
+
+type adminPage struct {
 	common
 
-	Key           string
 	Actor         string
 	Following     []string
 	Followers     []string
@@ -50,7 +56,7 @@ type AdminPage struct {
 	Jannies       []db.Verify
 }
 
-type Meta struct {
+type meta struct {
 	Title       string
 	Description string
 	Url         string

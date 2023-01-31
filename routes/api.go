@@ -15,7 +15,7 @@ func Media(ctx *fiber.Ctx) error {
 		return RouteImages(ctx, ctx.Query("hash"))
 	}
 
-	return ctx.SendStatus(404)
+	return ctx.SendStatus(400)
 }
 
 func RouteImages(ctx *fiber.Ctx, media string) error {

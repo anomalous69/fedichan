@@ -245,6 +245,12 @@ CREATE TABLE IF NOT EXISTS accounts(
 	session text
 );
 
+CREATE TABLE IF NOT EXISTS captchas(
+	id TEXT NOT NULL UNIQUE,
+	file TEXT NOT NULL UNIQUE,
+	solution TEXT NOT NULL
+);
+
 ALTER TABLE activitystream ALTER COLUMN content TYPE varchar(4500);
 ALTER TABLE cacheactivitystream ALTER COLUMN content TYPE varchar(4500);
 

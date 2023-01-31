@@ -27,6 +27,22 @@ func themeCookie(c *fiber.Ctx) string {
 	return c.Cookies("theme")
 }
 
+func populateCaptcha(hasAuth bool, b *activitypub.Board) error {
+	if hasAuth {
+		// No-op because laziness
+		return nil
+	}
+
+	file, id, err := db.GetCaptcha()
+	if err != nil {
+		return util.WrapError(err)
+	}
+
+	b.Captcha = "/" + file
+	b.CaptchaCode = id
+	return nil
+}
+
 func getActorPost(ctx *fiber.Ctx) error {
 	path := ctx.Path()
 	obj := activitypub.ObjectBase{Id: config.Domain + path}
@@ -223,11 +239,11 @@ func TemplateFunctions(engine *fhtml.Engine) {
 		return true
 	})
 
-	engine.AddFunc("renderPost", func(p activitypub.ObjectBase, b activitypub.Board, t activitypub.ObjectBase, a db.Acct, trunc bool) template.HTML {
+	engine.AddFunc("renderPost", func(p activitypub.ObjectBase, b activitypub.Board, t activitypub.ObjectBase, a *db.Acct, trunc bool) template.HTML {
 		buf := &strings.Builder{}
 		if err := postTmpl.ExecuteTemplate(buf, "post", struct {
 			Board  activitypub.Board
-			Acct   db.Acct
+			Acct   *db.Acct
 			Thread activitypub.ObjectBase
 			Post   activitypub.ObjectBase
 			Trunc  bool
@@ -396,3 +412,52 @@ func parseOptions(ctx *fiber.Ctx) []string {
 
 	return opts
 }
+
+func statusTemplate(num int) func(ctx *fiber.Ctx, msg ...string) error {
+	n := fmt.Sprint(num)
+	return func(ctx *fiber.Ctx, msg ...string) error {
+		acct, _ := ctx.Locals("acct").(*db.Acct)
+
+		var m string
+		if msg != nil {
+			m = msg[0]
+		}
+
+		return ctx.Status(num).Render(n, errorData{
+			common: common{
+				Title:  "Error",
+				Acct:   acct,
+				Boards: activitypub.Boards,
+				Key:    config.Key,
+			},
+			Message: m,
+		}, "layouts/main")
+	}
+}
+
+func send500(ctx *fiber.Ctx, err error, msg ...string) error {
+	acct, _ := ctx.Locals("acct").(*db.Acct)
+
+	var m string
+	if msg != nil {
+		m = msg[0]
+	}
+
+	// The results of this call do not matter to us
+	ctx.Status(500).Render("500", errorData{
+		common: common{
+			Title:  "Error",
+			Acct:   acct,
+			Boards: activitypub.Boards,
+			Key:    config.Key,
+		},
+		Message: m,
+		Error:   err,
+	}, "layouts/main")
+
+	return err
+}
+
+var send400 = statusTemplate(400)
+var send403 = statusTemplate(403)
+var send404 = statusTemplate(404)

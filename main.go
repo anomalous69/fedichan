@@ -180,7 +180,7 @@ func Init() {
 
 	go activitypub.StartupArchive()
 
-	go util.MakeCaptchas(100)
+	go db.MakeCaptchas()
 
 	go db.CheckInactive()
 }

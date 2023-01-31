@@ -1,16 +1,12 @@
 package routes
 
 import (
-	"errors"
-
 	"github.com/KushBlazingJudah/fedichan/activitypub"
 	"github.com/KushBlazingJudah/fedichan/config"
 	"github.com/KushBlazingJudah/fedichan/db"
 	"github.com/KushBlazingJudah/fedichan/util"
 	"github.com/gofiber/fiber/v2"
 )
-
-var ErrNoAuth = errors.New("not authenticated")
 
 func Index(ctx *fiber.Ctx) error {
 	acct, _ := ctx.Locals("acct").(*db.Acct)
@@ -26,7 +22,7 @@ func Index(ctx *fiber.Ctx) error {
 		return nil
 	}
 
-	var data PageData
+	var data pageData
 
 	data.NewsItems, err = db.GetNews(3)
 	if err != nil {

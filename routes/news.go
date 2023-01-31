@@ -19,7 +19,7 @@ func NewsGet(ctx *fiber.Ctx) error {
 	ts, err := strconv.Atoi(timestamp)
 
 	if err != nil {
-		return ctx.Status(404).Render("404", nil)
+		return send404(ctx)
 	}
 
 	actor, err := activitypub.GetActorFromDB(config.Domain)
@@ -28,7 +28,7 @@ func NewsGet(ctx *fiber.Ctx) error {
 		return util.WrapError(err)
 	}
 
-	var data PageData
+	var data pageData
 	data.PreferredUsername = actor.PreferredUsername
 	data.Boards = activitypub.Boards
 	data.Board.Name = ""
@@ -65,7 +65,7 @@ func NewsGetAll(ctx *fiber.Ctx) error {
 		return util.WrapError(err)
 	}
 
-	var data PageData
+	var data pageData
 	data.PreferredUsername = actor.PreferredUsername
 	data.Title = actor.PreferredUsername + " News"
 	data.Boards = activitypub.Boards
@@ -132,7 +132,7 @@ func NewsDelete(ctx *fiber.Ctx) error {
 	tsint, err := strconv.Atoi(timestamp)
 
 	if err != nil {
-		return ctx.Status(404).Render("404", nil)
+		return send404(ctx)
 	}
 
 	if err := db.DeleteNewsItem(tsint); err != nil {

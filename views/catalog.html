@@ -29,11 +29,9 @@
     {{ $hide := or $sens $onion }}
     {{ if $hide }}
     <div id="hide-{{ .Id }}" style="display: none;">[Hide]</div>
-    <div id="sensitive-{{ .Id }}">
-      <div style="position: relative; text-align: center;">
-        <img id="sensitive-img-{{ .Id }}" style="float: left; margin-right: 10px; margin-bottom: 10px; max-width: 180px; max-height: 180px;" src="/static/sensitive.png">
-	<div id="sensitive-text-{{ .Id }}" style="width: 170px; position: absolute; margin-top: 75px; padding: 5px; background-color: black; color: white; cursor: default; ">{{if $sens}}NSFW Content{{if and $sens $onion}} / {{end}}{{end}}{{if $onion}}Tor{{end}}</div>
-      </div>
+    <div id="sensitive-{{ .Id }}" class="sensitive">
+        <img id="sensitive-img-{{ .Id }}" src="/static/sensitive.png">
+	<div id="sensitive-text-{{ .Id }}">{{if $sens}}NSFW Content{{if and $sens $onion}} / {{end}}{{end}}{{if $onion}}Tor{{end}}</div>
     </div>
     {{ end }}
     <a id="{{ .Id }}-anchor" href="/{{ $board.Name }}/{{ shortURL $board.Actor.Outbox .Id}}">

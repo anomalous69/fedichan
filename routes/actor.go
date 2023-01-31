@@ -165,7 +165,7 @@ func ActorFollowers(ctx *fiber.Ctx) error {
 func MakeActorPost(ctx *fiber.Ctx) error {
 	actor, err := activitypub.GetActorFromDB(config.Domain + "/" + ctx.FormValue("boardName"))
 	if err != nil {
-		return ctx.SendStatus(404)
+		return send404(ctx)
 	}
 
 	_, reg := ctx.Locals("acct").(*db.Acct)
@@ -173,25 +173,21 @@ func MakeActorPost(ctx *fiber.Ctx) error {
 	// Waive captcha for authenticated users, otherwise complain
 	// Do this as early as possible to prevent wasting time
 	if !reg {
-		valid, err := util.CheckCaptcha(ctx.FormValue("captcha"))
+		valid, err := db.CheckCaptcha(ctx.FormValue("captchaCode"), ctx.FormValue("captcha"))
 		if err != nil {
 			// Silently log it
 			log.Printf("CheckCaptcha error: %v", err)
 		}
 
-		if !valid {
-			return ctx.Render("403", fiber.Map{
-				"message": "Incorrect Captcha",
-			})
+		if !valid { // Always false when err != nil
+			return send403(ctx, "Incorrect captcha.")
 		}
 	}
 
 	header, err := ctx.FormFile("file")
 
 	if ctx.FormValue("inReplyTo") == "" && header == nil {
-		return ctx.Render("403", fiber.Map{
-			"message": "Media is required for new posts",
-		})
+		return send400(ctx, "Media is required for new threads.")
 	}
 
 	var file multipart.File
@@ -204,20 +200,14 @@ func MakeActorPost(ctx *fiber.Ctx) error {
 
 		// TODO: Do this according to the set limit
 		if header.Size > (7 << 20) {
-			return ctx.Render("403", fiber.Map{
-				"message": "7MB max file size",
-			})
+			return send400(ctx, "Max file size is 7 MB.")
 		} else if isBanned, err := db.IsMediaBanned(file); err == nil && isBanned {
-			log.Println("media banned")
-			_, err := ctx.Status(403).Write([]byte(""))
-			return util.WrapError(err)
+			return send400(ctx, "Media is banned.")
 		}
 
 		contentType, _ := util.GetFileContentType(file)
-
 		if !util.SupportedMIMEType(contentType) {
-			_, err := ctx.Status(403).Write([]byte("file type not supported"))
-			return util.WrapError(err)
+			return send400(ctx, "Unsupported file type.")
 		}
 
 		file.Seek(0, io.SeekStart)
@@ -225,28 +215,19 @@ func MakeActorPost(ctx *fiber.Ctx) error {
 		// No file attached or couldn't load it
 		// Disallow blank posting
 		if strings.TrimSpace(ctx.FormValue("comment")) == "" {
-			return ctx.Render("403", fiber.Map{
-				"message": "Comment or Subject required",
-			})
+			return send400(ctx, "Comment required.")
 		}
 	}
 
 	// Sanity check values
 	if len(ctx.FormValue("comment")) > 4500 {
-		return ctx.Render("403", fiber.Map{
-			"message": "Comment limit 4500 characters",
-		})
+		return send400(ctx, "Comment limit is 4500 characters.")
 	} else if len(ctx.FormValue("subject")) > 100 || len(ctx.FormValue("name")) > 100 || len(ctx.FormValue("options")) > 100 {
-		return ctx.Render("403", fiber.Map{
-			"message": "Name, Subject or Options limit 100 characters",
-		})
+		return send400(ctx, "Name, subject, or options limit is 100 characters.")
 	} else if strings.Count(ctx.FormValue("comment"), "\n") > 50 {
-		return ctx.Render("403", fiber.Map{
-			"message": "Too many new lines - try again.",
-		})
+		return send400(ctx, "Your post has too many lines.")
 	} else if is, _ := util.IsPostBlacklist(ctx.FormValue("comment")); is {
-		log.Println("Blacklist post blocked")
-		return ctx.Redirect("/", 301)
+		return send400(ctx, "Your post was blocked.")
 	}
 
 	nObj, err := objectFromForm(ctx, activitypub.CreateObject("Note"))
@@ -274,17 +255,17 @@ func MakeActorPost(ctx *fiber.Ctx) error {
 
 	for _, e := range obj.Option {
 		if e == "noko" || e == "nokosage" {
-			return ctx.Redirect(config.Domain+"/"+ctx.FormValue("boardName")+"/"+util.ShortURL(actor.Outbox, id), 301)
+			return ctx.Redirect("/"+ctx.FormValue("boardName")+"/"+util.ShortURL(actor.Outbox, id), 301)
 		}
 	}
 
 	if ctx.FormValue("returnTo") == "catalog" {
-		return ctx.Redirect(config.Domain+"/"+ctx.FormValue("boardName")+"/catalog", 301)
+		return ctx.Redirect("/"+ctx.FormValue("boardName")+"/catalog", 301)
 	} else {
-		return ctx.Redirect(config.Domain+"/"+ctx.FormValue("boardName"), 301)
+		return ctx.Redirect("/"+ctx.FormValue("boardName"), 301)
 	}
 
-	return ctx.Redirect(config.Domain+"/"+ctx.FormValue("boardName"), 301)
+	return ctx.Redirect("/"+ctx.FormValue("boardName"), 301)
 }
 
 func ActorPost(ctx *fiber.Ctx) error {
@@ -314,10 +295,10 @@ func ActorPost(ctx *fiber.Ctx) error {
 	collection, err := obj.GetCollectionFromPath()
 
 	if err != nil {
-		return ctx.Status(404).Render("404", nil)
+		return send404(ctx)
 	}
 
-	var data PageData
+	var data pageData
 
 	if collection.Actor.Id != "" {
 		data.Board.Post.Actor = collection.Actor.Id
@@ -343,14 +324,8 @@ func ActorPost(ctx *fiber.Ctx) error {
 		data.PostId = util.ShortURL(data.Board.To, data.Posts[0].Id)
 	}
 
-	// Ignore captcha if we're authenticated
-	if !hasAuth {
-		capt, err := util.GetRandomCaptcha()
-		if err != nil {
-			return util.WrapError(err)
-		}
-		data.Board.Captcha = config.Domain + "/" + capt
-		data.Board.CaptchaCode, _ = util.GetCaptchaCode(data.Board.Captcha)
+	if err := populateCaptcha(hasAuth, &data.Board); err != nil {
+		return util.WrapError(err)
 	}
 
 	data.Instance, err = activitypub.GetActorFromDB(config.Domain)
@@ -393,7 +368,7 @@ func ActorCatalog(ctx *fiber.Ctx) error {
 		return util.WrapError(err)
 	}
 
-	var data PageData
+	var data pageData
 	data.Board.Name = actor.Name
 	data.Board.PrefName = actor.PreferredUsername
 	data.Board.InReplyTo = ""
@@ -414,14 +389,8 @@ func ActorCatalog(ctx *fiber.Ctx) error {
 		return util.WrapError(err)
 	}
 
-	// Ignore captcha if we're authenticated
-	if !hasAuth {
-		capt, err := util.GetRandomCaptcha()
-		if err != nil {
-			return util.WrapError(err)
-		}
-		data.Board.Captcha = config.Domain + "/" + capt
-		data.Board.CaptchaCode, _ = util.GetCaptchaCode(data.Board.Captcha)
+	if err := populateCaptcha(hasAuth, &data.Board); err != nil {
+		return util.WrapError(err)
 	}
 
 	data.Title = "/" + data.Board.Name + "/ - catalog"
@@ -444,7 +413,7 @@ func ActorPosts(ctx *fiber.Ctx) error {
 	actor, err := activitypub.GetActorByNameFromDB(ctx.Params("actor"))
 
 	if err != nil {
-		return ctx.Status(404).Render("404", nil)
+		return send404(ctx)
 	}
 
 	if activitypub.AcceptActivity(ctx.Get("Accept")) {
@@ -476,7 +445,7 @@ func ActorPosts(ctx *fiber.Ctx) error {
 		pages = append(pages, int(i))
 	}
 
-	var data PageData
+	var data pageData
 	data.Board.Name = actor.Name
 	data.Board.PrefName = actor.PreferredUsername
 	data.Board.Summary = actor.Summary
@@ -492,14 +461,8 @@ func ActorPosts(ctx *fiber.Ctx) error {
 
 	data.Board.Post.Actor = actor.Id
 
-	// Ignore captcha if we're authenticated
-	if !hasAuth {
-		capt, err := util.GetRandomCaptcha()
-		if err != nil {
-			return util.WrapError(err)
-		}
-		data.Board.Captcha = config.Domain + "/" + capt
-		data.Board.CaptchaCode, _ = util.GetCaptchaCode(data.Board.Captcha)
+	if err := populateCaptcha(hasAuth, &data.Board); err != nil {
+		return util.WrapError(err)
 	}
 
 	data.Title = "/" + actor.Name + "/ - " + actor.PreferredUsername
@@ -537,7 +500,7 @@ func ActorArchive(ctx *fiber.Ctx) error {
 		return util.WrapError(err)
 	}
 
-	var returnData PageData
+	var returnData pageData
 	returnData.Board.Name = actor.Name
 	returnData.Board.PrefName = actor.PreferredUsername
 	returnData.Board.InReplyTo = ""
@@ -554,12 +517,11 @@ func ActorArchive(ctx *fiber.Ctx) error {
 
 	returnData.Instance, err = activitypub.GetActorFromDB(config.Domain)
 
-	capt, err := util.GetRandomCaptcha()
-	if err != nil {
-		return util.WrapError(err)
-	}
-	returnData.Board.Captcha = config.Domain + "/" + capt
-	returnData.Board.CaptchaCode, _ = util.GetCaptchaCode(returnData.Board.Captcha)
+	/*
+		if err := populateCaptcha(hasAuth, &returnData.Board); err != nil {
+			return util.WrapError(err)
+		}
+	*/
 
 	returnData.Title = "/" + actor.Name + "/ - " + actor.PreferredUsername
 

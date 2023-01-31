@@ -38,14 +38,18 @@ func AdminVerify(ctx *fiber.Ctx) error {
 
 func AdminIndex(ctx *fiber.Ctx) error {
 	acct, hasAuth := ctx.Locals("acct").(*db.Acct)
-	actor, _ := activitypub.GetActorFromPath(ctx.Path(), "/"+config.Key+"/")
-
-	if actor.Id == "" {
-		actor, _ = activitypub.GetActorByNameFromDB(config.Domain)
+	if !hasAuth {
+		return ctx.Render("verify", common{
+			Title:  "Login",
+			Boards: activitypub.Boards,
+			Acct:   nil,
+			Key:    config.Key,
+		}, "layouts/main")
 	}
 
-	if !hasAuth {
-		return ctx.Render("verify", fiber.Map{"key": config.Key})
+	actor, _ := activitypub.GetActorFromPath(ctx.Path(), "/"+config.Key+"/")
+	if actor.Id == "" {
+		actor, _ = activitypub.GetActorByNameFromDB(config.Domain)
 	}
 
 	actor, err := activitypub.GetActor(config.Domain)
@@ -69,7 +73,7 @@ func AdminIndex(ctx *fiber.Ctx) error {
 		followers = append(followers, e.Id)
 	}
 
-	var adminData AdminPage
+	var adminData adminPage
 	adminData.Following = following
 	adminData.Followers = followers
 
@@ -190,16 +194,16 @@ func AdminAddBoard(ctx *fiber.Ctx) error {
 
 func AdminActorIndex(ctx *fiber.Ctx) error {
 	acct, hasAuth := ctx.Locals("acct").(*db.Acct)
-	var data AdminPage
+	if !hasAuth {
+		return ctx.Render("verify", fiber.Map{"key": config.Key})
+	}
+
+	var data adminPage
 
 	actor, _ := activitypub.GetActorFromPath(ctx.Path(), "/"+config.Key+"/")
 
 	if actor.Id == "" {
 		actor, _ = activitypub.GetActorByNameFromDB(config.Domain)
-	}
-
-	if !hasAuth {
-		return ctx.Render("verify", fiber.Map{"key": config.Key})
 	}
 
 	data.Acct = acct
@@ -272,14 +276,13 @@ func AdminActorIndex(ctx *fiber.Ctx) error {
 
 func AdminAddJanny(ctx *fiber.Ctx) error {
 	acct, hasAuth := ctx.Locals("acct").(*db.Acct)
-	actor, _ := activitypub.GetActorFromPath(ctx.Path(), "/"+config.Key+"/")
-
-	if actor.Id == "" {
-		actor, _ = activitypub.GetActorByNameFromDB(config.Domain)
+	if !hasAuth || acct.Type != db.Admin {
+		return send403(ctx)
 	}
 
-	if !hasAuth || acct.Type != db.Admin {
-		return util.WrapError(ErrNoAuth)
+	actor, _ := activitypub.GetActorFromPath(ctx.Path(), "/"+config.Key+"/")
+	if actor.Id == "" {
+		actor, _ = activitypub.GetActorByNameFromDB(config.Domain)
 	}
 
 	var verify db.Verify
@@ -305,14 +308,13 @@ func AdminAddJanny(ctx *fiber.Ctx) error {
 
 func AdminEditSummary(ctx *fiber.Ctx) error {
 	acct, hasAuth := ctx.Locals("acct").(*db.Acct)
-	actor, _ := activitypub.GetActorFromPath(ctx.Path(), "/"+config.Key+"/")
-
-	if actor.Id == "" {
-		actor, _ = activitypub.GetActorByNameFromDB(config.Domain)
+	if !hasAuth || acct.Type != db.Admin {
+		return send403(ctx)
 	}
 
-	if !hasAuth || acct.Type != db.Admin {
-		return util.WrapError(ErrNoAuth)
+	actor, _ := activitypub.GetActorFromPath(ctx.Path(), "/"+config.Key+"/")
+	if actor.Id == "" {
+		actor, _ = activitypub.GetActorByNameFromDB(config.Domain)
 	}
 
 	summary := ctx.FormValue("summary")
@@ -333,14 +335,14 @@ func AdminEditSummary(ctx *fiber.Ctx) error {
 
 func AdminDeleteJanny(ctx *fiber.Ctx) error {
 	acct, hasAuth := ctx.Locals("acct").(*db.Acct)
+	if !hasAuth || acct.Type != db.Admin {
+		return send403(ctx)
+	}
+
 	actor, _ := activitypub.GetActorFromPath(ctx.Path(), "/"+config.Key+"/")
 
 	if actor.Id == "" {
 		actor, _ = activitypub.GetActorByNameFromDB(config.Domain)
-	}
-
-	if !hasAuth || acct.Type != db.Admin {
-		return util.WrapError(ErrNoAuth)
 	}
 
 	var verify db.Verify

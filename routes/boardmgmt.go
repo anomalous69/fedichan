@@ -2,7 +2,6 @@ package routes
 
 import (
 	"errors"
-	"log"
 	"net/http"
 	"os"
 	"regexp"
@@ -342,7 +341,7 @@ func BoardAddToIndex(ctx *fiber.Ctx) error {
 func BoardPopArchive(ctx *fiber.Ctx) error {
 	_, hasAuth := ctx.Locals("acct").(*db.Acct)
 	if !hasAuth {
-		return ctx.Status(404).Render("404", nil)
+		return send404(ctx)
 	}
 
 	id := ctx.Query("id")
@@ -360,7 +359,7 @@ func BoardPopArchive(ctx *fiber.Ctx) error {
 func BoardAutoSubscribe(ctx *fiber.Ctx) error {
 	_, hasAuth := ctx.Locals("acct").(*db.Acct)
 	if !hasAuth {
-		return ctx.Status(404).Render("404", nil)
+		return send404(ctx)
 	}
 
 	actor, err := activitypub.GetActorFromDB(config.Domain)
@@ -390,7 +389,7 @@ func BoardAutoSubscribe(ctx *fiber.Ctx) error {
 func BoardBlacklist(ctx *fiber.Ctx) error {
 	_, hasAuth := ctx.Locals("acct").(*db.Acct)
 	if !hasAuth {
-		return ctx.Status(404).Render("404", nil)
+		return send404(ctx)
 	}
 
 	if ctx.Method() == "GET" {
@@ -436,27 +435,19 @@ func ReportPost(ctx *fiber.Ctx) error {
 
 	if close == "1" {
 		if !hasAuth {
-			return ctx.Status(404).Render("404", fiber.Map{
-				"message": "Something broke",
-			})
+			return send403(ctx)
 		}
 
 		if local, _ := obj.IsLocal(); !local {
 			if err := db.CloseLocalReport(obj.Id, board); err != nil {
-				log.Println(err)
-				return ctx.Status(404).Render("404", fiber.Map{
-					"message": "Something broke",
-				})
+				return send500(ctx, err)
 			}
 
 			return ctx.Redirect("/"+config.Key+"/"+board, http.StatusSeeOther)
 		}
 
 		if err := obj.DeleteReported(); err != nil {
-			log.Println(err)
-			return ctx.Status(404).Render("404", fiber.Map{
-				"message": "Something broke",
-			})
+			return send500(ctx, err)
 		}
 
 		return ctx.Redirect("/"+config.Key+"/"+board, http.StatusSeeOther)
@@ -464,50 +455,38 @@ func ReportPost(ctx *fiber.Ctx) error {
 
 	if local, _ := obj.IsLocal(); !local {
 		if err := db.CreateLocalReport(id, board, reason); err != nil {
-			log.Println(err)
-			return ctx.Status(404).Render("404", fiber.Map{
-				"message": "Something broke",
-			})
+			return send500(ctx, err)
 		}
 
 		return ctx.Redirect("/"+board+"/"+util.RemoteShort(obj.Id), http.StatusSeeOther)
 	}
 
-	var captcha = ctx.FormValue("captchaCode") + ":" + ctx.FormValue("captcha")
-
 	if len(reason) > 100 {
-		return ctx.Status(403).Render("403", fiber.Map{
-			"message": "Report comment limit 100 characters",
-		})
+		return send400(ctx, "Report length may contain at most 100 characters.")
 	}
 
 	if len(strings.TrimSpace(reason)) == 0 {
-		return ctx.Status(403).Render("403", fiber.Map{
-			"message": "Report reason required",
-		})
+		return send400(ctx, "Report reason required.")
 	}
 
-	if ok, _ := util.CheckCaptcha(captcha); !ok && close != "1" {
-		return ctx.Status(403).Render("403", fiber.Map{
-			"message": "Invalid captcha",
-		})
+	if ok, _ := db.CheckCaptcha(ctx.FormValue("captchaCode"), ctx.FormValue("captcha")); !ok && close != "1" {
+		return send403(ctx, "Invalid captcha.")
 	}
 
 	if err := db.CreateLocalReport(obj.Id, board, reason); err != nil {
-		log.Println(err)
-		return ctx.Status(404).Render("404", fiber.Map{
-			"message": "Something broke",
-		})
+		return send500(ctx, err)
 	}
 
 	return ctx.Redirect(id, http.StatusSeeOther)
 }
 
 func ReportGet(ctx *fiber.Ctx) error {
-	acct, _ := ctx.Locals("acct").(*db.Acct)
+	acct, hasAuth := ctx.Locals("acct").(*db.Acct)
 	actor, _ := activitypub.GetActor(ctx.Query("actor"))
 
-	var data PageData
+	var data pageData
+	var err error
+
 	data.Board.Actor = actor
 	data.Board.Name = actor.Name
 	data.Board.PrefName = actor.PreferredUsername
@@ -517,20 +496,18 @@ func ReportGet(ctx *fiber.Ctx) error {
 	data.Board.Restricted = actor.Restricted
 	data.Acct = acct
 
-	capt, err := util.GetRandomCaptcha()
-
-	if err != nil {
+	if err := populateCaptcha(hasAuth, &data.Board); err != nil {
 		return util.WrapError(err)
 	}
-
-	data.Board.Captcha = config.Domain + "/" + capt
-	data.Board.CaptchaCode, _ = util.GetCaptchaCode(data.Board.Captcha)
 
 	data.Meta.Description = data.Board.Summary
 	data.Meta.Url = data.Board.Actor.Id
 	data.Meta.Title = data.Title
 
 	data.Instance, err = activitypub.GetActorFromDB(config.Domain)
+	if err != nil {
+		return err
+	}
 
 	data.Themes = config.Themes
 	data.ThemeCookie = themeCookie(ctx)
@@ -551,7 +528,7 @@ func Sticky(ctx *fiber.Ctx) error {
 	actor, _ := activitypub.GetActorByNameFromDB(board)
 
 	if id == "" || !hasAuth {
-		return util.WrapError(ErrNoAuth)
+		return send403(ctx)
 	}
 
 	var obj = activitypub.ObjectBase{Id: id}
@@ -591,7 +568,7 @@ func Lock(ctx *fiber.Ctx) error {
 	actor, _ := activitypub.GetActorByNameFromDB(board)
 
 	if id == "" || !hasAuth {
-		return util.WrapError(ErrNoAuth)
+		return send403(ctx)
 	}
 
 	var obj = activitypub.ObjectBase{Id: id}
