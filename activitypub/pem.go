@@ -8,7 +8,6 @@ import (
 	"errors"
 	"log"
 	"os"
-	"regexp"
 	"strings"
 
 	"github.com/KushBlazingJudah/fedichan/config"
@@ -203,34 +202,21 @@ func StorePemToDB(actor Actor) error {
 func ParseHeaderSignature(signature string) Signature {
 	var nsig Signature
 
-	keyId := regexp.MustCompile(`keyId=`)
-	headers := regexp.MustCompile(`headers=`)
-	sig := regexp.MustCompile(`signature=`)
-	algo := regexp.MustCompile(`algorithm=`)
-
 	signature = strings.ReplaceAll(signature, "\"", "")
 	parts := strings.Split(signature, ",")
 
 	for _, e := range parts {
-		if keyId.MatchString(e) {
-			nsig.KeyId = keyId.ReplaceAllString(e, "")
-			continue
-		}
+		k, v, _ := strings.Cut(e, "=")
 
-		if headers.MatchString(e) {
-			header := headers.ReplaceAllString(e, "")
-			nsig.Headers = strings.Split(header, " ")
-			continue
-		}
-
-		if sig.MatchString(e) {
-			nsig.Signature = sig.ReplaceAllString(e, "")
-			continue
-		}
-
-		if algo.MatchString(e) {
-			nsig.Algorithm = algo.ReplaceAllString(e, "")
-			continue
+		switch k {
+		case "keyId":
+			nsig.KeyId = v
+		case "headers":
+			nsig.Headers = strings.Split(v, " ")
+		case "signature":
+			nsig.Signature = v
+		case "algorithm":
+			nsig.Algorithm = v
 		}
 	}
 

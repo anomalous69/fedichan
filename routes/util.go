@@ -373,7 +373,7 @@ func parseAttachment(obj activitypub.ObjectBase, catalog bool) template.HTML {
 		return ""
 	}
 
-	if regexp.MustCompile(`image\/`).MatchString(obj.Attachment[0].MediaType) {
+	if strings.HasPrefix(obj.Attachment[0].MediaType, "image/") {
 		src := obj.Preview.Href
 		if src == "" {
 			src = obj.Attachment[0].Href
@@ -381,9 +381,9 @@ func parseAttachment(obj activitypub.ObjectBase, catalog bool) template.HTML {
 		src = util.MediaProxy(src)
 
 		return template.HTML(fmt.Sprintf(`<img class="media" enlarge="0" attachment="%s" src="%s" preview="%s">`, obj.Attachment[0].Href, src, src))
-	} else if regexp.MustCompile(`audio\/`).MatchString(obj.Attachment[0].MediaType) {
+	} else if strings.HasPrefix(obj.Attachment[0].MediaType, "audio/") {
 		return template.HTML(fmt.Sprintf(`<audio class="media" controls preload="metadata"><source src="%s" type="%s">Audio is not supported.</audio>`, util.MediaProxy(obj.Attachment[0].Href), obj.Attachment[0].MediaType))
-	} else if regexp.MustCompile(`video\/`).MatchString(obj.Attachment[0].MediaType) {
+	} else if strings.HasPrefix(obj.Attachment[0].MediaType, "video/") {
 		return template.HTML(fmt.Sprintf(`<video class="media" controls muted preload="metadata"><source src="%s" type="%s">Audio is not supported.</video>`, util.MediaProxy(obj.Attachment[0].Href), obj.Attachment[0].MediaType))
 	}
 

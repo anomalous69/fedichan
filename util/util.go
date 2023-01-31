@@ -13,18 +13,18 @@ import (
 	"strings"
 
 	"github.com/KushBlazingJudah/fedichan/config"
+	"github.com/KushBlazingJudah/fedichan/internal/rx"
 )
 
+var xferRegexp = regexp.MustCompile("(http://|https://)?(www.)?")
+var onionRegexp = regexp.MustCompile(`\.onion`)
+
 func IsOnion(url string) bool {
-	re := regexp.MustCompile(`\.onion`)
-	return re.MatchString(url)
+	return onionRegexp.MatchString(url)
 }
 
 func StripTransferProtocol(value string) string {
-	re := regexp.MustCompile("(http://|https://)?(www.)?")
-	value = re.ReplaceAllString(value, "")
-
-	return value
+	return xferRegexp.ReplaceAllString(value, "")
 }
 
 func ShortURL(actorName string, url string) string {
@@ -39,8 +39,7 @@ func ShortURL(actorName string, url string) string {
 		reply = urlParts[1]
 	}
 
-	re = regexp.MustCompile(`\w+$`)
-	temp := re.ReplaceAllString(op, "")
+	temp := rx.WordCharsToEnd.ReplaceAllString(op, "")
 
 	if temp == actor {
 		id := LocalShort(op)
@@ -72,14 +71,12 @@ func ShortURL(actorName string, url string) string {
 }
 
 func LocalShort(url string) string {
-	re := regexp.MustCompile(`\w+$`)
-	return re.FindString(StripTransferProtocol(url))
+	return rx.WordCharsToEnd.FindString(StripTransferProtocol(url))
 }
 
 func RemoteShort(url string) string {
-	re := regexp.MustCompile(`\w+$`)
-	id := re.FindString(StripTransferProtocol(url))
-	re = regexp.MustCompile(`.+/.+/`)
+	id := rx.WordCharsToEnd.FindString(StripTransferProtocol(url))
+	re := regexp.MustCompile(`.+/.+/`)
 	actorurl := re.FindString(StripTransferProtocol(url))
 	re = regexp.MustCompile(`/.+/`)
 	actorname := re.FindString(actorurl)

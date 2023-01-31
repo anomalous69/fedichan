@@ -6,7 +6,6 @@ import (
 	"log"
 	"mime/multipart"
 	"net/http"
-	"regexp"
 	"strconv"
 	"strings"
 
@@ -14,6 +13,7 @@ import (
 	"github.com/KushBlazingJudah/fedichan/config"
 	"github.com/KushBlazingJudah/fedichan/db"
 	"github.com/KushBlazingJudah/fedichan/util"
+	"github.com/KushBlazingJudah/fedichan/internal/rx"
 	"github.com/gofiber/fiber/v2"
 )
 
@@ -281,8 +281,7 @@ func ActorPost(ctx *fiber.Ctx) error {
 		return getActorPost(ctx)
 	}
 
-	re := regexp.MustCompile(`\w+$`)
-	postId := re.FindString(ctx.Path())
+	postId := rx.WordCharsToEnd.FindString(ctx.Path())
 
 	inReplyTo, _ := db.GetPostIDFromNum(postId)
 

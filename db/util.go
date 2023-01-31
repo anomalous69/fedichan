@@ -7,6 +7,8 @@ import (
 	"regexp"
 	"runtime"
 	"strings"
+
+	"github.com/KushBlazingJudah/fedichan/internal/rx"
 )
 
 func wrapErr(err error) error {
@@ -51,8 +53,7 @@ func shortURL(actorName string, url string) string {
 		reply = urlParts[1]
 	}
 
-	re = regexp.MustCompile(`\w+$`)
-	temp := re.ReplaceAllString(op, "")
+	temp := rx.WordCharsToEnd.ReplaceAllString(op, "")
 
 	if temp == actor {
 		id := localShort(op)
@@ -84,14 +85,12 @@ func shortURL(actorName string, url string) string {
 }
 
 func localShort(url string) string {
-	re := regexp.MustCompile(`\w+$`)
-	return re.FindString(stripTransferProtocol(url))
+	return rx.WordCharsToEnd.FindString(stripTransferProtocol(url))
 }
 
 func remoteShort(url string) string {
-	re := regexp.MustCompile(`\w+$`)
-	id := re.FindString(stripTransferProtocol(url))
-	re = regexp.MustCompile(`.+/.+/`)
+	id := rx.WordCharsToEnd.FindString(stripTransferProtocol(url))
+	re := regexp.MustCompile(`.+/.+/`)
 	actorurl := re.FindString(stripTransferProtocol(url))
 	re = regexp.MustCompile(`/.+/`)
 	actorname := re.FindString(actorurl)

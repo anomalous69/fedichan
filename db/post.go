@@ -10,11 +10,8 @@ import (
 
 	"github.com/KushBlazingJudah/fedichan/activitypub"
 	"github.com/KushBlazingJudah/fedichan/config"
+	"github.com/KushBlazingJudah/fedichan/internal/rx"
 )
-
-var citeRegexp = regexp.MustCompile(`(>>(https?://[A-Za-z0-9_.:\-~]+\/[A-Za-z0-9_.\-~]+\/)(f[A-Za-z0-9_.\-~]+-)?([A-Za-z0-9_.\-~]+)?#?([A-Za-z0-9_.\-~]+)?)`)
-var linkTitleRegexp = regexp.MustCompile(`(&gt;&gt;(https?://[A-Za-z0-9_.:\-~]+\/[A-Za-z0-9_.\-~]+\/)\w+(#.+)?)`)
-var quoteRegexp = regexp.MustCompile(`(?m)^\s*&gt;(.+?)$`)
 
 func ConvertHashLink(domain string, link string) string {
 	re := regexp.MustCompile(`(#.+)`)
@@ -31,7 +28,7 @@ func ConvertHashLink(domain string, link string) string {
 }
 
 func ParseCommentForReplies(comment string, op string) ([]activitypub.ObjectBase, error) {
-	match := citeRegexp.FindAllStringSubmatch(comment, -1)
+	match := rx.Cite.FindAllStringSubmatch(comment, -1)
 
 	var links []string
 
@@ -75,7 +72,7 @@ func ParseCommentForReplies(comment string, op string) ([]activitypub.ObjectBase
 
 func ParseLinkTitle(actorName string, op string, content string) string {
 	// TODO: Rewrite using ReplaceFunc
-	match := linkTitleRegexp.FindAllStringSubmatch(content, -1)
+	match := rx.LinkTitle.FindAllStringSubmatch(content, -1)
 
 	for i := range match {
 		link := strings.Replace(match[i][0], ">>", "", 1)
@@ -145,9 +142,8 @@ func ParseTruncate(content string, board activitypub.Actor, op string, id string
 }
 
 func ParseLinkComments(board activitypub.Actor, op string, content string, thread activitypub.ObjectBase) string {
-	re := regexp.MustCompile(`(&gt;&gt;(https?://[A-Za-z0-9_.:\-~]+\/[A-Za-z0-9_.\-~]+\/)(f[A-Za-z0-9_.\-~]+-)?([A-Za-z0-9_.\-~]+)?#?([A-Za-z0-9_.\-~]+)?)`)
-	return re.ReplaceAllStringFunc(content, func(match string) string {
-		v := re.FindStringSubmatch(match)
+	return rx.CiteEsc.ReplaceAllStringFunc(content, func(match string) string {
+		v := rx.CiteEsc.FindStringSubmatch(match)
 
 		isOP := ""
 		domain := v[2]
@@ -211,5 +207,5 @@ func ParseLinkComments(board activitypub.Actor, op string, content string, threa
 }
 
 func ParseCommentQuotes(content string) string {
-	return quoteRegexp.ReplaceAllString(content, `<span class="quote">&gt;$1</span>`)
+	return rx.Quote.ReplaceAllString(content, `<span class="quote">&gt;$1</span>`)
 }
