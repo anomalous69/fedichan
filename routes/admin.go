@@ -13,6 +13,15 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
+func sendLogin(ctx *fiber.Ctx) error {
+	return ctx.Render("verify", common{
+		Title:  "Login",
+		Boards: activitypub.Boards,
+		Acct:   nil,
+		Key:    config.Key,
+	}, "layouts/main")
+}
+
 func AdminVerify(ctx *fiber.Ctx) error {
 	user := ctx.FormValue("username")
 	pass := ctx.FormValue("password")
@@ -39,12 +48,7 @@ func AdminVerify(ctx *fiber.Ctx) error {
 func AdminIndex(ctx *fiber.Ctx) error {
 	acct, hasAuth := ctx.Locals("acct").(*db.Acct)
 	if !hasAuth {
-		return ctx.Render("verify", common{
-			Title:  "Login",
-			Boards: activitypub.Boards,
-			Acct:   nil,
-			Key:    config.Key,
-		}, "layouts/main")
+		return sendLogin(ctx)
 	}
 
 	actor, _ := activitypub.GetActorFromPath(ctx.Path(), "/"+config.Key+"/")
@@ -195,7 +199,7 @@ func AdminAddBoard(ctx *fiber.Ctx) error {
 func AdminActorIndex(ctx *fiber.Ctx) error {
 	acct, hasAuth := ctx.Locals("acct").(*db.Acct)
 	if !hasAuth {
-		return ctx.Render("verify", fiber.Map{"key": config.Key})
+		return sendLogin(ctx)
 	}
 
 	var data adminPage

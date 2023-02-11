@@ -61,11 +61,7 @@ h1, h2, h3, h4, h5, h6 {
   color: #789922;
 }
 
-.post {
-  background-color: #d5daf0;
-}
-
-.nsfw .post {
+.nsfw .post.reply {
   background-color: #f0e0d6;
 }
 
@@ -355,4 +351,21 @@ header {
 
 .fileinfo {
 	display: block;
+}
+
+.post.op {
+	margin-bottom: 12px;
+}
+
+.post.reply {
+	display: inline-block;
+	background-color: #d5daf0;
+	padding: 5px;
+	margin-bottom: 2px;
+}
+
+.post p {
+	white-space: pre-wrap;
+	margin: 10px 30px 10px 30px;
+	word-wrap: anywhere;
 }

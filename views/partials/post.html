@@ -15,8 +15,11 @@
 [<a href="/banmedia?id={{ .Id }}&board={{ $board.Actor.Name }}">Ban Media</a>]
 [<a href="/deleteattach?id={{ .Id }}&board={{ $board.Actor.Name }}">Delete Attachment</a>]
 [<a href="/marksensitive?id={{ .Id }}&board={{ $board.Actor.Name }}">Mark Sensitive</a>]
+
+{{if not .InReplyTo}}
 [<a href="/sticky?id={{ .Id }}&board={{ $board.Actor.Name }}">Sticky</a>]
 [<a href="/lock?id={{ .Id }}&board={{ $board.Actor.Name }}">Lock</a>]
+{{end}}
 {{ end }}
 
 <span class="fileinfo">
@@ -38,6 +41,12 @@
 <div id="media-{{ .Id }}" class="mediacont" {{if $hide}}style="display: none;" data-sensitive="{{if $onion}}onion{{else}}nsfw{{end}}"{{end}}>
     {{ parseAttachment . false }}
 </div>
+{{ else }}
+{{if and $acct (not .InReplyTo)}}
+[<a href="/sticky?id={{ .Id }}&board={{ $board.Actor.Name }}">Sticky</a>]
+[<a href="/lock?id={{ .Id }}&board={{ $board.Actor.Name }}">Lock</a>]
+{{end}}
+
 {{ end }}
 
 <span class="subject"><b>{{ .Name }}</b></span>
@@ -52,6 +61,6 @@
 {{ end }}
 {{ end }}
 
-<p id="{{ .Id }}-content" style="white-space: pre-wrap; margin: 10px 30px 10px 30px;">{{ parseContent $board.Actor $opId .Content $thread .Id $trunc }}</p>
+<p id="{{ .Id }}-content">{{ parseContent $board.Actor $opId .Content $thread .Id $trunc }}</p>
 {{end}}
 {{end}}

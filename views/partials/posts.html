@@ -3,34 +3,30 @@
 {{ $len := len .Posts }}
 {{ $page := . }}
 {{ $trunc := eq $page.PostType "new" }}
+
 {{ range .Posts }}
 {{ $thread := . }}
+{{ $replies := .Replies }}
 {{ $opId := .Id }}
+
 {{ if eq $board.InReplyTo "" }}
 <hr>
 {{ end }}
+
 <div style="overflow: auto;">
-  <div id="{{ shortURL $board.Actor.Outbox .Id }}" style="overflow: visible; margin-bottom: 12px;">
+  <div id="{{ shortURL $board.Actor.Outbox .Id }}" class="post op">
     {{renderPost . $board $thread $acct $trunc}}
 
-    {{ if .Replies }}
-    {{ $replies := .Replies }}
-    {{ if gt $replies.TotalItems 5 }}
-    {{ if gt $len 1 }}
-    <span>{{ $replies.TotalItems }} replies{{ if gt $replies.TotalImgs 0}} and {{ $replies.TotalImgs }} images{{ end }}, Click <a id="view" post="{{.Id}}" href="/{{ $board.Name }}/{{ shortURL $board.Actor.Outbox .Id }}">here</a> to view all.</span>
-    {{ end }}
-    {{ end }}
-    {{ range $replies.OrderedItems }}
-    <div id="{{ shortURL $board.Actor.Outbox .Id }}">
-      <div style="display: inline-block; overflow: auto;">
-        <div style="float: left; display: block; margin-right: 5px;">&gt;&gt;</div>
-        <div class="post" style="overflow: auto; padding: 5px; margin-bottom: 2px;">
-          {{renderPost . $board $thread $acct $trunc}}
-        </div>
-      </div>
-    </div>
-    {{ end }}
+    {{ if and $replies (gt $replies.TotalItems 5) }}
+    <i>{{ $replies.TotalItems }} repl{{if gt $replies.TotalItems 1}}ies{{else}}y{{end}}{{ if gt $replies.TotalImgs 0}} and {{ $replies.TotalImgs }} image{{if gt $replies.TotalImgs 1}}s{{end}}{{ end }}, Click <a id="view" post="{{.Id}}" href="/{{ $board.Name }}/{{ shortURL $board.Actor.Outbox .Id }}">here</a> to view all.</i>
     {{ end }}
   </div>
+
+  {{if $replies}}{{ range $replies.OrderedItems }}
+  <div id="{{ shortURL $board.Actor.Outbox .Id }}" class="post reply">
+    {{renderPost . $board $thread $acct $trunc}}
+  </div>
+  <br/>
+  {{ end }}{{end}}
 </div>
 {{ end }}
