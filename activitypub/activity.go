@@ -253,69 +253,84 @@ func (activity Activity) SetActorFollowing() error {
 	return nil
 }
 
+func (activity Activity) send(actor Actor, j []byte, instance string) {
+	for try := 0; try < 5; try++ {
+		// no-op on first iter
+		time.Sleep(time.Duration(try) * time.Minute)
+
+		req, err := http.NewRequest("POST", actor.Inbox, bytes.NewBuffer(j))
+		if err != nil {
+			log.Printf("fatal error creating request for activity to %s: %v", actor.Inbox, err)
+			return
+		}
+
+		// sign the activity
+		// must be done every time because of the signing window
+		date := time.Now().UTC().Format(time.RFC1123)
+		path := strings.Replace(actor.Inbox, instance, "", 1)
+		re := regexp.MustCompile("https?://(www.)?")
+		path = re.ReplaceAllString(path, "")
+		sig := fmt.Sprintf("(request-target): %s %s\nhost: %s\ndate: %s", "post", path, instance, date)
+		encSig, err := activity.Actor.ActivitySign(sig)
+		if err != nil {
+			log.Printf("fatal error signing activity to %s: %v", actor.Inbox, err)
+			return
+		}
+
+		signature := fmt.Sprintf(`keyId="%s",headers="(request-target) host date",signature="%s"`, activity.Actor.PublicKey.Id, encSig)
+
+		// set headers
+		req.Header.Set("Content-Type", config.ActivityStreams)
+		req.Header.Set("Date", date)
+		req.Header.Set("Signature", signature)
+		req.Host = instance
+
+		resp, err := util.RouteProxy(req)
+		if err != nil {
+			log.Printf("couldn't send activity to %s (try %d): %v", actor.Inbox, try, err)
+			continue
+		}
+		resp.Body.Close() // we don't need it
+
+		switch resp.StatusCode {
+		case 200: // done!
+			goto out
+		case 400, 401, 403:
+			// we're unlikely to be able to repeat this request
+			log.Printf("couldn't send activity to %s: fatal status code %d", actor.Inbox, resp.StatusCode)
+			goto out
+		default:
+			log.Printf("couldn't send activity to %s (try %d): status code %d", actor.Inbox, try, resp.StatusCode)
+			continue
+		}
+
+		try += 1
+		continue
+
+	out:
+		break
+	}
+}
+
 func (activity Activity) Send() error {
 	// TODO: Should requests be async or sync?
 	// Currently they are async. Good for responsiveness but may cause confusion
 
 	j, _ := json.MarshalIndent(activity, "", "\t")
+
+	// TODO: debug switch
 	log.Println(string(j))
 
 	for _, e := range activity.To {
 		if e != activity.Actor.Id {
 			// TODO: webfinger
 			actor := Actor{Id: e, Inbox: e + "/inbox"}
-
 			name, instance := GetActorAndInstance(actor.Id)
 
 			if name != "main" {
-				go func(actor Actor, activity Activity) error {
-					var status int
-					var try int
-
-					for try != 5 && status != 200 {
-						time.Sleep(time.Duration(try) * time.Minute)
-
-						req, err := http.NewRequest("POST", actor.Inbox, bytes.NewBuffer(j))
-						if err != nil {
-							return util.WrapError(err)
-						}
-
-						date := time.Now().UTC().Format(time.RFC1123)
-						path := strings.Replace(actor.Inbox, instance, "", 1)
-						re := regexp.MustCompile("https?://(www.)?")
-						path = re.ReplaceAllString(path, "")
-						sig := fmt.Sprintf("(request-target): %s %s\nhost: %s\ndate: %s", "post", path, instance, date)
-						encSig, err := activity.Actor.ActivitySign(sig)
-
-						if err != nil {
-							return util.WrapError(err)
-						}
-
-						signature := fmt.Sprintf("keyId=\"%s\",headers=\"(request-target) host date\",signature=\"%s\"", activity.Actor.PublicKey.Id, encSig)
-
-						req.Header.Set("Content-Type", config.ActivityStreams)
-						req.Header.Set("Date", date)
-						req.Header.Set("Signature", signature)
-						req.Host = instance
-
-						resp, err := util.RouteProxy(req)
-
-						if err != nil {
-							try += 1
-							continue
-						}
-
-						status = resp.StatusCode
-						try += 1
-					}
-
-					return nil
-
-				}(actor, activity)
+				go activity.send(actor, j, instance)
 			}
 		}
-
-		time.Sleep(150 * time.Millisecond)
 	}
 
 	return nil
