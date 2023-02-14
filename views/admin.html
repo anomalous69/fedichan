@@ -1,97 +1,127 @@
 <header>
-  <h3>Add Board</h3>
-  <form id="new-post" action="/{{ .Key }}/addboard" method="post" enctype="application/x-www-form-urlencoded">
-    <label>Name:</label><br>
-    <input type="text" name="name" placeholder="g" required><br>
-    <label>Prefered Name:</label><br>
-    <input type="text" name="prefname" placeholder="Technology" required><input type="submit" value="Add"><br>
-    <label>Summary:</label><br>
-    <textarea name="summary" rows="8" cols="50"></textarea><br>
-    <label>Restricted (i.e SFW):</label><br>
-    <select name="restricted">
-      <option value="True">True</option>
-      <option value="False">False</option>
-    </select>
-  </form>
-  <div>
-    [<a href="#reported">Reported</a>]
-    [<a href="#news">Create News</a>]
-    [<a href="#regex">Post Blacklist</a>]
-  </div>
+	<h1>Instance Management</h1>
 </header>
 
-<div id="following" class="box2">
-  <h4>Subscribed</h4>
-  <form id="follow-form" action="/{{ .Key }}/follow" method="post" enctype="application/x-www-form-urlencoded">
-    <input id="follow" name="follow" placeholder="http://localhost:3000/g"></input><input type="submit" value="Subscribe"><br>
-    <input type="hidden" name="actor" value="{{ .Actor }}">
-  </form>
-  <ul class="nobullist">
-    {{ $actor := .Actor }}
-    {{ $key := .Key }}
-    {{ range .Following }}
-    <li>[<a href="/{{ $key }}/follow?follow={{ . }}&actor={{ $actor }}">Unfollow</a>]<a href="{{ . }}">{{ . }}</a></li>
-    {{ end }}
-  </ul>
+<div>
+		[<a href="#reported">Reported</a>]
+		{{ if (isMod .Acct) }}
+		[<a href="#news">Create News</a>]
+		{{ end }}
+		[<a href="#regex">Post Blacklist</a>]
 </div>
 
-<div id="followers" class="box2">
-  <h4>Followers</h4>
-  <ul class="nobullist">
-    {{ range .Followers }}
-    <li><a href="http://localhost:3000/g">{{ . }}</a></li>
-    {{ end }}
-  </ul>
+{{ if (isAdmin .Acct) }}
+<div class="box2">
+	<h3>Add Board</h3>
+	<form id="new-post" action="/{{ .Key }}/addboard" method="post" enctype="application/x-www-form-urlencoded">
+		<label>Name:</label><br>
+		<input type="text" name="name" placeholder="g" required><br>
+		<label>Prefered Name:</label><br>
+		<input type="text" name="prefname" placeholder="Technology" required><input type="submit" value="Add"><br>
+		<label>Summary:</label><br>
+		<textarea name="summary" rows="8" cols="50"></textarea><br>
+		<label>Restricted (i.e SFW):</label><br>
+		<select name="restricted">
+			<option value="True">True</option>
+			<option value="False">False</option>
+		</select>
+	</form>
 </div>
+{{ end }}
+
+{{ if (isAdmin .Acct) }}
+<div class="box2">
+	<h2>User Management</h3>
+
+	<table>
+		<tr>
+			<th>Username</th>
+			<th>Status</th>
+		</tr>
+		{{range .Users}}
+		<tr>
+			<td>{{.Username}}</td>
+			<td>{{.Type}}</td>
+		</tr>
+		{{end}}
+	</table>
+
+	<h3>Add new user</h3>
+
+	<form id="new-user" action="/{{ .Key }}/addmod" method="post">
+		<label>Username:</label><br>
+		<input type="text" name="username" placeholder="janny" required><br>
+		<label>E-mail: <i>optional</i></label><br>
+		<input type="text" name="email" placeholder="janny@4chan.org"><br>
+		<label>Password:</label><br>
+		<input type="password" name="password" required><br>
+
+		<label>Type:</label><br>
+		<select name="type">
+			<option value="janitor">Janitor (delete posts, review reports)</option>
+			<option value="mod">Moderator (ban media and text, manage board relationships)</option>
+			<option value="admin">Admin (manage boards)</option>
+		</select>
+
+		<input type="submit" value="Add">
+	</form>
+</div>
+{{ end }}
 
 <div id="reported" class="box2">
-  <h4>Reported</h4>
-  <ul class="nobullist">
-    {{ $domain := .Domain }}
-    {{ range .Reports }}
-    <h4 style="margin: 0;"><a href="{{ print $domain "/" (index . 0).Actor.Name }}">/{{ (index . 0).Actor.Name }}/</a></h4>
-    {{ range . }}
-    <li style="padding: 12px;">
-      <div style="margin-bottom: 5px;">{{ .Object.Updated | timeToReadableLong }}</div>
-      <a id="rpost" post="{{ .ID }}" title="{{ parseLinkTitle .Actor.Outbox .OP .Object.Content}}" href="/{{ parseLink .Actor .ID }}">{{ shortURL .Actor.Outbox .ID }}</a> - <b>{{ .Count }}</b> [<a href="/delete?id={{ .ID }}&board={{ .Actor.Name }}&manage=t">Remove Post</a>] {{ if gt (len .Object.Attachment) 0 }} [<a href="/banmedia?id={{ .ID }}&board={{ .Actor.Name }}">Ban Media</a>] [<a href="/deleteattach?id={{ .ID }}&board={{ .Actor.Name }}&manage=t">Remove Attachment</a>]{{ end }} [<a href="/report?id={{ .ID }}&close=1&board={{ .Actor.Name }}">Close</a>]
-      <ul>
-        {{ range .Reason }}
-        <li>
-          <span>"{{ . }}" </span>
-        </li>
-        {{ end }}
-      </ul>
-    </li>
-    {{ end }}
-    {{ end }}
-  </ul>
+	<h4>Reported</h4>
+	<ul class="nobullist">
+		{{ $domain := .Domain }}
+		{{ range .Reports }}
+		<h4 style="margin: 0;"><a href="{{ print $domain "/" (index . 0).Actor.Name }}">/{{ (index . 0).Actor.Name }}/</a></h4>
+		{{ range . }}
+		<li style="padding: 12px;">
+			<div style="margin-bottom: 5px;">{{ .Object.Updated | timeToReadableLong }}</div>
+			<a id="rpost" post="{{ .ID }}" title="{{ parseLinkTitle .Actor.Outbox .OP .Object.Content}}" href="/{{ parseLink .Actor .ID }}">{{ shortURL .Actor.Outbox .ID }}</a> - <b>{{ .Count }}</b> [<a href="/delete?id={{ .ID }}&board={{ .Actor.Name }}&manage=t">Remove Post</a>] {{ if gt (len .Object.Attachment) 0 }} [<a href="/banmedia?id={{ .ID }}&board={{ .Actor.Name }}">Ban Media</a>] [<a href="/deleteattach?id={{ .ID }}&board={{ .Actor.Name }}&manage=t">Remove Attachment</a>]{{ end }} [<a href="/report?id={{ .ID }}&close=1&board={{ .Actor.Name }}">Close</a>]
+			<ul>
+				{{ range .Reason }}
+				<li>
+					<span>"{{ . }}" </span>
+				</li>
+				{{ end }}
+			</ul>
+		</li>
+		{{ end }}
+		{{ end }}
+	</ul>
 </div>
 
+{{ if (isMod .Acct) }}
 <div class="box2">
-  <h3>Create News</h3>
-  <form id="news" action="/{{ .Key }}/newspost" method="post" enctype="application/x-www-form-urlencoded">
-    <label>Title:</label><br>
-    <input type="text" name="title" placeholder="New Board" required><input type="submit" value="Post"><br>
-    <label>Content:</label><br>
-    <textarea name="summary" rows="8" cols="50"></textarea><br>
-  </form>
+	<h3>Create News</h3>
+	<form id="news" action="/{{ .Key }}/newspost" method="post" enctype="application/x-www-form-urlencoded">
+		<label>Title:</label><br>
+		<input type="text" name="title" placeholder="New Board" required><input type="submit" value="Post"><br>
+		<label>Content:</label><br>
+		<textarea name="summary" rows="8" cols="50"></textarea><br>
+	</form>
 </div>
+{{end}}
 
 <div class="box2" id="regex">
-  <h3>Regex Post Blacklist</h3>
-  <form id="blacklist" action="/blacklist" method="post" enctype="application/x-www-form-urlencoded">
-    <label>Regex:</label><br>
-    <input type="text" name="regex" placeholder="(?i)(?s)(.+)?stuff?(.+)to(.+)?block(.+)?https?://(.+)?" size="38" required><input style="margin-left: 5px;" type="submit" value="Post"><br>
-    <label>Test Case:</label><br>
-    <textarea name="testCase" rows="8" cols="50" placeholder="enter a test case to block, if it passes the regex will be added to the blacklist.&#10;&#10;(?i) for case insesitive &#10;(?s) to span multiple lines"></textarea><br>
-  </form>
-  {{ if .PostBlacklist }}
-  <ul class="nobullist">
-    {{ range .PostBlacklist }}
-    <li>{{ .Regex }} [<a href="/blacklist?remove={{ .Id }}">remove</a>]</li>
-    {{ end }}
-  </ul>
-  {{ end }}
+	<h3>Regex Post Blacklist</h3>
+
+	{{ if (isMod .Acct) }}
+	<form id="blacklist" action="/blacklist" method="post" enctype="application/x-www-form-urlencoded">
+		<label>Regex:</label><br>
+		<input type="text" name="regex" placeholder="(?i)(?s)(.+)?stuff?(.+)to(.+)?block(.+)?https?://(.+)?" size="38" required><input style="margin-left: 5px;" type="submit" value="Post"><br>
+		<label>Test Case:</label><br>
+		<textarea name="testCase" rows="8" cols="50" placeholder="enter a test case to block, if it passes the regex will be added to the blacklist.&#10;&#10;(?i) for case insesitive &#10;(?s) to span multiple lines"></textarea><br>
+	</form>
+	{{end}}
+
+	{{ if .PostBlacklist }}
+	<ul class="nobullist">
+		{{ range .PostBlacklist }}
+		<li>{{ .Regex }} [<a href="/blacklist?remove={{ .Id }}">remove</a>]</li>
+		{{ end }}
+	</ul>
+	{{ end }}
 </div>
 
 {{ template "partials/footer" . }}

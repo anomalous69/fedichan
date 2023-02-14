@@ -2,7 +2,6 @@ package routes
 
 import (
 	"net/http"
-	"regexp"
 	"sort"
 	"time"
 
@@ -57,52 +56,32 @@ func AdminIndex(ctx *fiber.Ctx) error {
 	}
 
 	actor, err := activitypub.GetActor(config.Domain)
-
 	if err != nil {
 		return util.WrapError(err)
 	}
 
-	reqActivity := activitypub.Activity{Id: actor.Following}
-	follow, _ := reqActivity.GetCollection()
-	follower, _ := reqActivity.GetCollection()
-
-	var following []string
-	var followers []string
-
-	for _, e := range follow.Items {
-		following = append(following, e.Id)
+	users, err := db.Users()
+	if err != nil {
+		return util.WrapError(err)
 	}
 
-	for _, e := range follower.Items {
-		followers = append(followers, e.Id)
-	}
-
-	var adminData adminPage
-	adminData.Following = following
-	adminData.Followers = followers
-
+	// TODO: should probably pool this.
 	var reported = make(map[string][]db.Reports)
-
-	for _, e := range following {
-		re := regexp.MustCompile(`.*/(.+)$`)
-		boards := re.FindStringSubmatch(e)
-		reports, _ := db.GetLocalReport(boards[1])
-
-		for _, k := range reports {
-			reported[k.Actor.Name] = append(reported[k.Actor.Name], k)
-		}
-	}
 
 	for k, e := range reported {
 		sort.Sort(db.ReportsSortDesc(e))
 		reported[k] = e
 	}
 
+	var adminData adminPage
+
 	adminData.Actor = actor.Id
 	adminData.Key = config.Key
 	adminData.Domain = config.Domain
 	adminData.Acct = acct
 	adminData.Title = actor.Name + " Admin page"
+
+	adminData.Users = users
 
 	adminData.Boards = activitypub.Boards
 
@@ -259,11 +238,6 @@ func AdminActorIndex(ctx *fiber.Ctx) error {
 
 	data.AutoSubscribe, _ = actor.GetAutoSubscribe()
 
-	/* TODO
-	jannies, err := actor.GetJanitors()
-	*/
-	jannies := []db.Verify(nil)
-
 	data.Meta.Description = data.Title
 	data.Meta.Url = data.Board.Actor.Id
 	data.Meta.Title = data.Title
@@ -273,7 +247,6 @@ func AdminActorIndex(ctx *fiber.Ctx) error {
 	data.RecentPosts, _ = actor.GetRecentPosts()
 	data.ThemeCookie = themeCookie(ctx)
 	data.Reports = reported
-	data.Jannies = jannies
 
 	return ctx.Render("manage", data, "layouts/main")
 }

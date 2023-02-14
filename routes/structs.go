@@ -53,7 +53,7 @@ type adminPage struct {
 	AutoSubscribe bool
 	RecentPosts   []activitypub.ObjectBase
 	Reports       map[string][]db.Reports
-	Jannies       []db.Verify
+	Users         []db.Acct
 }
 
 type meta struct {

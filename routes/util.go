@@ -164,7 +164,11 @@ func TemplateFunctions(engine *fhtml.Engine) {
 	engine.AddFunc("timeToUnix", timeToUnix)
 
 	engine.AddFunc("isAdmin", func(d *db.Acct) bool {
-		return d != nil && d.Type == db.Admin
+		return d != nil && d.Type >= db.Admin
+	})
+
+	engine.AddFunc("isMod", func(d *db.Acct) bool {
+		return d != nil && d.Type >= db.Mod
 	})
 
 	engine.AddFunc("proxy", util.MediaProxy)

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/rand"
 	"crypto/sha256"
+	"database/sql"
 	"encoding/hex"
 	"errors"
 
@@ -27,6 +28,7 @@ const saltLength = 16
 
 type Acct struct {
 	Username string
+	Email    string
 	Type     AcctType
 }
 
@@ -77,7 +79,12 @@ func makePwText(pass string, salt []byte) []byte {
 //
 // TODO: Update
 func (a Acct) Save() error {
-	_, err := config.DB.Exec(`insert into accounts (username, type) values ($1, $2)`, a.Username, a.Type)
+	var email *string
+	if a.Email != "" {
+		email = &a.Email
+	}
+
+	_, err := config.DB.Exec(`insert into accounts (username, email, type) values ($1, $2)`, a.Username, email, a.Type)
 	return wrapErr(err)
 }
 
@@ -104,9 +111,11 @@ func (a Acct) Session() (string, error) {
 // If this session is invalid, ErrInvalid is returned.
 func LoginSession(session string) (Acct, error) {
 	a := Acct{}
-	if config.DB.QueryRow(`select username, type from accounts where session=$1`, session).Scan(&a.Username, &a.Type) != nil {
+	var email sql.NullString
+	if err := config.DB.QueryRow(`select username, email, type from accounts where session=$1`, session).Scan(&a.Username, &email, &a.Type); err != nil {
 		return a, ErrInvalid
 	}
+	a.Email = email.String
 
 	return a, nil
 }
@@ -129,4 +138,29 @@ func CheckPassword(user, pass string) bool {
 // Used for creating an Admin user on startup.
 func UserExists(user string) bool {
 	return config.DB.QueryRow(`select from accounts where username=$1`, user).Scan() == nil
+}
+
+// Users returns a list of users.
+func Users() ([]Acct, error) {
+	rows, err := config.DB.Query(`select username, email, type from accounts order by username asc`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var users []Acct
+
+	for rows.Next() {
+		var email sql.NullString
+		u := Acct{}
+
+		if err := rows.Scan(&u.Username, &email, &u.Type); err != nil {
+			return users, err
+		}
+
+		u.Email = email.String
+		users = append(users, u)
+	}
+
+	return users, nil
 }

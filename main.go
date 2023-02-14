@@ -64,6 +64,7 @@ func main() {
 		a, err = db.LoginSession(cookie)
 		if err != nil {
 			// TODO: Drop cookie
+			log.Println(err)
 			goto done
 		}
 

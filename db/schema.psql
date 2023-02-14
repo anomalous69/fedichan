@@ -239,6 +239,7 @@ activity_id varchar(100)
 
 CREATE TABLE IF NOT EXISTS accounts(
 	username TEXT NOT NULL UNIQUE,
+	email TEXT,
 	type INTEGER,
 	password bytea,
 	salt bytea,
@@ -258,3 +259,5 @@ DROP TABLE IF EXISTS wallet;
 DROP TABLE IF EXISTS verificationcooldown;
 DROP TABLE IF EXISTS crossverification;
 DROP TABLE IF EXISTS actorauth;
+
+ALTER TABLE accounts ADD COLUMN IF NOT EXISTS email TEXT;

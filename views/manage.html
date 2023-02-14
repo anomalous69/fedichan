@@ -72,21 +72,5 @@
   </ul>
 </div>
 
-{{ if (isAdmin .Acct) }}
-<div id="jannies" class="box2">
-  <h4>Janitor Managment</h4>
-  <form id="janny-form" action="/{{ .Key }}/{{ .Board.Name }}/addjanny" method="post" enctype="application/x-www-form-urlencoded" style="margin-top: 5px;">
-    <input id="label" name="label" style="margin-bottom: 5px;" size="35" placeholder="Label i.e Janny Alias"></input>
-    <input type="submit" value="Add Janitor"><br>
-    <input type="hidden" name="actor" value="{{ $board.Actor.Id }}">
-  </form>
-  <ul class="nobullist">
-    {{ range .Jannies }}
-    <li>{{ .Label }} - <b>Login:</b> {{ .Identifier }} <b>Code:</b> {{ .Code }} <a href="/{{ $key }}/{{ $board.Name }}/deletejanny?code={{ .Code }}">[Revoke]</a></li>
-    {{ end }}
-  </ul>
-</div>
-{{ end }}
-
 {{ template "partials/footer" . }}
 {{ template "partials/general_scripts" . }}
