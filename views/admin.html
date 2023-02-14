@@ -1,3 +1,4 @@
+{{$acct := .Acct}}
 <header>
 	<h1>Instance Management</h1>
 </header>
@@ -29,26 +30,28 @@
 </div>
 {{ end }}
 
-{{ if (isAdmin .Acct) }}
 <div class="box2">
-	<h2>User Management</h3>
+	<h2>Users</h3>
 
 	<table>
 		<tr>
 			<th>Username</th>
+			<th>E-mail</th>
 			<th>Status</th>
 		</tr>
 		{{range .Users}}
 		<tr>
-			<td>{{.Username}}</td>
+			<td>{{.Username}}{{if or (isAdmin $acct) (eq $acct.Username .Username)}} <a href="/{{$.Key}}/chpasswd?user={{.Username}}">Update</a>{{end}}</td>
+			<td>{{.Email}}</td>
 			<td>{{.Type}}</td>
 		</tr>
 		{{end}}
 	</table>
 
+	{{if isAdmin $acct}}
 	<h3>Add new user</h3>
 
-	<form id="new-user" action="/{{ .Key }}/addmod" method="post">
+	<form id="new-user" action="/{{ .Key }}/adduser" method="post">
 		<label>Username:</label><br>
 		<input type="text" name="username" placeholder="janny" required><br>
 		<label>E-mail: <i>optional</i></label><br>
@@ -60,13 +63,13 @@
 		<select name="type">
 			<option value="janitor">Janitor (delete posts, review reports)</option>
 			<option value="mod">Moderator (ban media and text, manage board relationships)</option>
-			<option value="admin">Admin (manage boards)</option>
+			<option value="admin">Admin (manage boards and users)</option>
 		</select>
 
 		<input type="submit" value="Add">
 	</form>
+	{{end}}
 </div>
-{{ end }}
 
 <div id="reported" class="box2">
 	<h4>Reported</h4>

@@ -8,13 +8,10 @@
   <!-- <div><a href="/{{ .Key }}/deleteboard?name={{ .Board.Name }}">[Delete Board]</a></div> -->
   <div>
     {{ if .IsLocal }}
-    [<a href="#following"> Subscribed </a>]
-    [<a href="#followers"> Subscribers </a>]
+    [<a href="#following"> Following </a>]
+    [<a href="#followers"> Followers </a>]
     {{ end }}
     [<a href="#reported"> Reported </a>]
-    {{ if (isAdmin .Acct) }}
-    [<a href="#jannies"> Janitor Managment </a>]
-    {{ end }}
   </div>
 </header>
 
@@ -25,7 +22,7 @@
 {{ $key := .Key }}
 {{ if .IsLocal }}
 <div id="following" class="box2">
-  <h4>Following</h4>
+  <h2>Following</h2>
   [{{ if .AutoSubscribe }}<a title="Auto Follow is On" href="/autosubscribe?board={{ .Board.Name }}">Toggle Auto Follow Off{{ else }}<a title="Auto Follow is Off" href="/autosubscribe?board={{ .Board.Name }}">Toggle Auto Follow On{{ end }}</a>]
   <form id="follow-form" action="/{{ .Key }}/{{ .Board.Name }}/follow" method="post" enctype="application/x-www-form-urlencoded" style="margin-top: 5px;">
     <input id="follow" name="follow" size="35" placeholder="https://fchan.xyz/g"></input>
@@ -41,7 +38,7 @@
 </div>
 
 <div id="followers" class="box2">
-  <h4>Followers</h4>
+  <h2>Followers</h2>
   <ul class="nobullist">
     {{ range .Followers }}
     <li><a href="{{ . }}">{{ . }}</a></li>
@@ -51,7 +48,7 @@
 {{ end }}
 
 <div id="reported" class="box2">
-  <h4>Reported</h4>
+  <h2>Reported</h2>
   <ul class="nobullist">
     {{ $domain := .Domain }}
     {{ range .Reports }}

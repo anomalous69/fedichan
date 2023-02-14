@@ -1,0 +1,25 @@
+<header>
+	<h1>Change Password for {{.User.Username}}</h1>
+</header>
+
+<div class="box2 center400">
+	<form action="/{{ .Key }}/chpasswd?user={{.User.Username}}" method="post">
+		<label>E-mail</label>
+		<input type="text" id="email" name="email" placeholder="{{.User.Email}}"><br>
+
+		<label>Password</label>
+		<input type="password" id="password" name="password" placeholder="leave blank to not update"><br>
+
+		{{if isAdmin .Acct}}
+		<label>Type</label>
+		<select name="type">
+			<option value="">No change ({{.User.Type}})</option>
+			<option value="janitor">Janitor (delete posts, review reports)</option>
+			<option value="mod">Moderator (ban media and text, manage board relationships)</option>
+			<option value="admin">Admin (manage boards and users)</option>
+		</select>
+		{{end}}
+
+		<input type="submit" value="Update">
+	</form>
+</div>

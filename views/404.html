@@ -1,6 +1,7 @@
 <div class="box2">
   <h1>404 Not Found</h1>
   <p>The resource you are trying to access does not exist.</p>
+  {{if .Message}}<p>{{.Message}}</p>{{end}}
   <p>
     Click <a href="/">here</a> to return to the index.
   </p>

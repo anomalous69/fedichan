@@ -32,20 +32,26 @@ type Acct struct {
 	Type     AcctType
 }
 
-type Verify struct {
-	Type       string
-	Identifier string
-	Code       string
-	Created    string
-	Board      string
-	Label      string
-}
-
 type Signature struct {
 	KeyId     string
 	Headers   []string
 	Signature string
 	Algorithm string
+}
+
+func (a AcctType) String() string {
+	switch a {
+	case None:
+		return "none"
+	case Janitor:
+		return "janitor"
+	case Mod:
+		return "mod"
+	case Admin:
+		return "admin"
+	default:
+		return "unknown???"
+	}
 }
 
 func makeSalt() []byte {
@@ -84,7 +90,7 @@ func (a Acct) Save() error {
 		email = &a.Email
 	}
 
-	_, err := config.DB.Exec(`insert into accounts (username, email, type) values ($1, $2)`, a.Username, email, a.Type)
+	_, err := config.DB.Exec(`insert into accounts (username, email, type) values ($1, $2, $3) on conflict (username) do update set email=excluded.email, type=excluded.type`, a.Username, email, a.Type)
 	return wrapErr(err)
 }
 
@@ -163,4 +169,22 @@ func Users() ([]Acct, error) {
 	}
 
 	return users, nil
+}
+
+// Fetches details of one specific user.
+func User(name string) (Acct, error) {
+	user := Acct{
+		Username: name,
+	}
+
+	var email sql.NullString
+
+	err := config.DB.QueryRow(`select email, type from accounts where username=$1`, name).Scan(&email, &user.Type)
+	if errors.Is(err, sql.ErrNoRows) {
+		err = ErrInvalid
+	}
+
+	user.Email = email.String
+
+	return user, err
 }

@@ -1,6 +1,8 @@
 package routes
 
 import (
+	"errors"
+	"fmt"
 	"net/http"
 	"sort"
 	"time"
@@ -26,7 +28,7 @@ func AdminVerify(ctx *fiber.Ctx) error {
 	pass := ctx.FormValue("password")
 
 	if !db.CheckPassword(user, pass) {
-		return ctx.Status(400).SendString("invalid username or password")
+		return send403(ctx, "Invalid username or password.")
 	}
 
 	a := db.Acct{Username: user}
@@ -251,38 +253,6 @@ func AdminActorIndex(ctx *fiber.Ctx) error {
 	return ctx.Render("manage", data, "layouts/main")
 }
 
-func AdminAddJanny(ctx *fiber.Ctx) error {
-	acct, hasAuth := ctx.Locals("acct").(*db.Acct)
-	if !hasAuth || acct.Type != db.Admin {
-		return send403(ctx)
-	}
-
-	actor, _ := activitypub.GetActorFromPath(ctx.Path(), "/"+config.Key+"/")
-	if actor.Id == "" {
-		actor, _ = activitypub.GetActorByNameFromDB(config.Domain)
-	}
-
-	var verify db.Verify
-	verify.Type = "janitor"
-	verify.Identifier = actor.Id
-	verify.Label = ctx.FormValue("label")
-
-	/* TODO
-	if err := actor.CreateVerification(verify); err != nil {
-		return util.WrapError(err)
-	}
-	*/
-
-	var redirect string
-	actor, _ = activitypub.GetActorFromPath(ctx.Path(), "/"+config.Key+"/")
-
-	if actor.Name != "main" {
-		redirect = actor.Name
-	}
-
-	return ctx.Redirect("/"+config.Key+"/"+redirect, http.StatusSeeOther)
-}
-
 func AdminEditSummary(ctx *fiber.Ctx) error {
 	acct, hasAuth := ctx.Locals("acct").(*db.Acct)
 	if !hasAuth || acct.Type != db.Admin {
@@ -310,32 +280,145 @@ func AdminEditSummary(ctx *fiber.Ctx) error {
 
 }
 
-func AdminDeleteJanny(ctx *fiber.Ctx) error {
+func AdminAddUser(ctx *fiber.Ctx) error {
 	acct, hasAuth := ctx.Locals("acct").(*db.Acct)
 	if !hasAuth || acct.Type != db.Admin {
 		return send403(ctx)
 	}
 
-	actor, _ := activitypub.GetActorFromPath(ctx.Path(), "/"+config.Key+"/")
+	frm := struct {
+		Username, Email, Password, Type string
+	}{}
 
-	if actor.Id == "" {
-		actor, _ = activitypub.GetActorByNameFromDB(config.Domain)
+	if err := ctx.BodyParser(&frm); err != nil {
+		return send400(ctx, "Invalid form contents.")
+	} else if frm.Username == "" || frm.Password == "" || frm.Type == "" {
+		return send400(ctx, "Must specify username, password, and type.")
 	}
 
-	var verify db.Verify
-	verify.Code = ctx.Query("code")
-
-	/* TODO
-	if err := actor.DeleteVerification(verify); err != nil {
-		return util.WrapError(err)
-	}
-	*/
-
-	var redirect string
-
-	if actor.Name != "main" {
-		redirect = actor.Name
+	// Create user
+	user := db.Acct{
+		Username: frm.Username,
+		Email:    frm.Email,
 	}
 
-	return ctx.Redirect("/"+config.Key+"/"+redirect, http.StatusSeeOther)
+	switch frm.Type {
+	case "janitor":
+		user.Type = db.Janitor
+	case "mod":
+		user.Type = db.Mod
+	case "admin":
+		user.Type = db.Admin
+	default:
+		return send400(ctx, "Invalid user type")
+	}
+
+	if err := user.Save(); err != nil {
+		return send500(ctx, fmt.Errorf("failed to save user: %v", err))
+	} else if err = user.SetPassword(frm.Password); err != nil {
+		return send500(ctx, fmt.Errorf("failed to set user password: %v", err))
+	}
+
+	return ctx.RedirectBack("/" + config.Key)
+}
+
+func AdminDeleteUser(ctx *fiber.Ctx) error {
+	acct, hasAuth := ctx.Locals("acct").(*db.Acct)
+	if !hasAuth || acct.Type != db.Admin {
+		return send403(ctx)
+	}
+
+	panic("not implemented")
+}
+
+func AdminChangePasswd(ctx *fiber.Ctx) error {
+	acct, hasAuth := ctx.Locals("acct").(*db.Acct)
+	if !hasAuth {
+		return send403(ctx)
+	}
+
+	// Admin can change the password and type for any user, including other
+	// admins.
+	// All others can only update their password.
+	// If Username is not specified, it defaults to the logged in user.
+	//
+	// Contrary to this route's name, the e-mail may be updated here too.
+	// Simply don't supply a password.
+
+	frm := struct {
+		Email, Password, Type string
+	}{}
+
+	tgt := ctx.Query("user", acct.Username)
+
+	if acct.Type < db.Admin && tgt != acct.Username {
+		return send403(ctx, "Insufficient privileges to update other users' details.")
+	}
+
+	// Fetch user details so we don't overwrite all of them with nil values
+	// This shadows target but the value is thrown away
+	target, err := db.User(tgt)
+	if err != nil {
+		if errors.Is(err, db.ErrInvalid) {
+			return send404(ctx, "User does not exist.")
+		}
+
+		return send500(ctx, err)
+	}
+
+	if ctx.Method() == "GET" {
+		var adminData adminPage
+
+		adminData.Key = config.Key
+		adminData.Domain = config.Domain
+		adminData.Acct = acct
+		adminData.Title = "Change Password"
+
+		adminData.User = &target
+
+		adminData.Boards = activitypub.Boards
+
+		adminData.Instance, _ = activitypub.GetActorFromDB(config.Domain)
+
+		adminData.Themes = config.Themes
+
+		return ctx.Render("chpasswd", adminData, "layouts/main")
+	}
+
+	if err := ctx.BodyParser(&frm); err != nil {
+		return send400(ctx, "Invalid form contents.")
+	} else if frm.Password == "" && frm.Type == "" {
+		return send400(ctx, "Specify something to change.")
+	}
+
+	// Overwrite values
+	if frm.Email != "" {
+		target.Email = frm.Email
+	}
+
+	if acct.Type >= db.Admin {
+		// Only allow admins to update this
+
+		switch frm.Type {
+		case "janitor":
+			target.Type = db.Janitor
+		case "mod":
+			target.Type = db.Mod
+		case "admin":
+			target.Type = db.Admin
+			// default: no update
+		}
+	}
+
+	if err := target.Save(); err != nil {
+		return send500(ctx, fmt.Errorf("failed to save user: %v", err))
+	}
+
+	if frm.Password != "" {
+		if err := target.SetPassword(frm.Password); err != nil {
+			return send500(ctx, fmt.Errorf("failed to update password: %v", err))
+		}
+	}
+
+	return ctx.RedirectBack("/" + config.Key)
 }

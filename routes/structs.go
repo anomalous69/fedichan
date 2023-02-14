@@ -54,6 +54,7 @@ type adminPage struct {
 	RecentPosts   []activitypub.ObjectBase
 	Reports       map[string][]db.Reports
 	Users         []db.Acct
+	User          *db.Acct
 }
 
 type meta struct {

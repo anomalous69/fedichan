@@ -9,7 +9,6 @@ import (
 	"os/exec"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/KushBlazingJudah/fedichan/config"
 )
@@ -32,10 +31,6 @@ var captchaPtns = []string{
 	"pattern:verticalbricks",
 	"pattern:verticalsaw",
 	"pattern:hs_cross",
-}
-
-func init() {
-	rand.Seed(time.Now().UTC().UnixNano())
 }
 
 func randomGen(domain string, defaultSize int) func(fsize ...int) string {
