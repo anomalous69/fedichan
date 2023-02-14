@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"mime/multipart"
 	"os"
+	"path"
 	"regexp"
 	"strings"
 	"time"
@@ -38,11 +39,10 @@ func CreateAttachmentObject(file multipart.File, header *multipart.FileHeader) (
 	filename := header.Filename
 	size := header.Size
 
-	re := regexp.MustCompile(`.+/`)
+	fileType := path.Ext(header.Filename)
+	name := fmt.Sprint(time.Now().UTC().Unix())
 
-	fileType := re.ReplaceAllString(contentType, "")
-
-	tempFile, err := os.CreateTemp("./public", "*."+fileType)
+	tempFile, err := os.Create(fmt.Sprintf("./public/%s%s", name, fileType))
 	if err != nil {
 		return nil, nil, util.WrapError(err)
 	}
@@ -52,7 +52,7 @@ func CreateAttachmentObject(file multipart.File, header *multipart.FileHeader) (
 
 	image.Type = "Attachment"
 	image.Name = filename
-	image.Href = config.Domain + "/" + tempFile.Name()
+	image.Href = fmt.Sprintf("%s/public/%s%s", config.Domain, name, fileType)
 	image.MediaType = contentType
 	image.Size = size
 	image.Published = time.Now().UTC()

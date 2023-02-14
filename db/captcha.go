@@ -66,7 +66,7 @@ func runConvert(args ...string) error {
 func createNewCaptcha() error {
 	id := randomKey()
 	solution := mkCaptcha()
-	file := fmt.Sprintf("./public/%s.jpg", id)
+	file := fmt.Sprintf("public/%s.jpg", id)
 	pattern := captchaPtns[rand.Intn(len(captchaPtns))]
 
 	if err := runConvert("-size", "200x98", pattern, "-transparent", "white", file); err != nil {
