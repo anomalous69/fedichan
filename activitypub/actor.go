@@ -1170,3 +1170,34 @@ select count
 
 	return nColl, nil
 }
+
+func (a Actor) Blotters() ([]string, error) {
+	rows, err := config.DB.Query(`select blotter from actor where (id = $1 or id = $2) and blotter is not NULL`, config.Domain, a.Id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	blts := []string{}
+
+	for rows.Next() {
+		v := ""
+		if err := rows.Scan(&v); err != nil {
+			return blts, err
+		}
+
+		blts = append(blts, v)
+	}
+
+	return blts, nil
+}
+
+func (a Actor) SetBlotter(val string) error {
+	ns := sql.NullString{
+		String: val,
+		Valid:  val != "",
+	}
+
+	_, err := config.DB.Exec(`update actor set blotter = $1 where id = $2`, &ns, a.Id)
+	return util.WrapError(err)
+}

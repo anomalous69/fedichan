@@ -149,6 +149,9 @@ var migrations = []func(*sql.Tx) error{
 		ALTER TABLE cacheactivitystream DROP COLUMN units;
 		ALTER TABLE cacheactivitystream DROP COLUMN width;
 	`),
+	migrationScript(`
+		ALTER TABLE actor ADD COLUMN blotter TEXT;
+	`),
 }
 
 func migrate() error {

@@ -90,6 +90,7 @@ func main() {
 	app.Post("/"+config.Key+"/deluser", routes.AdminDeleteUser)
 	app.Get("/"+config.Key+"/chpasswd", routes.AdminChangePasswd)
 	app.Post("/"+config.Key+"/chpasswd", routes.AdminChangePasswd)
+	app.Post("/"+config.Key+"/blotter", routes.AdminSetBlotter)
 	app.Post("/"+config.Key+"/:actor/editsummary", routes.AdminEditSummary)
 	app.All("/"+config.Key+"/:actor/follow", routes.AdminFollow)
 	app.Get("/"+config.Key+"/:actor", routes.AdminActorIndex)

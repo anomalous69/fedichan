@@ -28,6 +28,15 @@
 		</select>
 	</form>
 </div>
+
+<div class="box2">
+	<h3>Set Blotter</h3>
+	<form id="set-blotter" action="/{{.Key}}/blotter" method="post">
+		<label>Text: <i>Leave empty to clear.</i></label><br>
+		<input type="text" name="blotter">
+		<input type="submit" value="Set">
+	</form>
+</div>
 {{ end }}
 
 <div class="box2">

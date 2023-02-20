@@ -12,7 +12,8 @@ CREATE TABLE actor(
 	followers varchar(100) default '',
 	restricted boolean default false,
 	autosubscribe boolean default false,
-	publicKeyPem varchar(100) default ''
+	publicKeyPem varchar(100) default '',
+	blotter TEXT,
 );
 
 CREATE TABLE replies(

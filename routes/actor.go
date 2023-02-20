@@ -315,6 +315,7 @@ func ActorPost(ctx *fiber.Ctx) error {
 	data.Board.Summary = actor.Summary
 	data.Board.Domain = config.Domain
 	data.Board.Restricted = actor.Restricted
+	data.Blotters, _ = actor.Blotters()
 	data.Acct = acct
 	data.ReturnTo = "feed"
 	data.PostType = "reply"
@@ -376,6 +377,7 @@ func ActorCatalog(ctx *fiber.Ctx) error {
 	data.Board.Summary = actor.Summary
 	data.Board.Domain = config.Domain
 	data.Board.Restricted = actor.Restricted
+	data.Blotters, _ = actor.Blotters()
 	data.Acct = acct
 	data.Key = config.Key
 	data.ReturnTo = "catalog"
@@ -453,6 +455,7 @@ func ActorPosts(ctx *fiber.Ctx) error {
 	data.Board.Actor = actor
 	data.Board.Domain = config.Domain
 	data.Board.Restricted = actor.Restricted
+	data.Blotters, _ = actor.Blotters()
 	data.Acct = acct
 	data.CurrentPage = page
 	data.ReturnTo = "feed"
@@ -508,6 +511,7 @@ func ActorArchive(ctx *fiber.Ctx) error {
 	data.Board.Summary = actor.Summary
 	data.Board.Domain = config.Domain
 	data.Board.Restricted = actor.Restricted
+	data.Blotters, _ = actor.Blotters()
 	data.Acct = acct
 	data.Key = config.Key
 	data.ReturnTo = "archive"

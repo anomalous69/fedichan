@@ -74,3 +74,10 @@
   if(newpost)
       newpost.style.display = "none";
 </script>
+
+{{ if .Blotters }}
+<hr>
+{{range .Blotters}}
+<p class="blotter">{{.}}</p>
+{{end}}
+{{end}}

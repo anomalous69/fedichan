@@ -1481,6 +1481,7 @@ func collectTo() ([]string, error) {
 	if err != nil {
 		return nil, util.WrapError(err)
 	}
+	defer rows.Close()
 
 	mails := []string{}
 

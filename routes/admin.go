@@ -190,6 +190,28 @@ func AdminAddBoard(ctx *fiber.Ctx) error {
 	return ctx.Redirect("/"+config.Key, http.StatusSeeOther)
 }
 
+func AdminSetBlotter(ctx *fiber.Ctx) error {
+	acct, hasAuth := ctx.Locals("acct").(*db.Acct)
+	if !hasAuth {
+		return sendLogin(ctx)
+	}
+
+	if acct.Type < db.Admin {
+		return send403(ctx, "Only admins can set the blotter.")
+	}
+
+	actor, err := activitypub.GetActorByNameFromDB(ctx.FormValue("board", "main"))
+	if err != nil {
+		return send404(ctx, "Board not found")
+	}
+
+	if err := actor.SetBlotter(ctx.FormValue("blotter")); err != nil {
+		return send500(ctx, err)
+	}
+
+	return ctx.Redirect("/"+config.Key+"/"+ctx.FormValue("board", ""), http.StatusSeeOther)
+}
+
 func AdminActorIndex(ctx *fiber.Ctx) error {
 	acct, hasAuth := ctx.Locals("acct").(*db.Acct)
 	if !hasAuth {

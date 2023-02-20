@@ -33,6 +33,7 @@ type pageData struct {
 	NewsItems         []db.NewsItem
 	BoardRemainer     []int
 	PostType          string
+	Blotters          []string
 }
 
 type errorData struct {

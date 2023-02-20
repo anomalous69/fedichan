@@ -17,6 +17,18 @@
 
 [<a href="/{{ .Board.Name }}">Return</a>]
 
+{{if isAdmin .Acct}}
+<div class="box2">
+	<h3>Set Blotter</h3>
+	<form id="set-blotter" action="/{{.Key}}/blotter" method="post">
+		<label>Text: <i>Leave empty to clear.</i></label><br>
+		<input type="text" name="blotter">
+		<input type="hidden" name="board" value="{{.Board.Name}}">
+		<input type="submit" value="Set">
+	</form>
+</div>
+{{end}}
+
 {{ $actor := .Board.Actor.Id }}
 {{ $board := .Board }}
 {{ $key := .Key }}
