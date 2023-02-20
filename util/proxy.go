@@ -43,7 +43,7 @@ func RouteProxy(req *http.Request) (*http.Response, error) {
 
 	req.Header.Set("User-Agent", "FChannel/"+config.InstanceName)
 
-	if proxyType == "tor" {
+	if proxyType == "tor" || IsOnion(config.Domain) {
 		proxyUrl, err := url.Parse("socks5://" + config.TorProxy)
 
 		if err != nil {
