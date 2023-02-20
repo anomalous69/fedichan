@@ -99,7 +99,6 @@ func CreateObject(objType string) ObjectBase {
 }
 
 func GetActivityFromJson(ctx *fiber.Ctx) (Activity, error) {
-
 	var respActivity ActivityRaw
 	var nActivity Activity
 	var nType string
@@ -146,7 +145,6 @@ func GetActivityFromJson(ctx *fiber.Ctx) (Activity, error) {
 		nActivity.Type = nType
 		nActivity.Actor = &actor
 		nActivity.Published = respActivity.Published
-		nActivity.Auth = respActivity.Auth
 
 		if len(to) > 0 {
 			nActivity.To = to

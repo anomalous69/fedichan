@@ -195,16 +195,6 @@ func GetFileContentType(out multipart.File) (string, error) {
 	return contentType, nil
 }
 
-func GetContentType(location string) string {
-	elements := strings.Split(location, ";")
-
-	if len(elements) > 0 {
-		return elements[0]
-	}
-
-	return location
-}
-
 func CreatedNeededDirectories() error {
 	if _, err := os.Stat("./public"); os.IsNotExist(err) {
 		if err = os.Mkdir("./public", 0755); err != nil {

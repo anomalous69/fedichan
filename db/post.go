@@ -126,14 +126,8 @@ func ParseContent(board activitypub.Actor, op string, content string, thread act
 }
 
 func ParseTruncate(content string, board activitypub.Actor, op string, id string) string {
-	if strings.Count(content, "\r") > 30 {
-		content = strings.ReplaceAll(content, "\r\n", "\r")
-		lines := strings.SplitAfter(content, "\r")
-		content = ""
-
-		for i := 0; i < 30; i++ {
-			content += lines[i]
-		}
+	if strings.Count(content, "\n") > 30 {
+		content = strings.Join(rx.Newline.Split(content, 30), "\n")
 
 		content += fmt.Sprintf("<a href=\"%s\">(view full post...)</a>", board.Id+"/"+shortURL(board.Outbox, op)+"#"+shortURL(board.Outbox, id))
 	}

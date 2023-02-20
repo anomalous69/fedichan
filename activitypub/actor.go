@@ -838,58 +838,6 @@ func (actor Actor) IsValid() (Actor, bool, error) {
 	return actor, actor.Id != "", util.WrapError(err)
 }
 
-func (actor Actor) ReportedResp(ctx *fiber.Ctx) error {
-	var err error
-
-	auth := ctx.Get("Authorization")
-	verification := strings.Split(auth, " ")
-
-	if len(verification) < 2 {
-		_, err := ctx.Status(400).Write([]byte(""))
-		return util.WrapError(err)
-	}
-
-	/* TODO
-	if hasAuth, _ := util.HasAuth(verification[1], actor.Id); !hasAuth {
-		_, err := ctx.Status(400).Write([]byte(""))
-		return util.WrapError(err)
-	}
-	*/
-
-	actor, err = GetActorFromDB(actor.Id)
-
-	if err != nil {
-		return util.WrapError(err)
-	}
-
-	var following Collection
-
-	following.AtContext.Context = "https://www.w3.org/ns/activitystreams"
-	following.Type = "Collection"
-	following.TotalItems, err = actor.GetReportedTotal()
-
-	if err != nil {
-		return util.WrapError(err)
-	}
-
-	following.Items, err = actor.GetReported()
-
-	if err != nil {
-		return util.WrapError(err)
-	}
-
-	enc, err := json.MarshalIndent(following, "", "\t")
-
-	if err != nil {
-		return util.WrapError(err)
-	}
-
-	ctx.Response().Header.Set("Content-Type", config.ActivityStreams)
-	_, err = ctx.Write(enc)
-
-	return util.WrapError(err)
-}
-
 func (actor Actor) SetAutoSubscribe() error {
 	current, err := actor.GetAutoSubscribe()
 

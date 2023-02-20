@@ -16,7 +16,7 @@
 [<a href="/deleteattach?id={{ .Id }}&board={{ $board.Actor.Name }}">Delete Attachment</a>]
 [<a href="/marksensitive?id={{ .Id }}&board={{ $board.Actor.Name }}">Mark Sensitive</a>]
 
-{{if not .InReplyTo}}
+{{if eq .Id $opId}}
 [<a href="/sticky?id={{ .Id }}&board={{ $board.Actor.Name }}">Sticky</a>]
 [<a href="/lock?id={{ .Id }}&board={{ $board.Actor.Name }}">Lock</a>]
 {{end}}

@@ -5,10 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"os"
 	"regexp"
-	"strings"
-	"time"
 
 	"github.com/KushBlazingJudah/fedichan/activitypub"
 	"github.com/KushBlazingJudah/fedichan/config"
@@ -16,7 +13,7 @@ import (
 )
 
 const pwDomain = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-const pwLength = 16
+const pwLength = 24
 
 func Connect() error {
 	host := config.DBHost
@@ -107,67 +104,6 @@ func CreateNewBoard(actor activitypub.Actor) (activitypub.Actor, error) {
 	return actor, nil
 }
 
-func RemovePreviewFromFile(id string) error {
-	var href string
-
-	query := `select href from activitystream where id in (select preview from activitystream where id=$1)`
-	if err := config.DB.QueryRow(query, id).Scan(&href); err != nil {
-		return nil
-	}
-
-	href = strings.Replace(href, config.Domain+"/", "", 1)
-
-	if href != "static/notfound.png" {
-		if _, err := os.Stat(href); err != nil {
-			return wrapErr(err)
-		}
-
-		err := os.Remove(href)
-		return wrapErr(err)
-	}
-
-	obj := activitypub.ObjectBase{Id: id}
-	err := obj.DeletePreview()
-	return wrapErr(err)
-}
-
-func AddInstanceToInactive(instance string) error {
-	var timeStamp string
-
-	query := `select timestamp from inactive where instance=$1`
-	if err := config.DB.QueryRow(query, instance).Scan(&timeStamp); err != nil {
-		query := `insert into inactive (instance, timestamp) values ($1, $2)`
-		_, err := config.DB.Exec(query, instance, time.Now().UTC().Format(time.RFC3339))
-
-		return wrapErr(err)
-	}
-
-	if !IsInactiveTimestamp(timeStamp) {
-		return nil
-	}
-
-	query = `delete from follower where follower like $1`
-	if _, err := config.DB.Exec(query, "%"+instance+"%"); err != nil {
-		return wrapErr(err)
-	}
-
-	err := DeleteInstanceFromInactive(instance)
-	return wrapErr(err)
-}
-
-func DeleteInstanceFromInactive(instance string) error {
-	query := `delete from inactive where instance=$1`
-	_, err := config.DB.Exec(query, instance)
-
-	return wrapErr(err)
-}
-
-func IsInactiveTimestamp(timeStamp string) bool {
-	stamp, _ := time.Parse(time.RFC3339, timeStamp)
-
-	return time.Now().UTC().Sub(stamp).Hours() > 48
-}
-
 func IsReplyToOP(op string, link string) (string, bool, error) {
 	var id string
 
@@ -203,74 +139,6 @@ func GetReplyOP(link string) (string, error) {
 	return id, nil
 }
 
-func CheckInactive() {
-	for {
-		CheckInactiveInstances()
-		time.Sleep(24 * time.Hour)
-	}
-}
-
-func CheckInactiveInstances() (map[string]string, error) {
-	var rows *sql.Rows
-	var err error
-
-	instances := make(map[string]string)
-
-	query := `select following from following`
-	if rows, err = config.DB.Query(query); err != nil {
-		return instances, wrapErr(err)
-	}
-
-	defer rows.Close()
-	for rows.Next() {
-		var instance string
-
-		if err := rows.Scan(&instance); err != nil {
-			return instances, wrapErr(err)
-		}
-
-		instances[instance] = instance
-	}
-
-	query = `select follower from follower`
-	if rows, err = config.DB.Query(query); err != nil {
-		return instances, wrapErr(err)
-	}
-
-	defer rows.Close()
-	for rows.Next() {
-		var instance string
-
-		if err := rows.Scan(&instance); err != nil {
-			return instances, wrapErr(err)
-		}
-
-		instances[instance] = instance
-	}
-
-	re := regexp.MustCompile(config.Domain + `(.+)?`)
-
-	for _, e := range instances {
-		actor, err := activitypub.GetActor(e)
-
-		if err != nil {
-			return instances, wrapErr(err)
-		}
-
-		if actor.Id == "" && !re.MatchString(e) {
-			if err := AddInstanceToInactive(e); err != nil {
-				return instances, wrapErr(err)
-			}
-		} else {
-			if err := DeleteInstanceFromInactive(e); err != nil {
-				return instances, wrapErr(err)
-			}
-		}
-	}
-
-	return instances, nil
-}
-
 func IsHashBanned(hash string) (bool, error) {
 	var h string
 
@@ -292,7 +160,7 @@ func PrintAdminAuth() error {
 		return err
 	}
 
-	pw := make([]byte, 32)
+	pw := make([]byte, pwLength)
 	rand.Read(pw)
 	for i := range pw {
 		pw[i] = pwDomain[int(pw[i])%len(pwDomain)]
