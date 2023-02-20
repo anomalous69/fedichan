@@ -10,3 +10,4 @@ var CiteEsc = regexp.MustCompile(`(&gt;&gt;(https?://[A-Za-z0-9_.:\-~]+\/[A-Za-z
 var LinkTitle = regexp.MustCompile(`(&gt;&gt;(https?://[A-Za-z0-9_.:\-~]+\/[A-Za-z0-9_.\-~]+\/)\w+(#.+)?)`)
 var Quote = regexp.MustCompile(`(?m)^\s*&gt;(.+?)$`)
 var WordCharsToEnd = regexp.MustCompile(`\w+$`)
+var Newline = regexp.MustCompile(`\r?\n`)

@@ -796,13 +796,6 @@ func (actor Actor) GetReportedTotal() (int, error) {
 	return count, nil
 }
 
-func (actor Actor) HasValidation(ctx *fiber.Ctx) bool {
-	// TODO: Board-specific account permissions are not yet implemented
-	// Assume yes if acct exists.
-	a := ctx.Locals("acct")
-	return a != nil
-}
-
 func (actor Actor) IsAlreadyFollowing(follow string) (bool, error) {
 	followers, err := actor.GetFollowing()
 
@@ -1163,6 +1156,8 @@ func (actor Actor) ProcessInboxCreate(activity Activity) error {
 }
 
 func (actor Actor) GetStickies() (Collection, error) {
+	// TODO: SELECT activity_id FROM sticky WHERE actor_id = ?
+
 	var nColl Collection
 	var result []ObjectBase
 

@@ -98,14 +98,9 @@ func NewsGetAll(ctx *fiber.Ctx) error {
 }
 
 func NewsPost(ctx *fiber.Ctx) error {
-	actor, err := activitypub.GetActorFromDB(config.Domain)
-
-	if err != nil {
-		return util.WrapError(err)
-	}
-
-	if has := actor.HasValidation(ctx); !has {
-		return nil
+	acct, hasAuth := ctx.Locals("acct").(*db.Acct)
+	if !hasAuth || acct.Type < db.Admin {
+		return send403(ctx, "Only admins can post news")
 	}
 
 	var newsitem db.NewsItem
@@ -121,16 +116,14 @@ func NewsPost(ctx *fiber.Ctx) error {
 }
 
 func NewsDelete(ctx *fiber.Ctx) error {
-	actor, err := activitypub.GetActorFromDB(config.Domain)
-
-	if has := actor.HasValidation(ctx); !has {
-		return nil
+	acct, hasAuth := ctx.Locals("acct").(*db.Acct)
+	if !hasAuth || acct.Type < db.Admin {
+		return send403(ctx, "Only admins can delete news")
 	}
 
 	timestamp := ctx.Path()[13+len(config.Key):]
 
 	tsint, err := strconv.Atoi(timestamp)
-
 	if err != nil {
 		return send404(ctx)
 	}

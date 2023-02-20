@@ -104,6 +104,15 @@ func AdminIndex(ctx *fiber.Ctx) error {
 }
 
 func AdminFollow(ctx *fiber.Ctx) error {
+	acct, hasAuth := ctx.Locals("acct").(*db.Acct)
+	if !hasAuth {
+		return sendLogin(ctx)
+	}
+
+	if acct.Type < db.Mod {
+		return send403(ctx, "Only moderators and admins can manage board relationships.")
+	}
+
 	follow := ctx.FormValue("follow")
 	actorId := ctx.FormValue("actor")
 
@@ -136,9 +145,13 @@ func AdminFollow(ctx *fiber.Ctx) error {
 }
 
 func AdminAddBoard(ctx *fiber.Ctx) error {
-	actor, _ := activitypub.GetActorFromDB(config.Domain)
-	if hasValidation := actor.HasValidation(ctx); !hasValidation {
-		return nil
+	acct, hasAuth := ctx.Locals("acct").(*db.Acct)
+	if !hasAuth {
+		return sendLogin(ctx)
+	}
+
+	if acct.Type < db.Admin {
+		return send403(ctx, "Only admins can create boards.")
 	}
 
 	var restrict bool
@@ -255,7 +268,7 @@ func AdminActorIndex(ctx *fiber.Ctx) error {
 
 func AdminEditSummary(ctx *fiber.Ctx) error {
 	acct, hasAuth := ctx.Locals("acct").(*db.Acct)
-	if !hasAuth || acct.Type != db.Admin {
+	if !hasAuth || acct.Type < db.Admin {
 		return send403(ctx)
 	}
 
@@ -282,7 +295,7 @@ func AdminEditSummary(ctx *fiber.Ctx) error {
 
 func AdminAddUser(ctx *fiber.Ctx) error {
 	acct, hasAuth := ctx.Locals("acct").(*db.Acct)
-	if !hasAuth || acct.Type != db.Admin {
+	if !hasAuth || acct.Type < db.Admin {
 		return send403(ctx)
 	}
 
@@ -324,7 +337,7 @@ func AdminAddUser(ctx *fiber.Ctx) error {
 
 func AdminDeleteUser(ctx *fiber.Ctx) error {
 	acct, hasAuth := ctx.Locals("acct").(*db.Acct)
-	if !hasAuth || acct.Type != db.Admin {
+	if !hasAuth || acct.Type < db.Admin {
 		return send403(ctx)
 	}
 
