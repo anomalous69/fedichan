@@ -2,7 +2,10 @@ package routes
 
 import (
 	"errors"
+	"fmt"
+	"log"
 	"net/http"
+	"net/smtp"
 	"os"
 	"regexp"
 	"strconv"
@@ -453,14 +456,6 @@ func ReportPost(ctx *fiber.Ctx) error {
 		return ctx.Redirect("/"+config.Key+"/"+board, http.StatusSeeOther)
 	}
 
-	if local, _ := obj.IsLocal(); !local {
-		if err := db.CreateLocalReport(id, board, reason); err != nil {
-			return send500(ctx, err)
-		}
-
-		return ctx.Redirect("/"+board+"/"+util.RemoteShort(obj.Id), http.StatusSeeOther)
-	}
-
 	if len(reason) > 100 {
 		return send400(ctx, "Report length may contain at most 100 characters.")
 	}
@@ -469,13 +464,56 @@ func ReportPost(ctx *fiber.Ctx) error {
 		return send400(ctx, "Report reason required.")
 	}
 
-	if ok, _ := db.CheckCaptcha(ctx.FormValue("captchaCode"), ctx.FormValue("captcha")); !ok && close != "1" {
-		return send403(ctx, "Invalid captcha.")
+	if !hasAuth {
+		if ok, _ := db.CheckCaptcha(ctx.FormValue("captchaCode"), ctx.FormValue("captcha")); !ok && close != "1" {
+			return send403(ctx, "Invalid captcha.")
+		}
 	}
 
 	if err := db.CreateLocalReport(obj.Id, board, reason); err != nil {
 		return send500(ctx, err)
 	}
+
+	go func() {
+		if setup := config.IsEmailSetup(); !setup {
+			return
+		}
+
+		rows, err := config.DB.Query(`select email from accounts where type >= 1 and email is not null`)
+		if err != nil {
+			log.Println(util.WrapError(err))
+			return
+		}
+		defer rows.Close()
+
+		to := []string{}
+
+		for rows.Next() {
+			v := ""
+			if err := rows.Scan(&v); err != nil {
+				log.Println(util.WrapError(err))
+				return
+			}
+
+			to = append(to, v)
+		}
+
+		msg := strings.Join([]string{
+			fmt.Sprintf("From: %s", config.SiteEmailFrom),
+			fmt.Sprintf("To: %s", strings.Join(to, ", ")),
+			fmt.Sprintf("Subject: New report: %s", obj.Id),
+			"",
+			reason,
+		}, "\n")
+
+		err = smtp.SendMail(config.SiteEmailSMTP,
+			smtp.PlainAuth("", config.SiteEmailUser, config.SiteEmailPassword, config.SiteEmailServer),
+			config.SiteEmailFrom, to, []byte(msg))
+
+		if err != nil {
+			log.Println(util.WrapError(err))
+		}
+	}()
 
 	return ctx.Redirect(id, http.StatusSeeOther)
 }

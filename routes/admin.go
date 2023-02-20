@@ -400,7 +400,7 @@ func AdminChangePasswd(ctx *fiber.Ctx) error {
 
 	if err := ctx.BodyParser(&frm); err != nil {
 		return send400(ctx, "Invalid form contents.")
-	} else if frm.Password == "" && frm.Type == "" {
+	} else if frm.Password == "" && frm.Type == "" && frm.Email == "" {
 		return send400(ctx, "Specify something to change.")
 	}
 

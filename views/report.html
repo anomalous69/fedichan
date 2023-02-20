@@ -19,6 +19,7 @@
       <input type="hidden" id="boardName" name="board" value="{{ .Board.Name }}">
       <input type="hidden" name="close" value="0">
       <input type="hidden" id="captchaCode" name="captchaCode" value="{{ .Board.CaptchaCode }}">
+      {{ if not .Acct }}
       <div style="width: 202px; margin: 0 auto; padding-top: 12px;">
         <label for="captcha">Captcha:</label><br>
         <input style="display: inline-block;" type="text" id="captcha" name="captcha" autocomplete="off"><br>
@@ -26,6 +27,7 @@
       <div style="width: 230px; margin: 0 auto;">
         <img src="{{ .Board.Captcha }}">
       </div>
+      {{ end }}
     </form>
   </div>
 </div>

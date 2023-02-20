@@ -1090,13 +1090,7 @@ func (actor Actor) ProcessInboxCreate(activity Activity) error {
 
 			activity.Object.Actor = actor.Id
 
-			go func(obj ObjectBase) {
-				err := obj.SendEmailNotify()
-
-				if err != nil {
-					log.Println(err)
-				}
-			}(activity.Object)
+			go activity.Object.SendEmailNotify()
 		}
 	}
 

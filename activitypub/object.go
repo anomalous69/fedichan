@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"net/smtp"
 	"os"
 	"os/exec"
 	"regexp"
@@ -1473,31 +1474,67 @@ func (obj ObjectBase) IsLocked() (bool, error) {
 	return false, nil
 }
 
-func (obj ObjectBase) SendEmailNotify() error {
-	/*
-		if setup := util.IsEmailSetup(); !setup {
-			return nil
+func collectTo() ([]string, error) {
+	// This is a hack to prevent recursive dependencies
+
+	rows, err := config.DB.Query(`select email from accounts where type >= 1 and email is not null`)
+	if err != nil {
+		return nil, util.WrapError(err)
+	}
+
+	mails := []string{}
+
+	for rows.Next() {
+		v := ""
+		if err := rows.Scan(&v); err != nil {
+			return mails, util.WrapError(err)
 		}
 
-		actor, _ := GetActorFromDB(obj.Actor)
+		mails = append(mails, v)
+	}
 
-		from := config.SiteEmail
-		pass := config.SiteEmailPassword
-		to := config.SiteEmailNotifyTo
-		body := fmt.Sprintf("New post: %s", config.Domain+"/"+actor.Name+"/"+util.ShortURL(actor.Outbox, obj.Id))
+	return mails, nil
+}
 
-		msg := "From: " + from + "\n" +
-			"To: " + to + "\n" +
-			"Subject: Image Board Post\n\n" +
-			body
+func (obj ObjectBase) SendEmailNotify() {
+	if setup := config.IsEmailSetup(); !setup {
+		return
+	}
 
-		err := smtp.SendMail(config.SiteEmailServer+":"+config.SiteEmailPort,
-			smtp.PlainAuth("", from, pass, config.SiteEmailServer),
-			from, []string{to}, []byte(msg))
+	actor, err := GetActorFromDB(obj.Actor)
+	if err != nil {
+		log.Println(util.WrapError(err))
+		return
+	}
 
-		return util.WrapError(err)
-	*/
+	to, err := collectTo()
+	if err != nil {
+		log.Println(util.WrapError(err))
+		return
+	}
 
-	// TODO
-	return nil
+	irt := ""
+	if len(obj.InReplyTo) > 0 {
+		irt = obj.InReplyTo[0].Id
+	}
+
+	msg := strings.Join([]string{
+		fmt.Sprintf("From: %s", config.SiteEmailFrom),
+		fmt.Sprintf("To: %s", strings.Join(to, ", ")),
+		fmt.Sprintf("Subject: New post: %s/%s/%s", config.Domain, actor.Name, util.ShortURL(actor.Outbox, obj.Id)),
+		"",
+		fmt.Sprintf("Name: %s %s", obj.AttributedTo, obj.TripCode),
+		fmt.Sprintf("InReplyTo: %s", irt),
+		fmt.Sprintf("Subject: %s", obj.Name),
+		"",
+		obj.Content,
+	}, "\n")
+
+	err = smtp.SendMail(config.SiteEmailSMTP,
+		smtp.PlainAuth("", config.SiteEmailUser, config.SiteEmailPassword, config.SiteEmailServer),
+		config.SiteEmailFrom, to, []byte(msg))
+
+	if err != nil {
+		log.Println(util.WrapError(err))
+	}
 }

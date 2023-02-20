@@ -102,13 +102,7 @@ func newPost(actor activitypub.Actor, nObj *activitypub.ObjectBase) error {
 		}
 	}(*nObj)
 
-	go func(obj activitypub.ObjectBase) {
-		err := obj.SendEmailNotify()
-
-		if err != nil {
-			log.Println(err)
-		}
-	}(*nObj)
+	go nObj.SendEmailNotify()
 
 	return nil
 }
