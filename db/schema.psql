@@ -1,243 +1,223 @@
 -- vim: set ft=sql:
 
-CREATE TABLE IF NOT EXISTS actor(
-type varchar(50) default '',
-id varchar(100) UNIQUE PRIMARY KEY,
-name varchar(50) default '',
-preferedusername varchar(100) default '',
-summary varchar(200) default '',
-inbox varchar(100) default '',
-outbox varchar(100) default '',
-following varchar(100) default '',
-followers varchar(100) default '',
-restricted boolean default false
+CREATE TABLE actor(
+	type varchar(50) default '',
+	id varchar(100) UNIQUE PRIMARY KEY,
+	name varchar(50) default '',
+	preferedusername varchar(100) default '',
+	summary varchar(200) default '',
+	inbox varchar(100) default '',
+	outbox varchar(100) default '',
+	following varchar(100) default '',
+	followers varchar(100) default '',
+	restricted boolean default false,
+	autosubscribe boolean default false,
+	publicKeyPem varchar(100) default ''
 );
 
-CREATE TABLE IF NOT EXISTS replies(
-id varchar(100),
-inreplyto varchar(100)
+CREATE TABLE replies(
+	id varchar(100),
+	inreplyto varchar(100)
 );
 
-CREATE TABLE IF NOT EXISTS following(
-id varchar(100),
-following varchar(100)
+CREATE TABLE following(
+	id varchar(100),
+	following varchar(100)
 );
 
-CREATE TABLE IF NOT EXISTS follower(
-id varchar(100),
-follower varchar(100)
+CREATE TABLE follower(
+	id varchar(100),
+	follower varchar(100)
 );
 
-CREATE TABLE IF NOT EXISTS verification(
-type varchar(50) default '',
-identifier varchar(50),
-code varchar(50),
-created TIMESTAMP default NOW()
+CREATE TABLE reported(
+	id varchar(100),
+	count int,
+	board varchar(100),
+	reason varchar(100)
 );
 
-CREATE TABLE IF NOT EXISTS reported(
-id varchar(100),
-count int,
-board varchar(100),
-reason varchar(100)
+CREATE TABLE activitystream(
+	actor varchar(100) default '',
+	attachment varchar(100) default '',
+	attributedTo varchar(100) default '',
+	audience varchar(100) default '',
+	bcc varchar(100) default '',
+	bto varchar(100) default '',
+	cc varchar(100) default '',
+	context varchar(100) default '',
+	current varchar(100) default '',
+	first varchar(100) default '',
+	generator varchar(100) default '',
+	icon varchar(100) default '',
+	id varchar(100) UNIQUE PRIMARY KEY,
+	image varchar(100) default '',
+	instrument varchar(100) default '',
+	last varchar(100) default '',
+	location varchar(100) default '',
+	items varchar(100) default '',
+	oneOf varchar(100) default '',
+	anyOf varchar(100) default '',
+	closed varchar(100) default '',
+	origin varchar(100) default '',
+	next varchar(100) default '',
+	object varchar(100),
+	prev varchar(100) default '',
+	preview varchar(100) default '',
+	result varchar(100) default '',
+	tag varchar(100) default '',
+	target varchar(100) default '',
+	type varchar(100) default '',
+	to_ varchar(100) default '',
+	url varchar(100) default '',
+	accuracy varchar(100) default '',
+	altitude varchar(100) default '',
+	content varchar(4500) default '',
+	name varchar(100) default '',
+	alias varchar(100) default '',
+	duration varchar(100) default '',
+	height varchar(100) default '',
+	href varchar(100) default '',
+	hreflang varchar(100) default '',
+	partOf varchar(100) default '',
+	latitude varchar(100) default '',
+	longitude varchar(100) default '',
+	mediaType varchar(100) default '',
+	endTime varchar(100) default '',
+	published TIMESTAMP default NOW(),
+	startTime varchar(100) default '',
+	radius varchar(100) default '',
+	rel varchar(100) default '',
+	startIndex varchar(100) default '',
+	summary varchar(100) default '',
+	totalItems varchar(100) default '',
+	units varchar(100) default '',
+	updated TIMESTAMP default NOW(),
+	deleted TIMESTAMP default NULL,
+	width varchar(100) default '',
+	subject varchar(100) default '',
+	relationship varchar(100) default '',
+	describes varchar(100) default '',
+	formerType varchar(100) default '',
+	size int default NULL,
+	public boolean default false,
+	sensitive boolean default false,
+	tripcode varchar(50) default '',
+	CONSTRAINT fk_object FOREIGN KEY (object) REFERENCES activitystream(id)
 );
 
-CREATE TABLE IF NOT EXISTS boardaccess(
-identifier varchar(100),
-code varchar(50),
-board varchar(100),
-type varchar(50)
+CREATE TABLE cacheactivitystream(
+	actor varchar(100) default '',
+	attachment varchar(100) default '',
+	attributedTo varchar(100) default '',
+	audience varchar(100) default '',
+	bcc varchar(100) default '',
+	bto varchar(100) default '',
+	cc varchar(100) default '',
+	context varchar(100) default '',
+	current varchar(100) default '',
+	first varchar(100) default '',
+	generator varchar(100) default '',
+	icon varchar(100) default '',
+	id varchar(100) UNIQUE PRIMARY KEY,
+	image varchar(100) default '',
+	instrument varchar(100) default '',
+	last varchar(100) default '',
+	location varchar(100) default '',
+	items varchar(100) default '',
+	oneOf varchar(100) default '',
+	anyOf varchar(100) default '',
+	closed varchar(100) default '',
+	origin varchar(100) default '',
+	next varchar(100) default '',
+	object varchar(100),
+	prev varchar(100) default '',
+	preview varchar(100) default '',
+	result varchar(100) default '',
+	tag varchar(100) default '',
+	target varchar(100) default '',
+	type varchar(100) default '',
+	to_ varchar(100) default '',
+	url varchar(100) default '',
+	accuracy varchar(100) default '',
+	altitude varchar(100) default '',
+	content varchar(4500) default '',
+	name varchar(100) default '',
+	alias varchar(100) default '',
+	duration varchar(100) default '',
+	height varchar(100) default '',
+	href varchar(100) default '',
+	hreflang varchar(100) default '',
+	partOf varchar(100) default '',
+	latitude varchar(100) default '',
+	longitude varchar(100) default '',
+	mediaType varchar(100) default '',
+	endTime varchar(100) default '',
+	published TIMESTAMP default NOW(),
+	startTime varchar(100) default '',
+	radius varchar(100) default '',
+	rel varchar(100) default '',
+	startIndex varchar(100) default '',
+	summary varchar(100) default '',
+	totalItems varchar(100) default '',
+	units varchar(100) default '',
+	updated TIMESTAMP default NOW(),
+	deleted TIMESTAMP default NULL,
+	width varchar(100) default '',
+	subject varchar(100) default '',
+	relationship varchar(100) default '',
+	describes varchar(100) default '',
+	formerType varchar(100) default '',
+	size int default NULL,
+	public boolean default false,
+	sensitive boolean default false,
+	tripcode varchar(50) default '',
+	CONSTRAINT fk_object FOREIGN KEY (object) REFERENCES cacheactivitystream(id)
 );
 
-CREATE TABLE IF NOT EXISTS activitystream(
-actor varchar(100) default '',
-attachment varchar(100) default '',
-attributedTo varchar(100) default '',
-audience varchar(100) default '',
-bcc varchar(100) default '',
-bto varchar(100) default '',
-cc varchar(100) default '',
-context varchar(100) default '',
-current varchar(100) default '',
-first varchar(100) default '',
-generator varchar(100) default '',
-icon varchar(100) default '',
-id varchar(100) UNIQUE PRIMARY KEY,
-image varchar(100) default '',
-instrument varchar(100) default '',
-last varchar(100) default '',
-location varchar(100) default '',
-items varchar(100) default '',
-oneOf varchar(100) default '',
-anyOf varchar(100) default '',
-closed varchar(100) default '',
-origin varchar(100) default '',
-next varchar(100) default '',
-object varchar(100),
-prev varchar(100) default '',
-preview varchar(100) default '',
-result varchar(100) default '',
-tag varchar(100) default '',
-target varchar(100) default '',
-type varchar(100) default '',
-to_ varchar(100) default '',
-url varchar(100) default '',
-accuracy varchar(100) default '',
-altitude varchar(100) default '',
-content varchar(2000) default '',
-name varchar(100) default '',
-alias varchar(100) default '',
-duration varchar(100) default '',
-height varchar(100) default '',
-href varchar(100) default '',
-hreflang varchar(100) default '',
-partOf varchar(100) default '',
-latitude varchar(100) default '',
-longitude varchar(100) default '',
-mediaType varchar(100) default '',
-endTime varchar(100) default '',
-published TIMESTAMP default NOW(),
-startTime varchar(100) default '',
-radius varchar(100) default '',
-rel varchar(100) default '',
-startIndex varchar(100) default '',
-summary varchar(100) default '',
-totalItems varchar(100) default '',
-units varchar(100) default '',
-updated TIMESTAMP default NOW(),
-deleted TIMESTAMP default NULL,
-width varchar(100) default '',
-subject varchar(100) default '',
-relationship varchar(100) default '',
-describes varchar(100) default '',
-formerType varchar(100) default '',
-size int default NULL,
-public boolean default false,
-CONSTRAINT fk_object FOREIGN KEY (object) REFERENCES activitystream(id)
+CREATE TABLE removed(
+	id varchar(100),
+	type varchar(25)
 );
 
-CREATE TABLE IF NOT EXISTS cacheactivitystream(
-actor varchar(100) default '',
-attachment varchar(100) default '',
-attributedTo varchar(100) default '',
-audience varchar(100) default '',
-bcc varchar(100) default '',
-bto varchar(100) default '',
-cc varchar(100) default '',
-context varchar(100) default '',
-current varchar(100) default '',
-first varchar(100) default '',
-generator varchar(100) default '',
-icon varchar(100) default '',
-id varchar(100) UNIQUE PRIMARY KEY,
-image varchar(100) default '',
-instrument varchar(100) default '',
-last varchar(100) default '',
-location varchar(100) default '',
-items varchar(100) default '',
-oneOf varchar(100) default '',
-anyOf varchar(100) default '',
-closed varchar(100) default '',
-origin varchar(100) default '',
-next varchar(100) default '',
-object varchar(100),
-prev varchar(100) default '',
-preview varchar(100) default '',
-result varchar(100) default '',
-tag varchar(100) default '',
-target varchar(100) default '',
-type varchar(100) default '',
-to_ varchar(100) default '',
-url varchar(100) default '',
-accuracy varchar(100) default '',
-altitude varchar(100) default '',
-content varchar(2000) default '',
-name varchar(100) default '',
-alias varchar(100) default '',
-duration varchar(100) default '',
-height varchar(100) default '',
-href varchar(100) default '',
-hreflang varchar(100) default '',
-partOf varchar(100) default '',
-latitude varchar(100) default '',
-longitude varchar(100) default '',
-mediaType varchar(100) default '',
-endTime varchar(100) default '',
-published TIMESTAMP default NOW(),
-startTime varchar(100) default '',
-radius varchar(100) default '',
-rel varchar(100) default '',
-startIndex varchar(100) default '',
-summary varchar(100) default '',
-totalItems varchar(100) default '',
-units varchar(100) default '',
-updated TIMESTAMP default NOW(),
-deleted TIMESTAMP default NULL,
-width varchar(100) default '',
-subject varchar(100) default '',
-relationship varchar(100) default '',
-describes varchar(100) default '',
-formerType varchar(100) default '',
-size int default NULL,
-public boolean default false,
-CONSTRAINT fk_object FOREIGN KEY (object) REFERENCES cacheactivitystream(id)
+CREATE TABLE publicKeyPem(
+	id varchar(100) UNIQUE,
+	owner varchar(100),
+	file varchar(100)
 );
 
-CREATE TABLE IF NOT EXISTS removed(
-id varchar(100),
-type varchar(25)
+CREATE TABLE newsItem(
+	title text,
+	content text,
+	time bigint
 );
 
-ALTER TABLE activitystream ADD COLUMN IF NOT EXISTS tripcode varchar(50) default '';
-ALTER TABLE cacheactivitystream ADD COLUMN IF NOT EXISTS tripcode varchar(50) default '';
-
-CREATE TABLE IF NOT EXISTS publicKeyPem(
-id varchar(100) UNIQUE,
-owner varchar(100),
-file varchar(100)
+CREATE TABLE postblacklist(
+	id serial primary key,
+	regex varchar(200)
 );
 
-CREATE TABLE IF NOT EXISTS newsItem(
-title text,
-content text,
-time bigint
+CREATE TABLE bannedmedia(
+	id serial primary key,
+	hash varchar(200)
 );
 
-ALTER TABLE actor ADD COLUMN IF NOT EXISTS publicKeyPem varchar(100) default '';
-
-ALTER TABLE activitystream ADD COLUMN IF NOT EXISTS sensitive boolean default false;
-ALTER TABLE cacheactivitystream ADD COLUMN IF NOT EXISTS sensitive boolean default false;
-
-CREATE TABLE IF NOT EXISTS postblacklist(
-id serial primary key,
-regex varchar(200)
+CREATE TABLE inactive(
+	instance varchar(100) primary key,
+	timestamp TIMESTAMP default NOW()
 );
 
-ALTER TABLE actor ADD COLUMN IF NOT EXISTS autosubscribe boolean default false;
-
-CREATE TABLE IF NOT EXISTS bannedmedia(
-id serial primary key,
-hash varchar(200)
+CREATE TABLE sticky(
+	actor_id varchar(100),
+	activity_id varchar(100)
 );
 
-CREATE TABLE IF NOT EXISTS inactive(
-instance varchar(100) primary key,
-timestamp TIMESTAMP default NOW()
+CREATE TABLE locked(
+	actor_id varchar(100),
+	activity_id varchar(100)
 );
 
-ALTER TABLE boardaccess ADD COLUMN IF NOT EXISTS label varchar(50) default 'Anon';
-
-CREATE TABLE IF NOT EXISTS sticky(
-actor_id varchar(100),
-activity_id varchar(100)
-);
-
-CREATE TABLE IF NOT EXISTS locked(
-actor_id varchar(100),
-activity_id varchar(100)
-);
-
-CREATE TABLE IF NOT EXISTS accounts(
+CREATE TABLE accounts(
 	username TEXT NOT NULL UNIQUE,
 	email TEXT,
 	type INTEGER,
@@ -246,18 +226,8 @@ CREATE TABLE IF NOT EXISTS accounts(
 	session text
 );
 
-CREATE TABLE IF NOT EXISTS captchas(
+CREATE TABLE captchas(
 	id TEXT NOT NULL UNIQUE,
 	file TEXT NOT NULL UNIQUE,
 	solution TEXT NOT NULL
 );
-
-ALTER TABLE activitystream ALTER COLUMN content TYPE varchar(4500);
-ALTER TABLE cacheactivitystream ALTER COLUMN content TYPE varchar(4500);
-
-DROP TABLE IF EXISTS wallet;
-DROP TABLE IF EXISTS verificationcooldown;
-DROP TABLE IF EXISTS crossverification;
-DROP TABLE IF EXISTS actorauth;
-
-ALTER TABLE accounts ADD COLUMN IF NOT EXISTS email TEXT;

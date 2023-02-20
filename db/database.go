@@ -1,6 +1,7 @@
 package db
 
 import (
+	"crypto/rand"
 	"database/sql"
 	"fmt"
 	"log"
@@ -13,6 +14,9 @@ import (
 	"github.com/KushBlazingJudah/fedichan/config"
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
+
+const pwDomain = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+const pwLength = 16
 
 func Connect() error {
 	host := config.DBHost
@@ -33,9 +37,13 @@ func Connect() error {
 		return wrapErr(err)
 	}
 
-	log.Println("Successfully connected DB")
-
 	config.DB = _db
+
+	if err := migrate(); err != nil {
+		return err
+	}
+
+	log.Println("Successfully connected DB")
 
 	return nil
 }
@@ -43,16 +51,6 @@ func Connect() error {
 func Close() error {
 	err := config.DB.Close()
 
-	return wrapErr(err)
-}
-
-func RunDatabaseSchema() error {
-	query, err := os.ReadFile("db/schema.psql")
-	if err != nil {
-		return wrapErr(err)
-	}
-
-	_, err = config.DB.Exec(string(query))
 	return wrapErr(err)
 }
 
@@ -283,7 +281,7 @@ func IsHashBanned(hash string) (bool, error) {
 }
 
 func PrintAdminAuth() error {
-	log.Println("Mod key: " + config.Key)
+	log.Printf("Mod key: %v", config.Key)
 
 	if UserExists("admin") {
 		return nil
@@ -294,7 +292,15 @@ func PrintAdminAuth() error {
 		return err
 	}
 
-	return a.SetPassword("password")
+	pw := make([]byte, 32)
+	rand.Read(pw)
+	for i := range pw {
+		pw[i] = pwDomain[int(pw[i])%len(pwDomain)]
+	}
+
+	log.Printf("Admin password set to: %v", string(pw))
+
+	return a.SetPassword(string(pw))
 }
 
 func InitInstance() error {

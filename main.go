@@ -143,41 +143,37 @@ func Init() {
 	rand.Seed(time.Now().UnixNano())
 
 	if err = util.CreatedNeededDirectories(); err != nil {
-		log.Println(err)
+		log.Fatal(err)
 	}
 
 	if err = db.Connect(); err != nil {
-		log.Println(err)
-	}
-
-	if err = db.RunDatabaseSchema(); err != nil {
-		log.Println(err)
+		log.Fatal(err)
 	}
 
 	if err = db.InitInstance(); err != nil {
-		log.Println(err)
+		log.Fatal(err)
 	}
 
 	if actor, err = activitypub.GetActorFromDB(config.Domain); err != nil {
-		log.Println(err)
+		log.Fatal(err)
 	}
 
 	if activitypub.FollowingBoards, err = actor.GetFollowing(); err != nil {
-		log.Println(err)
+		log.Fatal(err)
 	}
 
 	if activitypub.Boards, err = activitypub.GetBoardCollection(); err != nil {
-		log.Println(err)
+		log.Fatal(err)
 	}
 
 	if config.Key == "" {
 		if config.Key, err = util.CreateKey(32); err != nil {
-			log.Println(err)
+			log.Fatal(err)
 		}
 	}
 
 	if err = util.LoadThemes(); err != nil {
-		log.Println(err)
+		log.Fatal(err)
 	}
 
 	go activitypub.StartupArchive()
