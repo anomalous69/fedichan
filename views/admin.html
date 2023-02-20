@@ -36,6 +36,14 @@
 		<input type="text" name="blotter">
 		<input type="submit" value="Set">
 	</form>
+
+	<h3>Set Locked</h3>
+	<form id="set-locked" action="/{{.Key}}/lock" method="post">
+		<b>This sets the locked status globally and will make everyone who does not have an account unable to post.</b><br>
+		<label>Value:</label>
+		<input type="checkbox" name="lock" value="1" {{if .Instance.Locked}}checked{{end}}>
+		<input type="submit" value="Set">
+	</form>
 </div>
 {{ end }}
 

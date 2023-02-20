@@ -1201,3 +1201,20 @@ func (a Actor) SetBlotter(val string) error {
 	_, err := config.DB.Exec(`update actor set blotter = $1 where id = $2`, &ns, a.Id)
 	return util.WrapError(err)
 }
+
+func (a Actor) Locked() bool {
+	val := false
+
+	// main value overrides actor value
+	err := config.DB.QueryRow(`select (select locked from actor where id = $1) or (select locked from actor where id = $2)`, a.Id, config.Domain).Scan(&val)
+	if err != nil {
+		return true
+	}
+
+	return val
+}
+
+func (a Actor) SetLocked(l bool) error {
+	_, err := config.DB.Exec(`update actor set locked = $1 where id = $2`, l, a.Id)
+	return err
+}

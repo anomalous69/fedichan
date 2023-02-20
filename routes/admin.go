@@ -52,11 +52,6 @@ func AdminIndex(ctx *fiber.Ctx) error {
 		return sendLogin(ctx)
 	}
 
-	actor, _ := activitypub.GetActorFromPath(ctx.Path(), "/"+config.Key+"/")
-	if actor.Id == "" {
-		actor, _ = activitypub.GetActorByNameFromDB(config.Domain)
-	}
-
 	actor, err := activitypub.GetActor(config.Domain)
 	if err != nil {
 		return util.WrapError(err)
@@ -88,6 +83,7 @@ func AdminIndex(ctx *fiber.Ctx) error {
 	adminData.Boards = activitypub.Boards
 
 	adminData.Board.Post.Actor = actor.Id
+	adminData.Board.Actor = actor
 
 	adminData.Instance, _ = activitypub.GetActorFromDB(config.Domain)
 
@@ -206,6 +202,28 @@ func AdminSetBlotter(ctx *fiber.Ctx) error {
 	}
 
 	if err := actor.SetBlotter(ctx.FormValue("blotter")); err != nil {
+		return send500(ctx, err)
+	}
+
+	return ctx.Redirect("/"+config.Key+"/"+ctx.FormValue("board", ""), http.StatusSeeOther)
+}
+
+func AdminSetLocked(ctx *fiber.Ctx) error {
+	acct, hasAuth := ctx.Locals("acct").(*db.Acct)
+	if !hasAuth {
+		return sendLogin(ctx)
+	}
+
+	if acct.Type < db.Admin {
+		return send403(ctx, "Only admins can set locked status.")
+	}
+
+	actor, err := activitypub.GetActorByNameFromDB(ctx.FormValue("board", "main"))
+	if err != nil {
+		return send404(ctx, "Board not found")
+	}
+
+	if err := actor.SetLocked(ctx.FormValue("lock") == "1"); err != nil {
 		return send500(ctx, err)
 	}
 

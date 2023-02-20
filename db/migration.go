@@ -152,6 +152,9 @@ var migrations = []func(*sql.Tx) error{
 	migrationScript(`
 		ALTER TABLE actor ADD COLUMN blotter TEXT;
 	`),
+	migrationScript(`
+		ALTER TABLE actor ADD COLUMN locked BOOLEAN NOT NULL DEFAULT FALSE;
+	`),
 }
 
 func migrate() error {
@@ -168,6 +171,10 @@ func migrate() error {
 
 	if err := config.DB.QueryRow(`select version from dbinternal`).Scan(&ver); err != nil {
 		return err
+	}
+
+	if ver >= len(migrations) {
+		return nil
 	}
 
 	for i, v := range migrations[ver:] {

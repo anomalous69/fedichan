@@ -28,7 +28,11 @@
     {{ if gt (len .Posts) 0 }}
     {{ if eq (index .Posts 0).Type "Note" }}
     <td style="text-align: center;">
-      <span>[<a id="reply-content" href="javascript:quote('{{ .Board.Actor.Id }}', '{{ (index .Posts 0).Id }}', 'reply')">Post a Reply</a>]</span>
+      {{ if and .Board.Actor.Locked (not .Acct) }}
+        <b>Board locked.</b>
+      {{else}}
+        <span>[<a id="reply-content" href="javascript:quote('{{ .Board.Actor.Id }}', '{{ (index .Posts 0).Id }}', 'reply')">Post a Reply</a>]</span>
+      {{end}}
     </td>
     {{ end }}
 

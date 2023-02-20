@@ -2,13 +2,22 @@
   <h1>/{{ .Board.Name }}/ - {{ .Board.PrefName }}</h1>
   <p>{{ .Board.Summary }}</p>
 
-  {{ if or (eq (len .Posts) 0) (eq (index .Posts 0).Type "Note") }}
+  {{ if and .Board.Actor.Locked (not .Acct) }}
+  <h2 id="newpostbtn" state="0">Board locked.<br>No new posts may be made at this time.</h2>
+  {{ else if or (eq (len .Posts) 0) (eq (index .Posts 0).Type "Note") }}
 
-  {{ if and .Board.InReplyTo (not (index .Posts 0).Locked) }}
-  <h3 id="newpostbtn" state="0">[<a href="javascript:startNewPost()">Post a Reply</a>]</h3>
+  <h3 id="newpostbtn" state="0">
+  {{ if and .Board.InReplyTo }}
+  {{ if (index .Posts 0).Locked }}
+  Thread locked. No new posts can be made.
+  {{else}}
+  [<a href="javascript:startNewPost()">Post a Reply</a>]
+  {{end}}
   {{ else }}
-  <h3 id="newpostbtn" state="0">[<a href="javascript:startNewPost()">Start a New Thread</a>]</h3>
+  [<a href="javascript:startNewPost()">Start a New Thread</a>]
   {{ end }}
+  {{ if and .Board.Actor.Locked .Acct }} (Locked) {{end}}
+  </h3>
 
   {{ $len := len .Posts }}
   <div id="newpost" style="text-align: left;">

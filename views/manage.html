@@ -26,6 +26,15 @@
 		<input type="hidden" name="board" value="{{.Board.Name}}">
 		<input type="submit" value="Set">
 	</form>
+
+	<h3>Set Locked</h3>
+	<form id="set-locked" action="/{{.Key}}/lock" method="post">
+		{{if .Instance.Locked}}<b>Instance is globally locked.</b><br>{{end}}
+		<label>Value: </label>
+		<input type="checkbox" name="lock" value="1" {{if .Board.Actor.Locked}}checked{{end}} {{if .Instance.Locked}}disabled{{end}}>
+		<input type="hidden" name="board" value="{{.Board.Actor.Name}}">
+		<input type="submit" value="Set" {{if .Instance.Locked}}disabled{{end}}>
+	</form>
 </div>
 {{end}}
 

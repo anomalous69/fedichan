@@ -173,6 +173,10 @@ func MakeActorPost(ctx *fiber.Ctx) error {
 	// Waive captcha for authenticated users, otherwise complain
 	// Do this as early as possible to prevent wasting time
 	if !reg {
+		if actor.Locked() {
+			return send403(ctx, "Board locked. No new posts may be made at this time.")
+		}
+
 		valid, err := db.CheckCaptcha(ctx.FormValue("captchaCode"), ctx.FormValue("captcha"))
 		if err != nil {
 			// Silently log it
