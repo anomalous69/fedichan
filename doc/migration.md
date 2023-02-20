@@ -22,11 +22,14 @@ Care will be taken to make this as automatic as possible.
 
 **FOR THE LOVE OF ALL THAT IS HOLY, TAKE BACKUPS.**
 I do not guarantee this will work for you, only that it worked for me.
+Fedichan makes **destructive changes to the database**.
+The data it deletes (asides from some tables) is mostly useless and the fields
+even completely unused, but keep this in mind.
 
 1. Ensure you are running the latest version of FChannel before migrating
 2. Install Fedichan like how you would FChannel
 3. Move `config/config-init` to `fchan.cfg`.
-4. You're done, hopefully
+4. You're done, hopefully. Run `./fchan`.
 
 Take note of the admin password that is printed to the terminal on the first
 run, as you won't get a chance to see it again unless you delete the admin user
