@@ -506,8 +506,9 @@ func ReportPost(ctx *fiber.Ctx) error {
 			reason,
 		}, "\n")
 
+		domain, _, _ := strings.Cut(config.SiteEmailSMTP, ":")
 		err = smtp.SendMail(config.SiteEmailSMTP,
-			smtp.PlainAuth("", config.SiteEmailUser, config.SiteEmailPassword, config.SiteEmailServer),
+			smtp.PlainAuth("", config.SiteEmailUser, config.SiteEmailPassword, domain),
 			config.SiteEmailFrom, to, []byte(msg))
 
 		if err != nil {

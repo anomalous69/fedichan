@@ -1531,8 +1531,9 @@ func (obj ObjectBase) SendEmailNotify() {
 		obj.Content,
 	}, "\n")
 
+	domain, _, _ := strings.Cut(config.SiteEmailSMTP, ":")
 	err = smtp.SendMail(config.SiteEmailSMTP,
-		smtp.PlainAuth("", config.SiteEmailUser, config.SiteEmailPassword, config.SiteEmailServer),
+		smtp.PlainAuth("", config.SiteEmailUser, config.SiteEmailPassword, domain),
 		config.SiteEmailFrom, to, []byte(msg))
 
 	if err != nil {
